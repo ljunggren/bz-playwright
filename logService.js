@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { saveVideo } = require('playwright-video');
 
 const Service = {
   stdTimeout:60000,
@@ -8,8 +9,11 @@ const Service = {
   capture:"",
   browser:"",
   result: 2,
-  logMonitor(page,notimeout,gtimeout,stdTimeout,reportPrefix, browser){
-    this.notimeout=notimeout
+  logMonitor(page,notimeout,gtimeout,stdTimeout,reportPrefix, browser,video){
+    Service.notimeout=notimeout
+    Service.page=page
+    Service.video=video
+    
     console.log("Initializing logMonitor");
     gtimeout && console.log("Override global timeout: " + gtimeout + " mins");
     stdTimeout && console.log("Override action timeout: " + stdTimeout + " mins");
@@ -90,6 +94,7 @@ const Service = {
     Service.beginningFun=fun
   },
   setPopup(popup){
+    console.log("set popup window")
     this.popup=popup
   },
   //task:{key,fun,onTime,timeout}
@@ -115,6 +120,11 @@ const Service = {
           Service.beginningFun()
         }else{
           Service.setRunTasks()
+        }
+        if(Service.video){
+          Service.page.evaluate((v)=>{
+            BZ.requestVideo()
+          });
         }
       },
       oneTime:1,
@@ -142,7 +152,7 @@ const Service = {
     Service.addTask({
       key:"ide-run:",
       fun(msg){
-        page.evaluate(()=>{ msg;  });
+        Service.page.evaluate(()=>{ msg;  });
       },
       timeout:Service.stdTimeout
     })
@@ -150,10 +160,11 @@ const Service = {
     Service.addTask({
       key:"videostart:",
       fun(msg){
-        
-        let videoFile = msg.split("videostart:")[1]+".mp4";
-        console.log("Start recording video: ", videoFile);
-         Service.capture = saveVideo(page, videoFile, {followPopups:true, fps: 5});      
+        (async () => {
+          let videoFile = msg.split("videostart:")[1]+".mp4";
+          console.log("Start recording video: ", videoFile);
+           Service.capture = await saveVideo(Service.popup, videoFile, {followPopups:true, fps: 5});      
+        })()
       },
       timeout:Service.stdTimeout
     })
@@ -161,9 +172,17 @@ const Service = {
     Service.addTask({
       key:"videostop:",
       fun(msg){
-        let videoFile = msg.split("videostop:")[1]+".mp4";
-        console.log("Stop recording video: ", videoFile);
-         Service.capture.stop();
+        (async () => {
+          let videoFile = msg.split("videostop:")[1]+".mp4";
+          console.log("Stop recording video: ", videoFile);
+          await Service.capture.stop();
+          await (()=>{
+            Service.page.evaluate((v)=>{
+              BZ.savedVideo()
+            });
+
+          })()
+        })()
       },
       timeout:Service.stdTimeout
     })
@@ -243,7 +262,7 @@ const Service = {
   gracefulShutdown(msg){
     console.error("Try to get Boozang to exit gracefully and write report");
     Service.popup.screenshot({path: "graceful_shutdown.png"});
-    page.evaluate(()=>{  
+    Service.page.evaluate(()=>{  
       BZ.e();console.log("BZ-LOG: Timing out check IDE response"); 
     });
     // Wait 100 seconds for Boozang to finish before force kill

@@ -96,19 +96,48 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     printStackTrace("ide",err);
   }
 
+
+
+  // Setup popup
+  //let popup = null;
+  function setupPopup(popup) {
+    // popup = pages[pages.length-1]; 
+    popup.setViewportSize({
+      width: parseInt(width),
+      height: parseInt(height)
+    });
+
+    popup.on("error", appPrintStackTrace);
+    popup.on("pageerror", appPrintStackTrace);
+    Service.setPopup(popup)
+  }
+
+
+  // let pages = await browser.pages();
+  // browser.on('targetcreated', async () => {
+    // console.log("New pop window *******")
+        // //console.log('New window/tab event created');
+        // pages = await browser.pages();
+        // //console.log("Pages length " + pages.length);
+        // setupPopup(); 
+        // Service.setPage(page);  
+  // });
+
+
+
   const page = await browser.newPage();
+
+  page.on('popup', async dialog => {
+    setupPopup(dialog)
+  })
 
   //await capture.stop()
   //await browser.close();
 
-  if (video) {
-    page.evaluate((v)=>{
-      BZ.requestVideo()
-    });
-  }
+
 
   // Assign all log listeners
-  Service.logMonitor(page,notimeout,gtimeout,timeout,file, browser)
+  Service.logMonitor(page,notimeout,gtimeout,timeout,file, browser,video)
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
