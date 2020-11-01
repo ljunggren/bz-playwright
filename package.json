@@ -1,0 +1,34 @@
+{
+  "name": "boozang",
+  "version": "4.1.0",
+  "description": "An Simple Driver for Chrome Headless basded on Puppeteer",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "node-options": "latest",
+    "playwright": "^1.5.2",
+    "playwright-video": "^2.4.0"
+  },
+  "bin": {
+    "boozang": "index.js"
+  },
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ljunggren/bz-puppeteer.git"
+  },
+  "keywords": [
+    "boozang",
+    "puppeteer",
+    "automation"
+  ],
+  "author": "Mats Ljunggren",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ljunggren/bz-puppeteer/issues"
+  },
+  "homepage": "https://github.com/ljunggren/bz-puppeteer#readme"
+}
