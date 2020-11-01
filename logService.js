@@ -8,7 +8,7 @@ const Service = {
   capture:"",
   browser:"",
   result: 2,
-  logMonitor(page,notimeout,gtimeout,stdTimeout,reportPrefix, capture, browser){
+  logMonitor(page,notimeout,gtimeout,stdTimeout,reportPrefix, browser){
     this.notimeout=notimeout
     console.log("Initializing logMonitor");
     gtimeout && console.log("Override global timeout: " + gtimeout + " mins");
@@ -16,7 +16,7 @@ const Service = {
     reportPrefix && console.log("Override report prefix: " + reportPrefix);
 
     Service.browser = browser;
-    Service.capture = capture;
+ 
     Service.stdTimeout=stdTimeout*60000||60000;
     Service.reportPrefix=reportPrefix ? reportPrefix + "_":"";
     
@@ -148,6 +148,29 @@ const Service = {
     })
 
     Service.addTask({
+      key:"videostart:",
+      fun(msg){
+        
+        let videoFile = msg.split("videostart:")[1]+".mp4";
+        console.log("Start recording video: ", videoFile);
+         Service.capture = saveVideo(page, videoFile, {followPopups:true, fps: 5});      
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
+      key:"videostop:",
+      fun(msg){
+        let videoFile = msg.split("videostop:")[1]+".mp4";
+        console.log("Stop recording video: ", videoFile);
+         Service.capture.stop();
+      },
+      timeout:Service.stdTimeout
+    })
+    
+
+
+    Service.addTask({
       key:"screenshot:",
       fun(msg){
         let screenshotFile = msg.split("screenshot:")[1]+".png";
@@ -212,14 +235,10 @@ const Service = {
   },
   shutdown(msg){
     msg && console.log(msg);
-    console.log("Stop video recording");
-   Service.capture.stop().then(()=>{
     Service.browser.close();
     if(!this.notimeout){
       process.exit(Service.result)
     }
-   })
-    
   },
   gracefulShutdown(msg){
     console.error("Try to get Boozang to exit gracefully and write report");

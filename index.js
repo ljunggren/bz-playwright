@@ -97,14 +97,18 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   }
 
   const page = await browser.newPage();
-  const capture = await saveVideo(page, 'recording.mp4', {followPopups:true});
 
   //await capture.stop()
   //await browser.close();
 
+  if (video) {
+    page.evaluate((v)=>{
+      BZ.requestVideo()
+    });
+  }
 
   // Assign all log listeners
-  Service.logMonitor(page,notimeout,gtimeout,timeout,file, capture, browser)
+  Service.logMonitor(page,notimeout,gtimeout,timeout,file, browser)
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
