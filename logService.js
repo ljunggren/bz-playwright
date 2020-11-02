@@ -121,7 +121,7 @@ const Service = {
         }else{
           Service.setRunTasks()
         }
-        if(Service.video){
+        if(Service.video && Service.video != "none"){
           Service.page.evaluate((v)=>{
             BZ.requestVideo()
           });
@@ -162,7 +162,7 @@ const Service = {
       fun(msg){
         (async () => {
           let videoFile = msg.split("videostart:")[1]+".mp4";
-          console.log("Start recording video: ", videoFile);
+           console.log("Start recording video: ", videoFile);
            Service.capture = await saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
         })()
       },
@@ -173,9 +173,14 @@ const Service = {
       key:"videostop:",
       fun(msg){
         (async () => {
-          let videoFile = msg.split("videostop:")[1]+".mp4";
+          let success = msg.includes(",success");
+          let videoFile = msg.split("videostop:")[1].split(",")[0]+".mp4";
           console.log("Stop recording video: ", videoFile);
           await Service.capture.stop();
+          if (success && Service.video != "all"){
+            console.log("Test success. Deleting video: " + videoFile);
+            fs.unlinkSync(Service.reportPrefix + videoFile);
+          }
           await (()=>{
             Service.page.evaluate((v)=>{
               BZ.savedVideo()
