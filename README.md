@@ -19,7 +19,7 @@ To install the command-line package run
 
 To run
 
-```boozang http://ai.boozang.com/extension/abc...```
+```node index http://ai.boozang.com/extension/abc...```
 
 
 To clone the repository run
@@ -31,19 +31,9 @@ To run the application from source simply run
 ```node index.js http://ai.boozang.com/extension/abc...```
 
 
-## Commands
-
-"Full" mode
-
-```boozang --headfull [testurl-including-auth-token]```
-
-Run with Boozang authentification token
-
-```boozang --token=auth-token [testurl-excluding-auth-token]```
-
 ## Options
 
-```USAGE: boozang [--token] [--headfull] [--verbose] [--screenshot] [--file=report] [--device=default] url```
+```USAGE: node index [--token] [--headfull] [--verbose] [--screenshot] [--file=report] [--device=default] url```
 
 -- token: The Boozang authorization token. The recommended way of generating a token is to create a team member with CI credentials on your project. In the management UI (ai.boozang.com) login as CI member and generate a token under Account->Get Token. You can now simply control CI access and consolidate all email notifications under the CI team member email address. 
 
@@ -53,7 +43,7 @@ Run with Boozang authentification token
 
 -- file: Overrides default report name "result".
 
---video: Capture videos of the tests
+--video: Capture videos of the tests. Possible values are: "all", "failed", and "none" (default).
 
 -- device: Emulate device. Find devices here: https://github.com/puppeteer/puppeteer/blob/main/src/common/DeviceDescriptors.ts
 
