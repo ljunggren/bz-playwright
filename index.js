@@ -57,11 +57,20 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
 
   file = (docker ? "/var/boozang/" : "") + opts.file;
 
-  if (opts.userdatadir){
-    userdatadir = (docker ? "/var/boozang/" : "") + (opts.userdatadir || "");
-    console.log("Setting userdatadir: " + userdatadir);
+  function getDateString(){
+    let dNow = new Date();
+    SimpleDateFormat ft = new SimpleDateFormat("yyMMddhhmm");
+    String datetime = ft.format(dNow);
+        System.out.println(datetime);
   }
-  
+
+  /** 
+  if (!userdatadir) {
+    userdatadir = "ud_" + Date.now();
+    console.log("Generating unique user-data-dir: ", userdatadir);
+  } 
+  */
+
   const launchargs = [
     '--disable-extensions-except=' + __dirname + '/bz-extension',
     '--load-extension=' + __dirname + '/bz-extension',
