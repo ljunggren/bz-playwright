@@ -163,7 +163,7 @@ const Service = {
         (async () => {
           let videoFile = msg.split("videostart:")[1]+".mp4";
           console.log("Start recording video: ", videoFile);
-           Service.capture = await saveVideo(Service.popup, videoFile, {followPopups:true, fps: 5});      
+           Service.capture = await saveVideo(Service.popup||Service.page, videoFile, {followPopups:true, fps: 5});      
         })()
       },
       timeout:Service.stdTimeout
