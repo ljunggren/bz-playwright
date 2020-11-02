@@ -12,13 +12,13 @@ const Service = require('./logService').Service;
 // Command defaults
 const opts = {
   "verbose" : false,
-  "file": "",
+  "file": "report",
   "listscenarios":"",
   "listsuite":"",
   "device" : "",
   "screenshot": false,
   "token":"",
-  "userdatadir":"test",
+  "userdatadir":"userdata",
   "width":1280,
   "height":1024,
   "docker": false,
@@ -71,7 +71,7 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     '--defaultViewport: null',
     ];
 
-  const browser = await chromium.launchPersistentContext("bananas",{
+  const browser = await chromium.launchPersistentContext(userdatadir,{
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"

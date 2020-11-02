@@ -1,12 +1,12 @@
-# Boozang Puppeteer Test runner 
+# Boozang Playwright Test runner 
 
 ## Usage
 
-```USAGE: boozang [--token] [--headfull] [--verbose] [--screenshot] [--file=report] [--device=default] url```
+```USAGE: boozang [--token] [--headfull] [--verbose] [--screenshot] [--file=report] [--video][--device=default] url```
 
 ## Introduction
 
-This is a helper package for Boozang test platform and allows for test execution from the command line. The test runner is designed to run Boozang tests (http://boozang.com) both in headless and non-headless mode, and is based on the amazing npm package Puppeteer (https://github.com/GoogleChrome/puppeteer) by Chrome developers. Just like Puppeteer it can be configured to use both headless Chrome and "full" Chrome. 
+This is a helper package for Boozang test platform and allows for test execution from the command line. The test runner is designed to run Boozang tests (http://boozang.com) and replaces bz-puppeteer, which was based on npm package Puppeteer (https://github.com/GoogleChrome/puppeteer) by Chrome developers. This package is instead based on Microsoft's Playwright (https://github.com/microsoft/playwright).
 
 
 ## Requirements
@@ -33,10 +33,6 @@ To run the application from source simply run
 
 ## Commands
 
-Headless run 
-
-```boozang [testurl-including-auth-token]```
-
 "Full" mode
 
 ```boozang --headfull [testurl-including-auth-token]```
@@ -49,22 +45,22 @@ Run with Boozang authentification token
 
 ```USAGE: boozang [--token] [--headfull] [--verbose] [--screenshot] [--file=report] [--device=default] url```
 
-- token: The Boozang authorization token. The recommended way of generating a token is to create a team member with CI credentials on your project. In the management UI (ai.boozang.com) login as CI member and generate a token under Account->Get Token. You can now simply control CI access and consolidate all email notifications under the CI team member email address. 
+-- token: The Boozang authorization token. The recommended way of generating a token is to create a team member with CI credentials on your project. In the management UI (ai.boozang.com) login as CI member and generate a token under Account->Get Token. You can now simply control CI access and consolidate all email notifications under the CI team member email address. 
 
-- headfull: Runs Boozang in full mode (non-headless). Will be triggered authomatically for URL with extension dependencies
+-- verbose: Turn on verbose logging
 
-- verbose: Turn on verbose logging
+-- screenshot: Generates a screenshot instead of runs a test. Used to generate tool screenshots for Boozang documentation. 
 
-- screenshot: Generates a screenshot instead of runs a test. Used to generate tool screenshots for Boozang documentation. 
+-- file: Overrides default report name "result".
 
-- file: Overrides default report name "result".
+--video: Capture videos of the tests
 
-- device: Emulate device. Find devices here: https://github.com/puppeteer/puppeteer/blob/main/src/common/DeviceDescriptors.ts
+-- device: Emulate device. Find devices here: https://github.com/puppeteer/puppeteer/blob/main/src/common/DeviceDescriptors.ts
 
 
 ## Built With
 
-* [Puppeteer](https://github.com/GoogleChrome/puppeteer) - Headless Chrome Node API from Google Chrome
+* [Playwright] (https://github.com/microsoft/playwright) - Playwright is a Node.js library to automate Chromium, Firefox and WebKit with a single API. 
 
 ## Authors
 
@@ -76,5 +72,3 @@ Run with Boozang authentification token
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-# bz-playwright
