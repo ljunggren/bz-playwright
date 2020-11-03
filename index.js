@@ -1,7 +1,3 @@
-#! /usr/bin/env node
-// Device Descriptors https://github.com/GoogleChrome/puppeteer/blob/master/DeviceDescriptors.js
-
-
 (async () => {
 
 const { chromium } = require('playwright');
@@ -46,7 +42,7 @@ const video = opts.video;
 let file = opts.file;
 
 if (result.errors || !result.args || result.args.length !== 1) {
-  console.log('USAGE: boozang [--token] [--docker] [--gtimeout] [--notimeout] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--screenshot] [--file=report] [url]');
+  console.log('USAGE: node index [--token] [--docker] [--gtimeout] [--notimeout] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
   process.exit(2);
 }
 
@@ -56,14 +52,6 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
 
 
   file = (docker ? "/var/boozang/" : "") + opts.file;
-
-  function getDateString(){
-    let dNow = new Date();
-    SimpleDateFormat ft = new SimpleDateFormat("yyMMddhhmm");
-    String datetime = ft.format(dNow);
-        System.out.println(datetime);
-  }
-
   /** 
   if (!userdatadir) {
     userdatadir = "ud_" + Date.now();
@@ -84,9 +72,6 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"
-    /** ,
-    userDataDir: userdatadir,
-     */
   });
 
   function printStackTrace(app,err){
