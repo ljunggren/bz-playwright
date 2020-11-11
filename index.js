@@ -18,9 +18,7 @@ const opts = {
   "width":1280,
   "height":1024,
   "docker": false,
-  "gtimeout": "",
   "notimeout": false,
-  "timeout": "",
   "video": "none"
 }
 
@@ -33,16 +31,14 @@ const docker = opts.docker;
 let userdatadir = opts.userdatadir;
 const width = opts.width;
 const height = opts.height;
-const gtimeout=opts.gtimeout;
 const listscenarios=opts.listscenarios;
 const listsuite=opts.listsuite;
 const notimeout=opts.notimeout;
-const timeout= opts.timeout;
 const video = opts.video;
 let file = opts.file;
 
 if (result.errors || !result.args || result.args.length !== 1) {
-  console.log('USAGE: node index [--token] [--docker] [--gtimeout] [--notimeout] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
+  console.log('USAGE: node index [--token] [--docker] [--notimeout] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
   process.exit(2);
 }
 
@@ -113,7 +109,7 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   })
 
   // Assign all log listeners
-  Service.logMonitor(page,notimeout,gtimeout,timeout,file, browser,video)
+  Service.logMonitor(page,notimeout,file, browser,video)
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
