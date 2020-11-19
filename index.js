@@ -18,7 +18,7 @@ const opts = {
   "width":1280,
   "height":1024,
   "docker": false,
-  "notimeout": false,
+  "keepalive": false,
   "video": "none"
 }
 
@@ -33,12 +33,12 @@ const width = opts.width;
 const height = opts.height;
 const listscenarios=opts.listscenarios;
 const listsuite=opts.listsuite;
-const notimeout=opts.notimeout;
+const keepalive=opts.keepalive;
 const video = opts.video;
 let file = opts.file;
 
 if (result.errors || !result.args || result.args.length !== 1) {
-  console.log('USAGE: node index [--token] [--docker] [--notimeout] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
+  console.log('USAGE: node index [--token] [--docker] [--keepalive] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
   process.exit(2);
 }
 
@@ -104,12 +104,28 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
 
   const page = await browser.newPage();
 
+  let url = result.args[0];
+  if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
+    if (!url.endsWith("/")) {
+        url += "/"
+    }
+    url += "run"
+  }
+  let inService=0;
+  console.log("Browser URL: "+url)
+  if(url.match(/(\?|\&)key=.+(\&|\#)/)){
+    console.log("Running in cooperation!")
+    inService=1
+  }else{
+    console.log("Running in stand alone!")
+  }
+
   page.on('popup', async dialog => {
     setupPopup(dialog)
   })
 
   // Assign all log listeners
-  Service.logMonitor(page,notimeout,file, browser,video)
+  Service.logMonitor(page,keepalive,file, inService, browser,video, saveVideo);
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
@@ -128,14 +144,6 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     })
   }
 
-
-  let url = result.args[0];
-  if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run")) {
-    if (!url.endsWith("/")) {
-        url += "/"
-    }
-    url += "run"
-}
   const response = await page.goto(url);
 
   page.on("error", idePrintStackTrace);

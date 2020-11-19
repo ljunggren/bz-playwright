@@ -1,37 +1,29 @@
 const fs = require('fs');
-const { saveVideo } = require('playwright-video');
 
 const Service = {
-  stdTimeout:60000,
+  stdTimeout:120000,
   taskMap:{},
   timer:0,
+  reportPrefix:"",
   status:"",
-  capture:"",
-  browser:"",
   result: 2,
-  logMonitor(page,notimeout,gtimeout,stdTimeout,reportPrefix, browser,video){
-    Service.notimeout=notimeout
-    Service.page=page
-    Service.video=video
-    
-    console.log("Initializing logMonitor");
-    gtimeout && console.log("Override global timeout: " + gtimeout + " mins");
-    stdTimeout && console.log("Override action timeout: " + stdTimeout + " mins");
-    reportPrefix && console.log("Override report prefix: " + reportPrefix);
+  consoleNum:0,
+  logMonitor(page,keepalive,reportPrefix,inService, browser, video, saveVideo){
+    this.inService=inService;
+    this.keepalive=keepalive;
+    this.video=video;
+    this.page=page;
+    this.saveVideo = saveVideo;
 
-    Service.browser = browser;
- 
-    Service.stdTimeout=stdTimeout*60000||60000;
-    Service.reportPrefix=reportPrefix ? reportPrefix + "_":"";
-    
-    if(!notimeout&&gtimeout){
-      setTimeout(()=>{
-        Service.gracefulShutdown("Global timeout triggered - try to do graceful shutdown")
-      },gtimeout*60000)
-    }
-    if(notimeout){
-      clearTimeout(Service.status)
-    }
+
+    console.log("Initializing logMonitor");
+   
+    if (reportPrefix) {
+      console.log("Override report prefix: " + reportPrefix);
+      Service.reportPrefix=reportPrefix + "_";
+    } 
+
+    clearTimeout(Service.status)
 
     page.on('console', msg => {
       let timeout,t;
@@ -41,6 +33,8 @@ const Service = {
       if(!msg){
         return
       }
+      // Todo add noLog conditions
+      // console.log(msg);
       
       if(Service.curTask){
         t=Service.curTask
@@ -48,31 +42,31 @@ const Service = {
       }else{
         for(let key in Service.taskMap){
           if(msg.includes(key)){
-            t=Service.taskMap[key]
-            
+            if(!key.startsWith("coop-")){
+              Service.reChkCoop(key)
+            }
+            t=Service.taskMap[key]           
             break
           }
         }
       }
-      
+      if (!t || !t.noLog){
+        console.log((Service.consoleNum++)+": "+msg)
+      }
       if(t){
-        if (!t.noLog){
-          console.log(msg)
-        }
         clearTimeout(Service.timer)
         if(!t.timeout){
-          timeout=t.fun(msg)
+          timeout=t.fun(msg)||Service.stdTimeout
           //console.log("Get timeout: "+timeout)
         }else{
           timeout=t.timeout
         }
-        
-        if(!notimeout){
-          // console.log("set timeout for shutdown: "+timeout)
-          Service.timer=setTimeout(()=>{
-            Service.shutdown(t.msg)
-          },timeout)
-        }
+        //console.log("set timeout: "+t.key+":"+timeout)
+        Service.timer=setTimeout(()=>{
+          if(Service.curProcess!="init"){
+            Service.handleTimeout(timeout,"Timeout on: "+t.key+":"+timeout)
+          }
+        },timeout)
         
         t.timeout&&t.fun(msg,Service.timer)
         if(t.oneTime){
@@ -94,8 +88,10 @@ const Service = {
     Service.beginningFun=fun
   },
   setPopup(popup){
-    console.log("set popup window")
     this.popup=popup
+  },
+  setPage(page){
+    this.page=page
   },
   //task:{key,fun,onTime,timeout}
   addTask(task){
@@ -104,10 +100,71 @@ const Service = {
   removeTask(task){
     delete this.taskMap[task.key]
   },
+  insertStdTask(p){
+    Service.curProcess=p
+    Service.taskMap={}
+    Service.inChkCoop=0
+    Service.coopAnswerList=[]
+    clearTimeout(Service.coopAnswerTimer)
+    Service.addTask({
+      key:"I-AM-OK",
+      fun:function(){
+        clearTimeout(Service.wakeupTimer)
+        
+      },
+      timeout:Service.stdTimeout
+    })
+    Service.addTask({
+      key:"update-std-timeout:",
+      fun(msg){
+        Service.stdTimeout = (parseInt(msg.split(this.key)[1].trim())||120000);
+        console.log("Setting std timeout to: " + Service.stdTimeout);
+        return Service.stdTimeout;
+      },
+      msg:"Standard timeout"
+    })
+
+    Service.addTask({
+      key:"coop-shutdown",
+      fun(msg){
+        Service.shutdown("As cooperator server request to shutdown!")
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
+      key:"task-done",
+      fun(msg){
+        if(!Service.keepalive){
+          Service.shutdown("One-Task Completed!")
+        }
+      },
+      timeout:Service.stdTimeout
+    })
+    
+    Service.addTask({
+      key:"coop-reload",
+      fun(msg){
+        Service.cancelChkCoop()
+        Service.init()
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
+      key:"coop-answer",
+      fun(msg){
+        Service.coopAnswer&&Service.coopAnswer(msg)
+      },
+      timeout:Service.stdTimeout
+    })
+  },
   init(){
+    Service.insertStdTask("init")
+    
     this.status=setTimeout(()=>{
       if(Service.status!="ready"){
-        Service.shutdown("Failed to load test")
+        Service.reload("Failed to load test")
       }
     },Service.stdTimeout)
     
@@ -132,11 +189,13 @@ const Service = {
     })
   },
   setRunTasks(){
-    Service.taskMap={}
+    Service.insertStdTask("run")
+    
     Service.addTask({
       key:"ms:",
       fun(msg){
-        return (parseInt(msg.split(this.key)[1].trim())||0)+15000
+        let v= (parseInt(msg.split(this.key)[1].trim())||0) + Service.stdTimeout;
+        return v;
       },
       msg:"Action timeout"
     })
@@ -163,7 +222,7 @@ const Service = {
         (async () => {
           let videoFile = msg.split("videostart:")[1]+".mp4";
            console.log("Start recording video: ", videoFile);
-           Service.capture = await saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
+           Service.capture = await this.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
         })()
       },
       timeout:Service.stdTimeout
@@ -191,8 +250,6 @@ const Service = {
       },
       timeout:Service.stdTimeout
     })
-    
-
 
     Service.addTask({
       key:"screenshot:",
@@ -212,7 +269,7 @@ const Service = {
     })
   },
   setEndTasks(){
-    Service.taskMap={}
+    Service.insertStdTask("end")
     Service.addTask({
       key:"Result:",
       fun(msg){
@@ -223,10 +280,11 @@ const Service = {
       timeout:Service.stdTimeout
     })
     Service.addTask({
-      key:"All tests completed!",
+      key:"The Task Completed!",
       fun(msg){
-        Service.shutdown(this.key)
-      }
+        Service.setRunTasks()
+      },
+      timeout:Service.stdTimeout
     })
     this.insertFileTask()
   },
@@ -257,24 +315,120 @@ const Service = {
       noLog:1
     })
   },
-  shutdown(msg){
-    msg && console.log(msg);
-    Service.browser.close();
-    if(!this.notimeout){
-      process.exit(Service.result)
+  chkIDE(){
+    if(Service.inService){
+      if(Service.inChkCoop){
+        Service.inChkCoop++
+        return
+      }
+      clearTimeout(Service.chkCoopTimer)
+      Service.chkCoopTimer=setTimeout(()=>{
+        Service.inChkCoop=1
+        Service.coopAnswerList=[]
+        Service.coopAnswer=function(v){
+          clearTimeout(Service.coopAnswerTimer)
+          v=JSON.parse(v)
+          console.log("get coop status:")
+          console.log(v)
+          Service.addCoopAnswer(v)
+        }
+        Service.getCoopStatus()
+      },5000)
     }
   },
-  gracefulShutdown(msg){
-    console.error("Try to get Boozang to exit gracefully and write report");
-    Service.popup.screenshot({path: "graceful_shutdown.png"});
+  addCoopAnswer(v){
+    Service.coopAnswerList.push(v)
+    if(Service.coopAnswerList.length<2){
+      Service.chkCoopTimer=setTimeout(()=>{
+        Service.getCoopStatus()
+      },60000)
+    }else{
+      console.log("Checking coop status")
+      let v1=Service.coopAnswerList[0],
+          v2=Service.coopAnswerList[1]
+      console.log(JSON.stringify(v1,0,2))
+      console.log(JSON.stringify(v2,0,2))
+      if(v1.status.type!=v2.status.type){
+        return
+      }else if(v1.status.type=="report"){
+        //TODO
+      }
+    }
+  },
+  reChkCoop(v){
+    if(Service.inChkCoop){
+      Service.cancelChkCoop()
+      if(!Service.lastChkCoopTimer){
+        Service.lastChkCoopTimer=Date.now()
+        Service.chkIDE()
+      }
+    }
+  },
+  cancelChkCoop(){
+    Service.inChkCoop=0
+    clearTimeout(Service.chkCoopTimer)
+    clearTimeout(Service.coopAnswerTimer)
+    Service.coopAnswerList=[]
+  },
+  getCoopStatus(){
+    Service.coopAnswerTimer=setTimeout(()=>{
+      Service.reloadIDE("Coop Server stop work! reload IDE")
+    },Service.stdTimeout)
+    this.page.evaluate(()=>{
+      $util.getCoopStatus()
+    })
+  },
+  async reloadIDE(msg){
+    console.log("Reload IDE for "+msg)
     Service.page.evaluate(()=>{  
-      BZ.e();console.log("BZ-LOG: Timing out check IDE response"); 
+      localStorage.setItem("bz-reboot",1)
     });
-    // Wait 100 seconds for Boozang to finish before force kill
-    setTimeout(function(){
-      Service.shutdown(msg);
-    },100000)   
+    
+    await Service.page.reload();
+    Service.init() 
+  },
+  shutdown(msg){
+    msg && console.log(msg)
+    process.exit(Service.result)
+  },
+  async handleTimeout(timeout,msg){
+    console.log(getCurrentTimeString()+": "+msg)
+    console.log("Try to wakeup IDE");
+    Service.wakeupIDE(timeout)
+    // //const { JSHeapUsedSize } = await Service.page.metrics();
+    // //console.log("Memory usage on exit: " + (JSHeapUsedSize / (1024*1024)).toFixed(2) + " MB");  
+    // Service.popup.screenshot({path: "graceful-timeout-"+getCurrentTimeString()+".png"});
+    // if(Service.inService){
+      // return Service.reloadIDE("Timeout")
+    // }else{
+      // Service.page.evaluate(()=>{  
+        // BZ.e("Timeout. Test runner telling BZ to shut down.");
+        // console.log("BZ-LOG: Graceful shutdown message received. Exiting... "); 
+      // });
+    // }
+    // // Wait 100 seconds for Boozang to finish before force kill
+    // setTimeout(function(){
+      // Service.shutdown("IDE Freeze - try to do graceful shutdown");
+    // },100000)   
+  },
+  wakeupIDE:function(timeout){
+    Service.page.evaluate((timeout)=>{
+      BZ.wakeup(timeout)
+    },timeout)
+    Service.wakeupTimer=setTimeout(()=>{
+      if(Service.keepalive){
+        Service.reloadIDE("No response from IDE. Shutting down...")
+      }else{
+        Service.shutdown("No response from IDE. Shutting down...")
+      }
+    },10000)
   }
 }
 Service.init()
+
+
+function getCurrentTimeString(){
+  let d=new Date()
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'-'+d.getHours()+'-'+d.getMinutes()+"-"+d.getSeconds()
+}
 exports.Service = Service;
