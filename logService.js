@@ -222,7 +222,7 @@ const Service = {
         (async () => {
           let videoFile = msg.split("videostart:")[1]+".mp4";
            console.log("Start recording video: ", videoFile);
-           Service.capture = await this.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
+           Service.capture = await Service.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
         })()
       },
       timeout:Service.stdTimeout
@@ -244,7 +244,6 @@ const Service = {
             Service.page.evaluate((v)=>{
               BZ.savedVideo()
             });
-
           })()
         })()
       },
