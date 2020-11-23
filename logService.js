@@ -15,6 +15,9 @@ const Service = {
     this.page=page;
     this.saveVideo = saveVideo;
 
+    if (this.video && this.video != "none") {
+      console.log("Running in video mode");
+    }
 
     console.log("Initializing logMonitor");
    
@@ -180,6 +183,7 @@ const Service = {
         }
         if(Service.video && Service.video != "none"){
           Service.page.evaluate((v)=>{
+            console.log("Initializing video capture...");
             BZ.requestVideo()
           });
         }
@@ -220,7 +224,7 @@ const Service = {
       key:"videostart:",
       fun(msg){
         (async () => {
-          let videoFile = msg.split("videostart:")[1]+".mp4";
+          let videoFile = msg.split("videostart:")[1].split(",")[0]+".mp4";
            console.log("Start recording video: ", videoFile);
            Service.capture = await Service.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
         })()
