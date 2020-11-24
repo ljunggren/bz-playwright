@@ -89,18 +89,18 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
 
 
   // Setup popup
-  //let popup = null;
-  function setupPopup(popup) {
-    // popup = pages[pages.length-1]; 
+  /**let popup = null;
+  function setupPopup() {
+    popup = pages[pages.length-1]; 
     popup.setViewportSize({
       width: parseInt(width),
       height: parseInt(height)
     });
 
-    popup.on("error", appPrintStackTrace);
-    popup.on("pageerror", appPrintStackTrace);
+    
     Service.setPopup(popup)
   }
+  */
 
   const page = await browser.newPage();
 
@@ -120,8 +120,10 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     console.log("Running in stand alone!")
   }
 
-  page.on('popup', async dialog => {
-    setupPopup(dialog)
+  page.on('popup', async popup => {
+    popup.on("error", appPrintStackTrace);
+    popup.on("pageerror", appPrintStackTrace);
+    Service.setPopup(popup);
   })
 
   // Assign all log listeners
