@@ -103,7 +103,7 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   */
 
   const page = await browser.newPage();
-
+  
   let url = result.args[0];
   if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
     if (!url.endsWith("/")) {
@@ -147,6 +147,8 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   }
 
   const response = await page.goto(url);
+  Service.setPage(page);
+
 
   page.on("error", idePrintStackTrace);
   page.on("pageerror", idePrintStackTrace);
