@@ -19,7 +19,10 @@ const opts = {
   "height":1024,
   "docker": false,
   "keepalive": false,
-  "video": "none"
+  "video": "none",
+  "testreset":false,
+  "loglevel": "debug",
+  "debugIDE":false
 }
 
 // Remove the first two arguments, which are the 'node' binary and the name
@@ -35,6 +38,10 @@ const listscenarios=opts.listscenarios;
 const listsuite=opts.listsuite;
 const keepalive=opts.keepalive;
 const video = opts.video;
+const debugIDE=opts.debugIDE;
+const sleep=opts.sleep;
+
+
 let file = opts.file;
 
 if (result.errors || !result.args || result.args.length !== 1) {
@@ -65,6 +72,9 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     ];
 
   const browser = await chromium.launchPersistentContext(userdatadir,{
+    recordVideo: {
+      dir: "./video",
+    },
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"
