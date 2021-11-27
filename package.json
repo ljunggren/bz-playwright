@@ -6,7 +6,8 @@
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
     "node-options": "latest",
     "playwright": "latest",
-    "playwright-video": "^2.4.0"
+    "playwright-video": "^2.4.0",
+    "tree-kill": "latest"
   },
   "bin": {
     "boozang": "index.js"
