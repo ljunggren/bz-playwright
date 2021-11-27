@@ -5,7 +5,7 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
     "node-options": "latest",
-    "playwright": "^1.5.2",
+    "playwright": "latest",
     "playwright-video": "^2.4.0"
   },
   "bin": {

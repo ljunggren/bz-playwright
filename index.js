@@ -123,6 +123,7 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   page.on('popup', async popup => {
     popup.on("error", appPrintStackTrace);
     popup.on("pageerror", appPrintStackTrace);
+    popup.setViewportSize({ width: width, height: height });
     Service.setPopup(popup);
   })
 
