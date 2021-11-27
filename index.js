@@ -1,4 +1,4 @@
-(async () => {
+
 
 const { chromium } = require('playwright');
 const options = require('node-options');
@@ -14,10 +14,11 @@ const opts = {
   "device" : "",
   "screenshot": false,
   "token":"",
-  "userdatadir":"userdata",
+  "userdatadir":"",
   "width":1280,
   "height":1024,
   "docker": false,
+  "sleep":0,
   "keepalive": false,
   "video": "none",
   "testreset":false,
@@ -36,16 +37,21 @@ const width = opts.width;
 const height = opts.height;
 const listscenarios=opts.listscenarios;
 const listsuite=opts.listsuite;
-const keepalive=opts.keepalive;
-const video = opts.video;
+
 const debugIDE=opts.debugIDE;
 const sleep=opts.sleep;
 
 
-let file = opts.file;
+let keepalive=opts.keepalive;
+let testReset=opts.testreset;
+let inService;
+const file = opts.file;
+const logLevel=opts.loglevel;
+
+const video = opts.video;
 
 if (result.errors || !result.args || result.args.length !== 1) {
-  console.log('USAGE: node index [--token] [--docker] [--keepalive] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--video] [--file=report] [url]');
+  console.log('USAGE: boozang [--token] [--docker] [--keepalive] [--testreset] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--screenshot] [--file=report] [url]');
   process.exit(2);
 }
 
@@ -53,15 +59,35 @@ console.log("Running with following args");
 console.log(opts);
 console.log("Example: Use --verbose for verbose logging (boolean example). Use --width=800 to override default width (value example.)");
 
+let LogLevelArray = ["error","warning","info","debug","log"];
+if (logLevel === "error"){
+  LogLevelArray = ["error"]
+} else if (logLevel === "warning"){
+  LogLevelArray = ["error","warning"]
+} else if (logLevel === "info"){
+  LogLevelArray = ["error","warning","info"]
+}
+console.log("Setting log levels: ", LogLevelArray);
 
-  file = (docker ? "/var/boozang/" : "") + opts.file;
-  /** 
-  if (!userdatadir) {
-    userdatadir = "ud_" + Date.now();
-    console.log("Generating unique user-data-dir: ", userdatadir);
-  } 
-  */
+let browser;
 
+Service.setResetButton(function(s){
+  start(1)
+});
+Service.debugIDE=debugIDE;
+function start(reset){
+  (async () => {
+    
+    let file = (docker ? "/var/boozang/" : "");
+    if (opts.file){
+      file += opts.file;
+    }
+
+    let userdatadir = "";
+    if (opts.userdatadir){
+      userdatadir = (docker ? "/var/boozang/userdatadir" : "") + (opts.userdatadir || "");
+      console.log("Setting userdatadir: " + userdatadir);
+    }
   const launchargs = [
     '--disable-extensions-except=' + __dirname + '/bz-extension',
     '--load-extension=' + __dirname + '/bz-extension',
@@ -78,41 +104,29 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"
-  });
-
-  function printStackTrace(app,err){
-    console.error(
-      "\n#######################################\n"
-    + app + " error: " + err.message
-    + "\n#######################################\n"
-    );   
-  }
+    });
+  
 
   function appPrintStackTrace(err){
-    printStackTrace("app",err);
+    Service.consoleMsg(err.message,"error","app");
   }
 
   function idePrintStackTrace(err){
-    printStackTrace("ide",err);
+    Service.consoleMsg(err.message,"error","ide");
+    Service.chkIDE()  
   }
 
+  const page = await browser.newPage();
 
 
   // Setup popup
-  /**let popup = null;
-  function setupPopup() {
-    popup = pages[pages.length-1]; 
-    popup.setViewportSize({
-      width: parseInt(width),
-      height: parseInt(height)
-    });
+  page.on('popup', async popup => {
+    popup.on("error", appPrintStackTrace);
+    popup.on("pageerror", appPrintStackTrace);
+    popup.setViewportSize({ width: width, height: height });
+    Service.setPopup(popup);
+  })
 
-    
-    Service.setPopup(popup)
-  }
-  */
-
-  const page = await browser.newPage();
   
   let url = result.args[0];
   if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
@@ -121,6 +135,13 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     }
     url += "run"
   }
+  if(reset){
+    url=url.replace(/\/run$/,"/")
+  }
+  
+  url=url.replace("#","&docker=1#")
+  
+  console.log(url)
   let inService=0;
   console.log("Browser URL: "+url)
   if(url.match(/(\?|\&)key=.+(\&|\#)/)){
@@ -130,15 +151,8 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     console.log("Running in stand alone!")
   }
 
-  page.on('popup', async popup => {
-    popup.on("error", appPrintStackTrace);
-    popup.on("pageerror", appPrintStackTrace);
-    popup.setViewportSize({ width: width, height: height });
-    Service.setPopup(popup);
-  })
-
   // Assign all log listeners
-  Service.logMonitor(page,keepalive,file, inService, browser,video, saveVideo);
+  Service.logMonitor(page,testReset,keepalive,file, inService,LogLevelArray, browser,video, saveVideo);
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
@@ -157,7 +171,10 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
     })
   }
 
+  //const version = await page.browser().version();
+  //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
   const response = await page.goto(url);
+
   Service.setPage(page);
 
 
@@ -165,8 +182,10 @@ console.log("Example: Use --verbose for verbose logging (boolean example). Use -
   page.on("pageerror", idePrintStackTrace);
 
 })()
+}
 
-
-
-
-
+console.log("Sleeping "+sleep+"s")
+setTimeout(()=>{
+  console.log("Finished sleep!")
+  start()
+},sleep*1000)
