@@ -2,8 +2,8 @@
 
 const { chromium } = require('playwright');
 const options = require('node-options');
-const { saveVideo } = require('playwright-video');
 const Service = require('./logService').Service;
+const { saveVideo } = require('playwright-video');
 
 // Command defaults
 const opts = {
@@ -102,7 +102,7 @@ function start(reset){
     args: launchargs,
     launchType: "PERSISTENT"
     });
-    
+
   
 
   function appPrintStackTrace(err){
