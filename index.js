@@ -98,13 +98,11 @@ function start(reset){
     ];
 
   const browser = await chromium.launchPersistentContext(userdatadir,{
-    recordVideo: {
-      dir: "./video",
-    },
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"
     });
+    
   
 
   function appPrintStackTrace(err){
