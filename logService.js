@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { syncBuiltinESMExports } = require('module');
 const killer = require('tree-kill');
 
 const Service = {
@@ -21,21 +22,17 @@ const Service = {
       Service.nextResetTime=Date.now()+((parseInt(Service.testReset)||1)*60000)
     }
   },
-  logMonitor(page,testReset,keepalive,reportPrefix,inService, logLevel, browser, video, saveVideo){
+  logMonitor(page,testReset,keepalive,reportPrefix,inService, logLevel, browser){
     this.inService=inService;
     this.testReset=testReset;
     Service.setNextResetTime()
 
     this.keepalive=keepalive;
-    this.video=video;
     this.page=page;
-    this.saveVideo = saveVideo;
+
 
     this.logLevel=logLevel;
 
-    if (this.video && this.video != "none") {
-      Service.consoleMsg("Running in video mode");
-    }
 
     Service.consoleMsg("Initializing logMonitor");
    
@@ -310,12 +307,6 @@ const Service = {
         
         Service.insertHandleIdling();
 
-        if(Service.video && Service.video != "none"){
-          Service.page.evaluate((v)=>{
-            Service.consoleMsg("Initializing video capture...");
-            BZ.requestVideo()
-          });
-        }
       },
       oneTime:1,
       timeout:Service.stdTimeout
@@ -399,40 +390,6 @@ const Service = {
         return v;
       },
       msg:"Action timeout"
-    })
-
-    Service.addTask({
-      key:"videostart:",
-      fun(msg){
-        (async () => {
-          let videoFile = msg.split("videostart:")[1].split(",")[0]+".mp4";
-           Service.consoleMsg("Start recording video: ", videoFile);
-           Service.capture = await Service.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
-        })()
-      },
-      timeout:Service.stdTimeout
-    })
-
-    Service.addTask({
-      key:"videostop:",
-      fun(msg){
-        (async () => {
-          let success = msg.includes(",success");
-          let videoFile = msg.split("videostop:")[1].split(",")[0]+".mp4";
-          Service.consoleMsg("Stop recording video: ", videoFile);
-          await Service.capture.stop();
-          if (success && Service.video != "all"){
-            Service.consoleMsg("Test success. Deleting video: " + videoFile);
-            fs.unlinkSync(Service.reportPrefix + videoFile);
-          }
-          await (()=>{
-            Service.page.evaluate((v)=>{
-              BZ.savedVideo()
-            });
-          })()
-        })()
-      },
-      timeout:Service.stdTimeout
     })
 
     Service.addTask({
@@ -581,7 +538,10 @@ const Service = {
     }
     msg && Service.consoleMsg(msg)
     //killer(Service.browser.process().pid, 'SIGKILL');
-    process.exit(Service.result)
+    setTimeout(()=>{
+      process.exit(Service.result)
+    },10000);
+    
   },
   async handleTimeout(timeout,msg){
     Service.consoleMsg(getCurrentTimeString()+": "+msg)

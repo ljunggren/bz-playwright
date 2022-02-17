@@ -3,7 +3,6 @@
 const { chromium } = require('playwright');
 const options = require('node-options');
 const Service = require('./logService').Service;
-const { saveVideo } = require('playwright-video');
 
 // Command defaults
 const opts = {
@@ -98,6 +97,9 @@ function start(reset){
     ];
 
   const browser = await chromium.launchPersistentContext(userdatadir,{
+   recordVideo: video==="none"? undefined : {
+      dir: 'videos/',
+    },
     headless: false,
     args: launchargs,
     launchType: "PERSISTENT"
@@ -119,10 +121,11 @@ function start(reset){
 
   // Setup popup
   page.on('popup', async popup => {
+    console.log('Popup');
     popup.on("error", appPrintStackTrace);
     popup.on("pageerror", appPrintStackTrace);
     popup.setViewportSize({ width: width, height: height });
-    Service.setPopup(popup);
+    //Service.setPopup(popup);
   })
 
   
@@ -150,7 +153,7 @@ function start(reset){
   }
 
   // Assign all log listeners
-  Service.logMonitor(page,testReset,keepalive,file, inService,LogLevelArray, browser,video, saveVideo);
+  Service.logMonitor(page,testReset,keepalive,file, inService,LogLevelArray, browser);
   if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
