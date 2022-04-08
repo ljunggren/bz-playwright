@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { syncBuiltinESMExports } = require('module');
 const killer = require('tree-kill');
 
 const Service = {
@@ -22,17 +21,21 @@ const Service = {
       Service.nextResetTime=Date.now()+((parseInt(Service.testReset)||1)*60000)
     }
   },
-  logMonitor(page,testReset,keepalive,reportPrefix,inService, logLevel, browser){
+  logMonitor(page,testReset,keepalive,reportPrefix,inService, logLevel, browser, video, saveVideo){
     this.inService=inService;
     this.testReset=testReset;
     Service.setNextResetTime()
 
     this.keepalive=keepalive;
+    this.video=video;
     this.page=page;
-
+    this.saveVideo = saveVideo;
 
     this.logLevel=logLevel;
 
+    if (this.video && this.video != "none") {
+      Service.consoleMsg("Running in video mode");
+    }
 
     Service.consoleMsg("Initializing logMonitor");
    
@@ -47,7 +50,9 @@ const Service = {
     page.on('console', msg => {
       let timeout,t;
       let msgType=msg._type;
-
+      if (msgType === "ConsoleMessage"){
+        msgType = "info";
+      }
       msg = (!!msg && msg.text()) || "def";
       msg=trimPreMsg(msg)
       if(!msg){
@@ -55,7 +60,9 @@ const Service = {
       }
       // Todo add noLog conditions
       // Service.consoleMsg(msg);
-      
+      if(msg.includes("##Action")){
+        Service.tryWakeup=0
+      }
       if(Service.curTask){
         t=Service.curTask
         Service.curTask=0
@@ -307,6 +314,12 @@ const Service = {
         
         Service.insertHandleIdling();
 
+        if(Service.video && Service.video != "none"){
+          Service.page.evaluate((v)=>{
+            Service.consoleMsg("Initializing video capture...");
+            BZ.requestVideo()
+          });
+        }
       },
       oneTime:1,
       timeout:Service.stdTimeout
@@ -355,19 +368,21 @@ const Service = {
       }
       Service.lastHardResetTimer=Date.now()
     }
-    Service.consoleMsg("reset ...")
-//        Service.page.close()
-    if(forKeep){
-      Service.page.close()
-    }else{
-      Service.browser._closed=1
-      Service.browser.close()
-    }
-    setTimeout(()=>{
-      Service.consoleMsg("restart ...")
-      Service.restartFun(forKeep)
-      Service.init()
-    },forKeep?1000:15000)
+    Service.consoleMsg("reset ...");
+    (async () => {
+      await Service.page.close()
+      if(forKeep){
+        
+      }else{
+        Service.browser._closed=1
+        await Service.browser.close()
+      }
+      setTimeout(()=>{
+        Service.consoleMsg("restart ...")
+        Service.restartFun(forKeep)
+        Service.init()
+      },forKeep?1000:15000)
+    })()
   },
   /**/
   setStatus(v){
@@ -393,10 +408,55 @@ const Service = {
     })
 
     Service.addTask({
+      key:"videostart:",
+      fun(msg){
+        (async () => {
+          let videoFile = msg.split("videostart:")[1].split(",")[0]+".mp4";
+           Service.consoleMsg("Start recording video: ", videoFile);
+           Service.capture = await Service.saveVideo(Service.popup||Service.page, Service.reportPrefix + videoFile, {followPopups:true, fps: 5});      
+        })()
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
+      key:"videostop:",
+      fun(msg){
+        (async () => {
+          let success = msg.includes(",success");
+          let videoFile = msg.split("videostop:")[1].split(",")[0]+".mp4";
+          Service.consoleMsg("Stop recording video: ", videoFile);
+          await Service.capture.stop();
+          if (success && Service.video != "all"){
+            Service.consoleMsg("Test success. Deleting video: " + videoFile);
+            fs.unlinkSync(Service.reportPrefix + videoFile);
+          }
+          await (()=>{
+            Service.page.evaluate((v)=>{
+              BZ.savedVideo()
+            });
+          })()
+        })()
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
       key:"screenshot:",
       fun(msg){
-        let screenshotFile = msg.split("screenshot:")[1]+".png";
-        Service.popup.screenshot({path: screenshotFile});
+        msg=msg.split("screenshot: ")[1]
+        msg=msg.split("\n")
+        console.log(msg[0])
+        let screenshotFile = "/var/boozang/" + msg[0]+".png";
+
+        let _base64Data = msg[1].replace(/^data:image\/([^;]+);base64,/, "");
+
+        fs.writeFile(screenshotFile,_base64Data,'base64', (err)=>{
+          if (err) {
+            Service.shutdown("Error: on output file: "+screenshotFile+", "+ err.message)
+          }
+          Service.consoleMsg("Report "+screenshotFile+" saved.")
+        })
       },
       timeout:Service.stdTimeout
     })
@@ -536,12 +596,17 @@ const Service = {
     if(Service.debugIDE){
       return
     }
-    msg && Service.consoleMsg(msg)
-    //killer(Service.browser.process().pid, 'SIGKILL');
-    setTimeout(()=>{
-      process.exit(Service.result)
-    },10000);
-    
+    msg && Service.consoleMsg(msg);
+    (async () => {
+      await Service.page.close()
+      await Service.browser.close()
+      setTimeout(()=>{
+        killer(Service.browser.process().pid, 'SIGKILL');
+        setTimeout(()=>{
+          process.exit(Service.result)
+        },1000)
+      },1000)
+    })()
   },
   async handleTimeout(timeout,msg){
     Service.consoleMsg(getCurrentTimeString()+": "+msg)
@@ -550,11 +615,14 @@ const Service = {
   },
   wakeupIDE:function(timeout){
     if(Service.tryWakeup>=1){
+      Service.consoleMsg("Going to stop test");
       Service.page.evaluate(()=>{  
         BZ.e("BZ-LOG: Wake-up IDE failed. Test runner telling BZ to stop.");
       });
       setTimeout(()=>{
-        Service.shutdown("Shutdown on no reaction from IDE!")
+        if(Service.tryWakeup){
+          Service.shutdown("Shutdown on no reaction from IDE!")
+        }
       },120000)
     }else{
       Service.page.evaluate((timeout)=>{
@@ -602,17 +670,26 @@ const Service = {
         Service.consoleNum++;
         if(msg.trim().match(/^<<<</)){
           Service.lanuchTest--
-          msg=" ".repeat(Service.lanuchTest*2)+msg
+          if(Service.lanuchTest<0){
+            Service.lanuchTest=0
+          }
+          msg=" ".repeat(Service.lanuchTest*2)+msg.replace(/\] [0-9:]+ /,"] "+getSpendTime()+" ")
         }else if(msg.trim().match(/^>>>>/)){
-          msg=" ".repeat(Service.lanuchTest*2)+msg
+          if(msg.includes(">>>> Loading Scenario")){
+            if(Service.lanuchTest>1){
+              Service.lanuchTest=1
+              console.log(`${Service.consoleNum++}:   <<<< Stopped Feature - Scenario [${Service.lastScenario}] ${getSpendTime()} XXXX Task: 0 / 0 <<<<`)
+            }
+            Service.lastScenario=(msg.match(/\[([^\]]+)\]/)||[])[1]
+          }
+          msg=" ".repeat(Service.lanuchTest*2)+msg.replace(/\([0-9:]+\) >>>>$/,"("+getSpendTime()+") >>>>")
           Service.lanuchTest++
         }else if(Date.now()-Service.lastTime>1000){
           let n=parseInt((Date.now()-Service.lastTime)/1000)
           let w="+"
-          let s=formatPeriod(Date.now()-Service.startTime)
           if(Service.lastTime){
             w=w.repeat(n)
-            n=" ("+s+", "+n+"s) "
+            n=" ("+getSpendTime()+", "+n+"s) "
           }else{
             w=""
             n=""
@@ -624,6 +701,10 @@ const Service = {
       }
     }
   }
+}
+
+function getSpendTime(){
+  return formatPeriod(Date.now()-Service.startTime)
 }
 
 Service.init()
