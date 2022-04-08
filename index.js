@@ -125,7 +125,7 @@ function start(reset){
     popup.on("error", appPrintStackTrace);
     popup.on("pageerror", appPrintStackTrace);
     popup.setViewportSize({ width: width, height: height });
-    //Service.setPopup(popup);
+    Service.setPopup(popup);
   })
 
   
@@ -176,7 +176,7 @@ function start(reset){
   //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
   const response = await page.goto(url);
 
-  Service.setPage(page);
+  Service.setPage(page,browser);
 
 
   page.on("error", idePrintStackTrace);

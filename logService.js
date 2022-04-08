@@ -29,6 +29,7 @@ const Service = {
     this.keepalive=keepalive;
     this.video=video;
     this.page=page;
+    this.browser=browser
     this.saveVideo = saveVideo;
 
     this.logLevel=logLevel;
