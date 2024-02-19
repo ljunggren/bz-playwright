@@ -164,7 +164,7 @@ function start(reset){
   }
 
   // Assign all log listeners
-  Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray);
+  Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray,browser);
   console.log(2+": "+tests)
   if(tests){
     console.log("Going to post tmp tasks .....")
