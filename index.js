@@ -22,7 +22,8 @@ const opts = {
   "video": "none",
   "testreset":false,
   "loglevel": "debug",
-  "debugIDE":false
+  "debugIDE":false,
+   proxy:false
 }
 
 // Remove the first two arguments, which are the 'node' binary and the name
@@ -39,7 +40,7 @@ const listsuite=opts.listsuite;
 
 const debugIDE=opts.debugIDE;
 const sleep=opts.sleep;
-
+const proxy=opts.proxy;
 
 let keepalive=opts.keepalive;
 let testReset=opts.testreset;
@@ -50,7 +51,7 @@ const logLevel=opts.loglevel;
 const video = opts.video;
 
 if (result.errors || !result.args || result.args.length !== 1) {
-  console.log('USAGE: boozang [--token] [--docker] [--keepalive] [--testreset] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--screenshot] [--file=report] [url]');
+  console.log('USAGE: boozang [--token] [--docker] [--keepalive] [--testreset] [--verbose] [--userdatadir] [--listscenarios] [--listsuite] [--width] [--height] [--screenshot] [--file=report] [--proxy] [url]');
   process.exit(2);
 }
 
@@ -66,6 +67,7 @@ if (logLevel === "error"){
 } else if (logLevel === "info"){
   LogLevelArray = ["error","warning","info"]
 }
+
 console.log("Setting log levels: ", LogLevelArray);
 
 let browser;
@@ -87,6 +89,7 @@ function start(reset){
       userdatadir = (docker ? "/var/boozang/userdatadir" : "") + (opts.userdatadir || "");
       console.log("Setting userdatadir: " + userdatadir);
     }
+
   const launchargs = [
     '--disable-extensions-except=' + __dirname + '/bz-extension',
     '--load-extension=' + __dirname + '/bz-extension',
@@ -136,8 +139,16 @@ function start(reset){
     }
     url += "run"
   }
+
   if(reset){
     url=url.replace(/\/run$/,"/")
+  }else if(url.endsWith("/run")){
+      tests=url.match(/\/(m[mt0-9\.,]+)\/run/)
+      if(tests){
+        tests=tests[1]
+        console.log("tests: "+tests)
+        url=url.replace(/\/(m[mt0-9\.,]+)\/run/,"")
+      }
   }
   
   url=url.replace("#","&docker=1#")
@@ -153,8 +164,17 @@ function start(reset){
   }
 
   // Assign all log listeners
-  Service.logMonitor(page,testReset,keepalive,file, inService,LogLevelArray, browser);
-  if(listsuite||listscenarios){
+  Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray);
+  console.log(2+": "+tests)
+  if(tests){
+    console.log("Going to post tmp tasks .....")
+    setTimeout(()=>{
+      console.log("post task:"+tests)
+      page.evaluate((v)=>{
+        $util.exeTests(v)
+      }, tests);
+    },5000)
+  }else if(listsuite||listscenarios){
     Service.setBeginningFun(function(){
       Service.insertFileTask(function(){
         Service.result = 0;
@@ -171,6 +191,7 @@ function start(reset){
       }
     })
   }
+  
 
   //const version = await page.browser().version();
   //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
@@ -182,7 +203,7 @@ function start(reset){
   page.on("error", idePrintStackTrace);
   page.on("pageerror", idePrintStackTrace);
 
-})()
+  })()
 }
 
 console.log("Sleeping "+sleep+"s")
@@ -190,3 +211,17 @@ setTimeout(()=>{
   console.log("Finished sleep!")
   start()
 },sleep*1000)
+
+
+if(proxy){
+  startProxy()
+}
+
+function startProxy(){
+  const express = require('./proxy/express')
+  let port=parseInt(proxy)
+  if(!port||port<80){
+    port=8080
+  }
+  express(port);
+}

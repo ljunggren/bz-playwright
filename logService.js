@@ -138,6 +138,9 @@ const Service = {
   removeTask(task){
     delete this.taskMap[task.key]
   },
+  markLoadingBZ:function(){
+    Service.bzLoad=1
+  },
   insertStdTask(p){
     Service.consoleMsg("In "+p+" task processing")
     Service.curProcess=p
@@ -196,6 +199,14 @@ const Service = {
       key:"coop-shutdown",
       fun(msg){
         Service.shutdown("As cooperator server request to shutdown!")
+      },
+      timeout:Service.stdTimeout
+    })
+
+    Service.addTask({
+      key:"loaded all module data",
+      fun(msg){
+        Service.markLoadingBZ()
       },
       timeout:Service.stdTimeout
     })
@@ -357,7 +368,7 @@ const Service = {
   },
   /*old*/
   reset(forKeep){
-    if(Service.debugIDE){
+    if(Service.debugIDE&&Service.bzLoad){
       return
     }
     Service.setNextResetTime()
@@ -371,6 +382,7 @@ const Service = {
     }
     Service.consoleMsg("reset ...");
     (async () => {
+      Service.bzLoad=0
       await Service.page.close()
       if(forKeep){
         
@@ -469,6 +481,7 @@ const Service = {
       },
       timeout:Service.stdTimeout
     })
+
   },
   setEndTasks(){
     Service.insertStdTask("end")
@@ -596,13 +609,16 @@ const Service = {
   shutdown(msg){
     if(Service.debugIDE){
       return
+    }else if(!Service.bzLoad){
+      Service.consoleMsg("Boozang server not ready, try again")
+      return Service.reset()
     }
     msg && Service.consoleMsg(msg);
     (async () => {
       await Service.page.close()
       await Service.browser.close()
       setTimeout(()=>{
-        killer(Service.browser.process().pid, 'SIGKILL');
+        //killer(Service.browser.process().pid, 'SIGKILL');
         setTimeout(()=>{
           process.exit(Service.result)
         },1000)
