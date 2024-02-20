@@ -50,8 +50,10 @@ const Service = {
 
     page.on('console', msg => {
       let timeout,t;
+
       let msgType=msg._type;
-      if (msgType === "ConsoleMessage"){
+
+      if (!msgType || msgType === "ConsoleMessage"){
         msgType = "info";
       }
       msg = (!!msg && msg.text()) || "def";
@@ -78,7 +80,7 @@ const Service = {
           }
         }
       }
-      //Service.consoleMsg("Type: " + msgType);
+
       if ((!t || !t.noLog) && Service.logLevel.includes(msgType)){
         Service.consoleMsg(msg)
       }
