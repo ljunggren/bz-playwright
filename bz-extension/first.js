@@ -1,21 +1,27 @@
-if(name!=="bz-master"){
+if(window.name!="bz-master"){
+  console.log("bz-client .....")
   var script = document.createElement("script");
   script.type = "application/javascript";
   script.textContent = "(" + (function() {
+    let _fun=window.constructor.prototype.addEventListener
+    window.constructor.prototype._addEventListener = _fun
     
-    EventTarget.prototype._addEventListener = EventTarget.prototype.addEventListener;
-    
-    EventTarget.prototype.addEventListener=function(t,f,c){
-      if(this==window&&t=="beforeunload"){
+    window.constructor.prototype.addEventListener=function(t,f,c){
+      if(t=="beforeunload"){
         this._addEventListener(t,function(event){
           let play=localStorage.getItem("playModel")
-          if(t=="beforeunload"&&play=="play"){
+          if(play=="pause"||play=="play"){
           }else{
             return f(event)
           }
         },c)
       }else{
-        this._addEventListener(t,f,c)
+        try{
+          this._addEventListener(t,f,c)
+        }catch(ex){
+          console.log(ex.stack)
+          debugger
+        }
       }
     }
   }) + ")();";

@@ -1,24 +1,67 @@
-let curContentExeAction=0,bzIframeId=null,topFrame=0,initEnv=0;
+window.bzIframeId=null
+let curContentExeAction=0,topFrame=0,initEnv=0;
  
 //Register
 window.extensionContent=1;
-if(name!=="bz-master"){
-  setTimeout(function(){
-    //_console("content register")
-    chrome.runtime.sendMessage({_registerTab: location.href,BZ:Boolean(window.BZ),name:window.name},function(_msg){
-      if(_msg && _msg._ignore){
-        chrome.runtime.onMessage.removeListener()
-      }
-    });
-  },0);
-}else{
-  window.postMessage({bz:1,bzExtensionId:chrome.runtime.id}, "*");
+console.log("BZ-LOG: Extension version: "+chrome.runtime.getManifest().version)
+function initCode(t,tt){
+  if(name!=="bz-master"){
+    if(parent==window){
+      registerTab()
+    }else if(window.innerWidth>10&&window.innerHeight>5){
+      setTimeout(()=>{
+        registerTab()
+      },1)
+    }else if(tt<10){
+      setTimeout(function(){
+        initCode(100,tt+1)
+      },t);
+    }
+  }else{
+    document.body.setAttribute("bz-id",chrome.runtime.id)
+    window.postMessage({bz:1,bzExtensionId:chrome.runtime.id}, "*");
+  }
 }
 
+function registerTab(){
+  //_console("content register")
+  console.log("Do register from:"+bzIframeId)
+  chrome.runtime.sendMessage({_registerTab: location.href,BZ:Boolean(window.BZ),name:window.name},function(_msg){
+    if(_msg && _msg._ignore){
+      chrome.runtime.onMessage.removeListener()
+    }
+  });
+}
 chrome.runtime.onMessage.addListener(handleMsg);
-
-function handleMsg(_event, _, sendResponse) {  
+let waitCodeTimer
+function handleMsg(_event, _, sendResponse, codeTime) {  
   //_console("content get message: ",_event)
+  if(window.name!="bz-master"&&(!window.ecMap||!window[ecMap.i]||!window[ecMap.u]||!window[ecMap.css])){
+    if(bzIframeId===null||bzIframeId===undefined){
+      return
+    }
+    codeTime=codeTime||0
+    if(codeTime%20==9){
+    //console.log("Waiting app code: "+bzIframeId)
+      if(window.innerWidth<10||window.innerHeight<5){
+        return
+      }
+      if(codeTime>100){
+        return
+      }else{
+        registerTab()
+      }
+    }
+
+    clearTimeout(waitCodeTimer)
+
+    waitCodeTimer=setTimeout(()=>{
+      handleMsg(_event,_,sendResponse,codeTime+1)
+    },100)
+  }else if(_event.scope=="formatter"){
+    formatter[_event.fun](_event.data,sendResponse)
+    return
+  }
   if(_event.findFrameId){
     return responseIFrameId(_event.findFrameId,sendResponse,_event.element,_event.retry)
   }else if(_event.findOffset){
@@ -37,7 +80,7 @@ function handleMsg(_event, _, sendResponse) {
     _event.twPage2=1
     if(_event.tab=="master"){
       if(name=="bz-master"){
-        window.postMessage(_event);
+        window.postMessage(_event,"*");
       }else{
         try{
           chrome.runtime.sendMessage(_event)
@@ -120,13 +163,13 @@ function handleMsg(_event, _, sendResponse) {
       if(o){
         if(_event.frameId===undefined || _event.frameId.includes(bzIframeId)){
           o.element=_event.element;
-          window[ecMap.iam][ecMap.sca](o);
         }
-        window[ecMap.i][ecMap.inn][ecMap.r]()
       }
+      window[ecMap.iam][ecMap.sca](o);
     }else{
       window[ecMap.i][ecMap.d][ecMap.ct]=o;
     }
+    window[ecMap.i][ecMap.inn][ecMap.r]()
   }else if(_event.curTest!==undefined){
     //_IDE._data._curTest=_event.curTest
     var o=_event.curTest;
@@ -164,10 +207,12 @@ function handleMsg(_event, _, sendResponse) {
     //_ideActionManagement._pickElement()
     window[ecMap.iam][ecMap.pe]()
   }else if(_event.updateExpection){
-  //_IDE._data._curAction=_event.updateExpection
-    window[ecMap.i][ecMap.d][ecMap.ca]=_event.updateExpection;
-//    _ideActionManagement._quickUpdateExpection(_event.updateExpection)
-    window[ecMap.iam][ecMap.que](_event.updateExpection)
+    if(_event.frameId.includes(bzIframeId)){
+    //_IDE._data._curAction=_event.updateExpection
+      window[ecMap.i][ecMap.d][ecMap.ca]=_event.updateExpection;
+  //    _ideActionManagement._quickUpdateExpection(_event.updateExpection)
+      window[ecMap.iam][ecMap.que](_event.updateExpection)
+    }
   }else if(_event.getFramePath){
     _doIt2();
     function _doIt2(){
@@ -185,7 +230,7 @@ function handleMsg(_event, _, sendResponse) {
 }
 function afterDocReady(_fun,_time){
   _time=_time||Date.now()
-  if(initEnv&&window.onunload&&window[ecMap.dat][ecMap.ea]){
+  if(initEnv&&window.onbeforeunload&&window[ecMap.dat][ecMap.ea]){
     _fun()
   }else{
     setTimeout(function(){
@@ -198,6 +243,8 @@ function _insertCssAndClientCode(_msg,_time){
   _time=_time||Date.now()
   if(document && document.body && document.body.innerHTML && (["complete","interactive"].includes(document.readyState) || Date.now()-_time>100000)){
     var o=document.createElement("style");
+    o.id="bz-css"
+
     o.innerHTML=_msg._css;
     document.body.parentNode.append(o);
     
@@ -317,3 +364,15 @@ function responseIframeOffset(vs,_sendResponse){
     }
   }
 }
+
+function _focus(){
+  if(!document.body){
+    return setTimeout(()=>{
+      _focus()
+    },100)
+  }
+  document.body.focus()
+}
+initCode(10,0)
+
+_focus()

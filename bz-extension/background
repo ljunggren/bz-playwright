@@ -1,12 +1,83 @@
 let _appUrl="https:/"+"/ai.boozang.com",_masterTabId,_masterFrameId,_masterUrl,_ctrlTabId,_ctrlWindowId,curElement,_frameIds={},_plugInCode,_bzEnvCode,_css,_status=_newStatus=0,_lastExeActionReq,_doingPopCtrl,_curTest,_data,_curAction,_shareData={},_ctrlFrameId;
-let _lastErrPage=0,_loadPageInfo,assignfirmeCall,ignoreReqs="",_topFrameId,_uncodeFrames=[];
-let _ignoreList=["https://vars.hotjar.com"],_lastIframeRequest=0,_dblCheckTime=0;
+let _lastErrPage=0,_loadPageInfo,assignfirmeCall,ignoreReqs="",_topFrameId=0,_uncodeFrames=[];
+let _ignoreList=["https://vars.hotjar.com"],_lastIframeRequest=0,_dblCheckTime=0,extendTopScript="",extendEndScript="";
+let bzClient;
 let funMap={
+  cleanMaster:function(){
+    cleanMaster()
+  },
   // storeEventGroupData:function(bkScope,bkFun,data){
     // for(var k in data){
       // _lastExeActionReq[k]=data[k]
     // }
   // },
+  getExtensions:function(bkScope,bkFun,v,_callback){
+    // let blockExtensions={
+      // "kbfnbcaeplbcioakkpcpgfkobkghlhen":"Grammarly"
+    // }
+    //try to find extension: Grammarly, it cause performance issue!
+    chrome.management.getAll(vs=>{
+      _callback(vs.filter(x=>{
+        return x.enabled
+      }))
+    })
+  },
+  loadImg:function(s,f,v,t,e,bkFun){
+    let img=document.createElement("img")
+//    document.body.append(img)
+    img.src=v
+
+    let c=document.createElement("canvas")
+//    document.body.append(c)
+    c.width=img.width
+    c.height=img.height
+    let cc=c.getContext("2d")
+    cc.drawImage(img,0,0)
+
+    img.onload=function(x){
+      x=c.toDataURL()
+      console.log(x)
+      bkFun(x)
+//      chrome.tabs.sendMessage(t.id, {scope:s,fun:f,data:{url:c.toDataURL()}});
+      c.remove()
+      img.remove()
+    }
+  },
+  setValidJsonData:function(scope,bkFun,data){
+    validateJsonData=data
+    window.open(data.url+"/showValid","bz-master");
+  },
+  getValidJsonData:function(scope,bkFun,data){
+    chrome.tabs.sendMessage(_masterTabId, {tab:"master",scope:"$util",fun:"showJsonValidateResult",data:validateJsonData});
+  },
+  openWindow:function(s,f,d,c){
+    if(d.name=="bz-client"){
+      bzClient=window.open(d.url,d.name,d.size);
+      bzClient.focus()
+      // setTimeout(()=>{
+      //   bzClient=window.open(d.url,d.name,d.size);
+      //   bzClient.focus()
+      // },1)
+    }else{
+      window.open(d.url,d.name,d.size);
+    }
+    c&&c({})
+  },
+  focusTW:function(){
+    if(bzClient&&!bzClient.closed){
+      bzClient.focus()
+    }
+  },
+  closeTW:function(){
+    try{
+      bzClient&&!bzClient.closed&&bzClient.close()
+    }catch(e){
+      debugger
+    }
+  },
+  blurTW:function(){
+    bzClient.blur()
+  },
   isRequestCompleted:function(bkScope,bkFun,_rList){
     _rList.forEach((r,i)=>{
       var v=_responseList[r]
@@ -20,9 +91,6 @@ let funMap={
     chrome.tabs.sendMessage(_masterTabId, {tab:"master",scope:bkScope,fun:bkFun,data:{result:!Object.keys(_list).length,data:_rList}});
   },
   postRequest:function(v,scope,fun){
-    if(v.url&&decodeURI(v.url)!=v.url){
-      v.url=encodeURI(v.url)
-    }
     if(["main_frame","xmlhttprequest"].includes(v.type)){
       v=funMap.buildRequestData(v)
       var id=v.requestId
@@ -46,22 +114,48 @@ let funMap={
     }
   },
   enableAllIframe:function(){
+    _initFrame(0)
     _uncodeFrames.forEach(f=>{_initFrame(f)})
   },
-  ajax:function(scope,fun,data,_callback){
+  ajax:function(scope,fun,data,_callback,element,responseFun){
     var xhttp = new XMLHttpRequest();
+    let asFile=data.notDownloadAsFile
+    delete data.notDownloadAsFile
     xhttp.onreadystatechange = function() {
       if (this.readyState == 4) {
-        var d={
-          tab:"master",
-          scope:scope,
-          fun:fun,
-          data:{status:this.status,data:this.response}
+        if(data.responseType=="arraybuffer"&&!asFile){
+          let o=_handleBold(this.response,data.url)
+          if(_callback&&_callback.constructor==Function){
+            _callback(o)
+          }else if(responseFun){
+            responseFun(o)
+          }
+        }else{
+          let hs={}
+          this.getAllResponseHeaders().split("\n").forEach(x=>{
+            if(x){
+              let k=x.indexOf(":")
+              let v=x.substring(k+1)
+              hs[x.substring(0,k).trim()]=v.trim()
+            }
+          })
+          
+          var d={
+            tab:"master",
+            scope:scope,
+            fun:fun,
+            data:{status:this.status,data:this.response,headers:hs},
+            
+          }
+          if(data.responseType&&this.response){
+            d.data.data=String.fromCharCode.apply(null, new Uint8Array(this.response));
+          }
+          if(_callback&&_callback.constructor==Function){
+            _callback(d.data)
+          }else if(responseFun){
+            responseFun(d.data)
+          }
         }
-        if(data.responseType&&this.response){
-          d.data.data=String.fromCharCode.apply(null, new Uint8Array(this.response));
-        }
-        _callback(d.data)
       }
     };
     xhttp.open(data.method, data.url, true);
@@ -74,15 +168,67 @@ let funMap={
     if(data.contentType){
       xhttp.setRequestHeader("Content-Type",data.contentType)
     }
+    xhttp.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
     xhttp.send(data.data);
+
+    function _handleBold(blob,_url){
+      var str=_handleCodePoints(new Uint8Array(blob));
+      
+      //var str = String.fromCharCode.apply(null, new Uint8Array(blob));
+      //var str=new TextDecoder("utf-8").decode(new Uint8Array(blob));
+      var v=_url.split("/");
+      var n=v.pop()||v.pop()
+
+      var t=n.split(".").pop()||"";
+      if(["jpg","png","svg","bmp","gif","jpeg","ico"].includes(t)){
+        t="image/"+t;
+      }else if("txt"==t){
+        t="plant/text"
+      }else{
+        t="application/"+t;
+      }
+      return [{
+        size:str.length,
+        name:n,
+        base64Link:"data:"+t+";base64,"+_b64EncodeUnicode(str),
+        lastModified:Date.now(),
+        lastModifiedDate:new Date(),
+        webkitRelativePath:"",
+        type:t
+      }];
+    }
+    function _handleCodePoints(array) {
+      var CHUNK_SIZE = 0x8000; // arbitrary number here, not too small, not too big
+      var index = 0;
+      var length = array.length;
+      var result = '';
+      var slice;
+      while (index < length) {
+        slice = array.slice(index, Math.min(index + CHUNK_SIZE, length)); // `Math.min` is not really necessary here I think
+        result += String.fromCharCode.apply(null, slice);
+        index += CHUNK_SIZE;
+      }
+      return result;
+    }
+
+    function _b64EncodeUnicode(str) {
+      try{
+        return btoa(str)
+      }catch(e){
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+            function toSolidBytes(match, p1) {
+                return String.fromCharCode('0x' + p1);
+        }));
+      }
+    }
   },
-  getScreenshot:function(bkScope,bkFun,d,t){
+  getScreenshot:function(bkScope,bkFun,d,t,element){
     let offset={
       left:0,
       top:0
     }
     chrome.tabs.captureVisibleTab((t&&t.tab.windowId)||_ctrlWindowId,(img) => {
-      let vs=getIframePath(curElement)||[]
+      let vs=getIframePath(element||curElement)||[]
       findOffset(vs,img)
     })
     
@@ -109,9 +255,9 @@ let _list={},_responseList={}
 
 chrome.browserAction.setBadgeText({text: chrome.runtime.getManifest().version=="1.2"?"TEST":"AI"});
 //open management page from extension icon!
-chrome.browserAction.onClicked.addListener(function() {
-  chrome.tabs.create({url: _appUrl}, function(tab) {});
-});
+// chrome.browserAction.onClicked.addListener(function() {
+  // chrome.tabs.create({url: _appUrl}, function(tab) {});
+// });
 
 
 /*Get Message from IDE*/
@@ -123,6 +269,10 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
   }
   //check whether the request from BZ client web page
   if(_req.bg){
+    if(_req.bgScript){
+      return eval(_req.bgScript)
+    }
+      
     return funMap[_req.fun](_req.bkScope,_req.bkFun,_req.data,_callback)
   }else if(_req.twPage){
     if(_req.tab=="master"){
@@ -136,7 +286,14 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
     }
   //Master tab send dynamic code to background to forward to content
   }else if(_req.bzExeCode){
-    _setCodeToContent(_req.bzExeCode,_req.id);
+    if(_req.element){
+      let v=getIframePath(_req.element)
+      return chrome.tabs.sendMessage(_ctrlTabId,{bz:1,findFrameId:v,element:_req.element,retry:0},function(r){
+        _setCodeToContent(_req.bzExeCode,r);
+      })
+    }else{
+      _setCodeToContent(_req.bzExeCode,_req.id);
+    }
   //Master send current status
   }else if(_req.status!==undefined){
     //master tab set status before start pop client win
@@ -152,7 +309,7 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
           _data=_req.data;
         }
         if(_newStatus=="record"){
-          funMap.enableAllIframe()
+          //funMap.enableAllIframe()
         }
         chrome.tabs.sendMessage(_ctrlTabId, {_newStatus:_newStatus,data:_req.data});
         _newStatus=0;
@@ -163,6 +320,13 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
   //Set BZ code mapping data to unecrypt code from https://ai.boozang.com
   }else if(_req.ecMap){
     ecMap=_req.ecMap;
+    _callback("background get ecMap")
+  }else if(_req.extendTopScript){
+    extendTopScript=_req.extendTopScript
+    return
+  }else if(_req.extendEndScript){
+    extendEndScript=_req.extendEndScript
+    return
   //Dynamic code from BZ master page
   }else if(_req.bzCode){
     if(_masterTabId&&_masterTabId!=_sender.tab.id){
@@ -176,7 +340,8 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
     _plugInCode=_req.bzCode;
     _lastExeActionReq=0;
     ignoreReqs="";
-    _setCodeToContent("window.close();",_topFrameId);
+    _callback(1)
+    // _setCodeToContent("window.close();",_topFrameId);
   //Set CSS file path from BZ master page
   }else if(_req.bzCss){
     _css=_req.bzCss;
@@ -187,7 +352,7 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
   }else{
     //for request execution a BZ testing action
     if(_req.exeAction){
-      _req.frameId=[_topFrameId];
+      assignFrameId(_req,_req.exeAction.element)
       _lastExeActionReq=_req;
       if(_req.exeAction.element){
         return _addFrameId(_req,_req.exeAction.element,function(r){
@@ -210,6 +375,7 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
         _doIt(r||_req)
       })
     }else if(_req.data&&_req.data.element){
+      assignFrameId(_req,_req.data.element)
       return _addFrameId(_req,_req.data.element,function(r){
         _doIt(r||_req)
       })
@@ -222,6 +388,11 @@ chrome.runtime.onMessageExternal.addListener(function(_req, _sender, _callback) 
       for(var k in _req.shareData){
         _shareData[k]=_req.shareData[k];
       }
+    }else if(_req.updateExpection&&_req.updateExpection.element){
+      assignFrameId(_req,_req.updateExpection.element)
+      return _addFrameId(_req,_req.updateExpection.element,function(r){
+        _doIt(r||_req)
+      })
     }
     _doIt(_req)
     function _doIt(_req){
@@ -254,7 +425,7 @@ function _addFrameId(_req,_element,_fun,_retry){
   }
   _retry=_retry||0
   _appRetry=_retry
-  _req.frameId=[_topFrameId];
+  assignFrameId(_req,_element)
   if(_element&&_element.constructor==Object){
     _element=_element.path
   }
@@ -263,18 +434,17 @@ function _addFrameId(_req,_element,_fun,_retry){
   if(_req.exeAction){
     _badRequest=setTimeout(function(){
       _appRetry++
-      if(_appRetry>30){
+      if(_appRetry*1000>(_req.exeAction.max||_req.exAction.min||2000)){
         _fun(_req)
       }else{
         _addFrameId(_req,_element,_fun,_appRetry)
       }
-    },2000)
+    },1000)
   }
   let v=getIframePath(_element)
   if(v){
     return chrome.tabs.sendMessage(_ctrlTabId,{bz:1,findFrameId:v,element:_element,retry:_appRetry},function(r){
       if(r!==undefined&&r!==null){
-        console.log(r)
         clearTimeout(_badRequest)
         if(_element[0]!="BZ.TW.document"){
           if(_req.exeAction){
@@ -314,11 +484,26 @@ function _addFrameId(_req,_element,_fun,_retry){
   _fun()
 }
 
+function assignFrameId(o,_element){
+  if(_element && _element[0]!="BZ.TW.document"){
+    o.frameId=[_topFrameId];
+  }else{
+    o.frameId=[0]
+  }
+}
 function getIframePath(_element){
-  if(_element&&!_element[0].startsWith("$(BZ.TW.document.body)")&&_element[0][0]=="$"){
-    var v=_element[0].match(/\(([0-9\,]+)\)/)
+  if(_element&&_element[0]&&!_element[0].startsWith("$(BZ.TW.document.body)")&&_element[0][0]=="$"){
+    var v=_element[0].match(/\((.+)\)/)
     if(v){
-      return v[1].split(",")
+      v=v[1].trim()
+      if(v.match(/^[0-9, ]+$/)){
+        return v.split(",")
+      }else{
+        v=v.split("(")
+        v=v[1]||v[0]
+        v=v.replace(/(^['"]|['"]$)/g,"")
+        return [v]
+      }
     }
   }
 }
@@ -333,7 +518,7 @@ function dblCheckForIframe(){
     }else{
       console.log("dblCheckForIframe doesn't work....")
     }
-  },10000)
+  },3000)
 }
 //to get frame ids by element path
 function _getFrameIds(_root){
@@ -349,30 +534,38 @@ function _isExistTab(id,_fun){
   });
 }
 //set code to chrome extension content
-function _setCodeToContent(c,id,tabId){
+function _setCodeToContent(c,id,tabId,chkFrameId){
   tabId=tabId||_ctrlTabId
   //for set dynamic code to current controled client tab, 
   if(tabId && !_lastErrPage){
     try{
+      chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client:"+c.length,twPage:1,tab:"master",bz:1});
       if(id!==undefined){
         if(!id&&_topFrameId){
           id=_topFrameId
         }
+        // chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code 1 to client:"+c.length,twPage:1,tab:"master",bz:1});
         chrome.tabs.executeScript(tabId, {code: c,matchAboutBlank:true,frameId:id},_=>{
-          let e = chrome.runtime.lastError;
-          if(e !== undefined){
-            console.log(tabId, _, e);
-          }
+          //let e = chrome.runtime.lastError;
+          //if(e !== undefined){
+            //console.log(tabId, _, e);
+          //}
         });
       }else{
         chrome.tabs.executeScript(tabId, {code: c,matchAboutBlank:true,allFrames:true},_=>{
           let e = chrome.runtime.lastError;
           if(e !== undefined){
+            chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client get error1:"+e,twPage:1,tab:"master",bz:1});
             console.log(tabId, _, e);
           }
         });
       }
-    }catch(e){}
+    }catch(e){
+      chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG: Set code to extension failed: "+e.message+"\n"+e.stock,twPage:1,tab:"master",bz:1});
+      console.log(e.stock)
+      
+      // chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client get error2:"+e.message,twPage:1,tab:"master",bz:1});
+    }
   }
 }
 function isIgnoreFrame(v){
@@ -382,18 +575,48 @@ function isIgnoreFrame(v){
     }
   }
 }
+
+let pop={
+  formatLog:function(tab) {
+    chrome.tabs.executeScript(tab.id, {code: `window.formatter&&window.formatter.exeFormag(${JSON.stringify(tab.data)})`,matchAboutBlank:true,allFrames:true},_=>{})
+  },
+  updateFormatLogSetting:function(tab){
+    chrome.tabs.executeScript(tab.id, {code: `window.formatter&&window.formatter.updateFormatLogSetting(${JSON.stringify(tab.data)})`,matchAboutBlank:true,allFrames:true},_=>{})
+  },
+  getPageInfo:function(tab,_fun){
+    chrome.tabs.sendMessage(tab, {scope:"formatter",fun:"getPageInfo"},d=>{
+      _fun(d)
+    });
+  }
+}
+
 //get message from app extension content
 chrome.runtime.onMessage.addListener(function(_msg, t, _sendResponse) {
+  if(_msg.pop){
+    _sendResponse("ok")
+    return pop[_msg.fun](_msg.data,function(d){
+      _sendResponse(d)
+    })
+  }else if(!_msg.requestSendResponse){
+    _sendResponse("ok")
+  }else{
+    _msg.requestSendResponse=_sendResponse
+  }
+  if(_msg.keep){
+    return;
+  }
   //_console("background (content): ",_msg)
   /*****************************************************************************************************
   //For REGISTER tab, it only work for new pop window. The new window must pop up from master window.
   *****************************************************************************************************/
-  if(_msg.keep){
-    return;
-  }else if(_msg.bg){
-    return funMap[_msg.fun](_msg.bkScope,_msg.bkFun,_msg.data,t)
+  if(_msg.bg){
+    funMap[_msg.fun](_msg.bkScope,_msg.bkFun,_msg.data,t,_msg.element,_msg.requestSendResponse)
+    return !!_msg.requestSendResponse
   }else if(_msg._registerTab && (_msg.name=="bz-client"||_ctrlTabId==t.tab.id)){
     if(_msg.name=="bz-client"){
+      if(!_plugInCode){
+        chrome.tabs.sendMessage(_masterTabId, {tab:"master",scope:"_extensionComm",fun:"_loadPlugCode"});
+      }
       _ctrlTabId=t.tab.id;
       _ctrlWindowId=t.tab.windowId;
       if(_ctrlTabId==_masterTabId){
@@ -402,18 +625,20 @@ chrome.runtime.onMessage.addListener(function(_msg, t, _sendResponse) {
       //to tell master the current client tab id
       chrome.tabs.sendMessage(_masterTabId, {tw:_ctrlTabId,topFrame:t.frameId,tab:"master"});
     }
-    if(t.url.startsWith(_appUrl)){
-      return alert("Testing on Boozang sites not supported!");
-    }
+    // if(t.url.startsWith(_appUrl)){
+    //   return alert("Testing on Boozang sites not supported!");
+    // }
     if(isIgnoreFrame(t.url)){
       return
     }
     _topFrameId=_msg.name=="bz-client"||_msg.name=="bz-manager"?t.frameId:_topFrameId;
     _setCodeToContent("bzIframeId="+t.frameId+";topFrame="+(_msg.name=="bz-client"?1:0)+";",t.frameId)
+/*
     if(_topFrameId!=t.frameId&&_status=="play"){
       _uncodeFrames.push(t.frameId)
       return
     }
+*/
     _initFrame(t.frameId)
   //only work after master window is ready, and the requestion will send to master
   }else if(_masterTabId){
@@ -449,17 +674,19 @@ chrome.runtime.onMessage.addListener(function(_msg, t, _sendResponse) {
     chrome.tabs.sendMessage(_masterTabId, _msg);
   }
 });
-
+function getPlugCode(){
+  return (extendTopScript||"")+"\n"+_plugInCode+"\n"+(extendEndScript||"")
+}
 function _initFrame(frameId){
   //Debugging flag, if the current content doesn't have dynamica code, set the master code to it.
   if(!window.BZ){
-    _setCodeToContent(_plugInCode,frameId);
+    _setCodeToContent(getPlugCode(),frameId);
   }else{
     //for BZ developer debugging in BZ office
     if(_masterUrl.includes("boozang")){
       //alert("The extension is not for production")
       if(_plugInCode){
-        _setCodeToContent(_plugInCode,frameId);
+        _setCodeToContent(getPlugCode(),frameId);
       }else{
         _setCodeToContent("showCode('BZ Debugging');",frameId);
       }
@@ -467,8 +694,11 @@ function _initFrame(frameId){
       _setCodeToContent("showCode('BZ Debugging');",frameId);
     }
   }
-  _setCodeToContent(_bzEnvCode+";window.onunload=function(){chrome.runtime.sendMessage({unloadFrame:1,id:bzIframeId})}",frameId);
-  _setCodeToContent("_insertCssAndClientCode("+JSON.stringify({_css:_css,_newStatus:_newStatus||_status,_status:_status,data:_data})+")",frameId)
+
+  _setCodeToContent(_bzEnvCode+";window.onbeforeunload=function(){chrome.runtime.sendMessage({unloadFrame:1,id:bzIframeId})}",frameId);
+  setTimeout(()=>{
+    _setCodeToContent("_insertCssAndClientCode("+JSON.stringify({_css:_css,_newStatus:_newStatus||_status,_status:_status,data:_data})+")",frameId)
+  },1000)
 
   if(_status!="play"){
     if(_curAction){
@@ -662,9 +892,10 @@ chrome.webRequest.onErrorOccurred.addListener(function(v){
 },{urls: ["<all_urls>"]});
 function cleanMaster(){
   var tabId=_ctrlTabId
-  _isExistTab(tabId,function(){
+  if(tabId!=_masterTabId){
     _setCodeToContent("window.close();",_topFrameId,tabId);
-  })
+  }
+  _status=""
   _masterTabId=0;
   _masterFrameId=0;
   _shareData={}
@@ -680,3 +911,5 @@ chrome.webRequest.onActionIgnored.addListener(function(v){
   }
   funMap.postRequest(v,"BZ","addRep")
 })
+
+

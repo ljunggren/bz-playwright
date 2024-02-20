@@ -163,6 +163,7 @@ function start(reset){
     console.log("Running in stand alone!")
   }
 
+  console.log("#### Updated browser for PW ###")
   // Assign all log listeners
   Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray,browser);
   console.log(2+": "+tests)
