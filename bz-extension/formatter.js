@@ -290,7 +290,6 @@ button:disabled{
   position: relative;
   font-size: 20px;
   font-weight: bold;
-  top: 6px;
   margin: 2px 15px 5px 5px;
   white-space: nowrap;
   color: #363D4A;
@@ -450,6 +449,12 @@ body>.bz-log-box .bz-header input[type=text]{
 
 .bz-scope{
   counter-reset: line;
+}
+.bz-exe-scope{
+  position: sticky;
+  top: 60px;
+  background: #FFF;
+  z-index: 1;
 }
 .bz-log-box>div>.bz-content:before{
   counter-increment: line;
@@ -816,7 +821,7 @@ input[type=number]{
 .bz-result-header{
   color:#00C;
   position: sticky;
-  top: 67px;
+  top: 120px;
   background: #f3f7f9;
   padding: 7px;
   margin-left: 0px;
@@ -877,10 +882,18 @@ input[type=number]{
       formatter.updateFormatLogSetting(setting)
       return
     }
+    if(!document.body){
+      return setTimeout(()=>formatter.exeFormag(setting,auto),1000)
+    }
     if(!document.body.innerHTML.includes("Boozang runner")&&!document.getElementsByTagName("iframe")[0]&&parent==window){
       if(!auto){
         alert("There is no boozang test log")
       }else{
+        for(let o of document.getElementsByTagName("A")){
+          if(o.innerHTML=="Full Log"){
+              o.click()
+          }
+        }
         if(Date.now()-auto>30000){
           return
         }else{
@@ -1004,6 +1017,7 @@ input[type=number]{
         formatter.element.exePanel.show()
       }else{
         formatter.element.exePanel.hide()
+        $(".bz-result-header").css({top:"67px"})
       }
     }
   },
@@ -1455,7 +1469,7 @@ input[type=number]{
         <div class='bz-pop-panel bz-close-panel bz-hide'><button class="bz-mini-icon bz-cross" style="position:absolute;"></button><div class='bz-box'></div></div>
       </div>`).appendTo(p),
       init:$(formatter.getGroupElement({name:"Initial",code:"project-init",level:"project",type:"init"})).appendTo(p),
-      exePanel:$("<div class='bz-scope' bz-name='Executing list'></div>").appendTo(p),
+      exePanel:$("<div class='bz-scope bz-exe-scope' bz-name='Executing list'></div>").appendTo(p),
       resultPanel:$("<div class='bz-result-header'><span id='bz-result-content'></span><input type='checkbox' id='bz-chk-replay-all'/></div>").appendTo(p),
       panel:$("<div class='bz-scope bz-hide-scope-header'></div>").appendTo(p),
       waitingList:$("<div class='bz-scope bz-hide' bz-name='Waiting list'></div>").appendTo(p),
@@ -1557,6 +1571,7 @@ input[type=number]{
         formatter.data.project.end.org=formatter.data.curEnd
         formatter.element.end.html(formatter.strToHtml(formatter.data.curEnd))
         formatter.element.exePanel.hide()
+        $(".bz-result-header").css({top:"67px"})
         $(".bz-chk-replay,#bz-chk-replay-all").show()
       }else{
         setTimeout(()=>{
@@ -1824,7 +1839,7 @@ input[type=number]{
         }
         fd.center=fd.center||"Boozang"
         x=x.match(/(http.+[\/].+)\/extension.*[?&]token\=.+#([^\/]+)[\/]([^\/]+)([\/](m[0-9]+[\/]t[0-9]+)[\/]run)?/);
-        debugger
+
         fd.startUrl=x[0].split("#")[0].replace(/token=[^&#]+/,"id="+x[2]).replace(/&(self|group)=[^&#]*/g,"")+"#"+x[2]+"/"+x[3]+"/"
         fd.host=x[1]
         fd.project.code=x[2]
@@ -2516,7 +2531,7 @@ input[type=number]{
   },
   getCameraPath:function(v){
     let fd=formatter.data
-    return fd.host+"/screenshot/"+fd.project.code+"/"+v+".jpg"
+    return fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg"
   },
   showCompare:function(){
     let o=$(".bz-pop-panel");
