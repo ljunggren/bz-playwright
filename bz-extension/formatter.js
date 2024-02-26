@@ -47,6 +47,12 @@ var formatter={
 .bz-camera:before{
   content:"📷";
 }
+.bz-pin-off:before{
+  content:"📌";
+}
+.bz-pin-on:before{
+  content:"📍";
+}
 .bz-init:before{
   content:"➠";
 }
@@ -390,9 +396,9 @@ button.bz-icon-txt{
 }
 
 .bz-ctrl-box{
-  width:300px;
+  min-width:300px;
   display:flex;
-  flex-flow: wrap-reverse;
+  /* flex-flow: wrap-reverse;*/
 }
 .bz-ctrl-box button{
   width:30px;
@@ -1101,6 +1107,21 @@ input[type=number]{
         }else{
           formatter.showCameraPanel()
         }
+      }else if(o.hasClass("bz-pin-off")){
+        o.removeClass("bz-pin-off")
+        o.addClass("bz-pin-on")
+        o.parent().parent().css({
+          position:"sticky",
+          top:"100px",
+          "z-index":10000
+        })
+      }else if(o.hasClass("bz-pin-on")){
+        o.removeClass("bz-pin-on")
+        o.addClass("bz-pin-off")
+        o.parent().parent().css({
+          position:"",
+          "z-index":0,
+        })
       }else if(o.hasClass("bz-log-item")){
         openLog(o)
       }else if(o.hasClass("bz-search")){
@@ -1381,8 +1402,11 @@ input[type=number]{
         ${ctrl}
         <button key="${o.code}" class="bz-icon bz-declare-btn bz-declare">(${o.declare.time||""})</button>
         <button title='${o.bug&&o.bug.msg&&o.bug.msg.replace(/[<]/g,"&lt;").replace(/[>]/g,"&gt;")}' class="bz-icon bz${o.bug?o.bug.type:""}-bug ${!o.bug&&'bz-hide'}" hash="${o.bug&&o.bug.hash}" path="${o.bug&&o.bug.path}"></button>
-        <button class="bz-icon bz-camera ${o.bug?o.camera?"":"bz-disable-icon":"bz-hide"}" title="${o.cameraMsg||""}" path="${o.camera||""}"></button>
-      `
+      `;
+      (o.camera||[]).forEach(x=>{
+        ctrl+=`<button class="bz-icon bz-camera" path="${x}"></button>`
+      })
+      ctrl+=`<button class="bz-icon bz-pin-off" title=""></button>`
     }
     if(ctrl){
       ctrl=`<div class="bz-ctrl-box">${ctrl}</div>`
@@ -1917,19 +1941,21 @@ input[type=number]{
 
     function handleFailedScenario(s){
       if(s.result=="failed"){
-        handleCamera(s)
+        handleCamera(s,1)
         handleBug(s)
+      }else if(s.org){
+        handleCamera(s)
       }
     }
 
-    function handleCamera(s){
+    function handleCamera(s,_failed){
       let w=s.org.match(/\n[0-9]+\: Screenshot\:([0-9a-f]{32})/ig);
       if(w){
-        w=w.pop().match(/Screenshot\:([0-9a-f]{32})/i)[1]
+        w=w.map(x=>x.match(/Screenshot\:([0-9a-f]{32})/i)[1])
         s.camera=w
         formatter.cameraList.push(w)
         formatter.element.header.find(".bz-camera").attr({disabled:false})
-      }else{
+      }else if(_failed){
         s.cameraMsg="There is no screenshot for API test case. Or got an error on loading page."
       }
     }
@@ -2037,13 +2063,23 @@ input[type=number]{
     if(v.constructor==String){
       v=v.split("\n")
     }
-    v=v.map(x=>`<div class="bz-line">${x}</div>`).join("")
-    if(mark=="screenshot"){
-      let k=v.match(/([0-9]+: Screenshot:([0-9a-f]{32}))/i)
-      if(k){
-        formatter.lastImg="<img src='"+formatter.getCameraPath(k[2])+"'/>"
+
+    v=v.map(x=>{
+      let xx=x.match(/([0-9]+: Screenshot:([0-9a-f]{32}))/i)
+      if(xx){
+        return `<img src='${formatter.getCameraPath(xx[2])}'/>`
+      }else{
+        return `<div class="bz-line">${x}</div>`
       }
-    }
+    }).join("")
+
+    // v=v.map(x=>`<div class="bz-line">${x}</div>`).join("")
+    // if(mark=="screenshot"){
+    //   let k=v.match(/([0-9]+: Screenshot:([0-9a-f]{32}))/i)
+    //   if(k){
+    //     formatter.lastImg="<img src='"+formatter.getCameraPath(k[2])+"'/>"
+    //   }
+    // }
 
     if(mark=="declare"){
       v=v.replace(/(bz-line)(">[0-9]+: BZ-LOG: declare on \[m[0-9])/g,"$1 bz-declare$2")
