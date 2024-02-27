@@ -1140,6 +1140,7 @@ input[type=number]{
           formatter.openWindow(url,"bz-bug")
         }
       }else if(o.hasClass("bz-failed")&&o.hasClass("bz-result")){
+        o.parent().find(".bz-pin-off").click()
         gotoHash(o)
       }else if(o.css("cursor")=="pointer"&&(o.hasClass("bz-title-text")||o.hasClass("bz-line"))){
         openTest(o)
