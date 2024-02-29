@@ -1663,6 +1663,9 @@ input[type=number]{
     if(!v){
       return bkFun&&bkFun()
     }
+    if(formatter.data.setting.lineClear){
+      v=v.split("\n").map(x=>formatter.lineClear(x.trim())).join("\n")
+    }
     v=(fd.curEnd||"")+v
 
     let ss=v.match(/\n[0-9]+\: BZ-Result\:(Success|Failed|Stop)$/gm)||[],
@@ -2494,6 +2497,17 @@ input[type=number]{
       }
     }
   },
+  lineClear:function(v){
+    let f=formatter.data.setting.lineClear
+    if(f){
+      if(f.constructor==String){
+        eval("f="+f)
+        formatter.data.setting.lineClear=f
+      }
+      return f(v)
+    }
+    return v
+  },
   copyText:function(w){
     let el =$("<textarea readonly style='position:absolute;left:-9999px'></textarea>").appendTo(document.body);
     let v=(w.innerText||"").replace(/^[0-9]+\: /,"")
@@ -2568,7 +2582,7 @@ input[type=number]{
   },
   getCameraPath:function(v){
     let fd=formatter.data
-    return fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg"
+    return location.protocol+fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg"
   },
   showCompare:function(){
     let o=$(".bz-pop-panel");

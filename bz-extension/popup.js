@@ -83,6 +83,9 @@ function init(){
   return [2,3].map(x=>{
     return url.replace(k+"/consoleFull","ws/out_"+k+"_"+x+".log")
   })
+}`,
+      lineClear:`function(line){
+  return (line||"").replace(/^[0-9]{4}-[^ ]+ /,"");
 }`
       }
     }
@@ -99,6 +102,7 @@ function init(){
     $("#retrieveWorkerLog").attr("checked",bzFormat.retrieveWorkerLog);
     
     $("#identifyMaster").val(bzFormat.identifyMaster)
+    $("#lineClear").val(bzFormat.lineClear)
     $("#identifyWorker").val(bzFormat.identifyWorker)
     $("#scenarioTime").val(bzFormat.scenarioTime);
     $("#testTime").val(bzFormat.testTime);
@@ -107,7 +111,7 @@ function init(){
     $("#actionTime").val(bzFormat.actionTime)
     bzFormat.account=bzFormat.account||{}
     updateSetting()
-    $("#scenarioTime,#testTime,#declareTime,#initTime,#actionTime,#identifyMaster,#identifyWorker").blur(function(){
+    $("#scenarioTime,#testTime,#declareTime,#initTime,#actionTime,#lineClear,#identifyMaster,#identifyWorker").blur(function(){
       updateSetting()
     })
     $("#autoFormat,#retrieveWorkerLog").click(function(){
@@ -307,6 +311,7 @@ function loadBranch(){
 function updateSetting(){
   bzFormat.autoFormat=$("#autoFormat")[0].checked
   bzFormat.identifyMaster=$("#identifyMaster").val()
+  bzFormat.lineClear=$("#lineClear").val()
   if(bzFormat.autoFormat){
     $("#pageScriptPanel").show()
   }else{
