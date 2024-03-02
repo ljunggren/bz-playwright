@@ -1503,6 +1503,9 @@ input[type=number]{
     
     let popPanel=$(".bz-pop-panel");
     popPanel.mousedown(function(e) {
+      if(["BUTTON","TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)){
+        return
+      }
       this.isDown = true;
       let r=this.getBoundingClientRect()
       this.org={
@@ -2842,7 +2845,26 @@ input[type=number]{
         tn=decodeURI(p),
         ws=formatter.getWorkerSize(os)
     o.attr({type:"play"})
-    
+    let dd={};
+    formatter.data.startUrl.split("?")[1].split("&").forEach(x=>{
+      x=x.split("=")
+      dd[x[0]]=x[1]
+    })
+
+    let d={
+      task:tn,
+      branch:version,
+      workers:ws,
+      number:dd.number,
+      test:os.map(x=>{
+        x=(x.code||x).split("-")
+        while(x.length>2){
+          x.pop()
+        }
+        return x.join(".")
+      }).join(",")
+    }
+
     o.find(".bz-box").html(`
       <div style="padding:0 10px;${os[0].constructor==String?'display:none':''}">Do you want to play the below selected scenarios?</div>
       <fieldset style="margin:5px 5px 10px 5px;${os[0].constructor==String?'display:none':''}">
@@ -2852,9 +2874,7 @@ input[type=number]{
         </div>
       </fieldset>
       <div class="bz-form" style='margin:5px'>
-        <div style="margin:5px;"><label style="display:flex;"><span style="flex:1;margin-right:5px;">Job</span><input style="flex:3;border:1px solid #CCC;padding:5px;" id="task" value="${tn}"/></label></div>
-        <div style="margin:5px;"><label style="display:flex;"><span style="flex:1;margin-right:5px;">Branch</span><input style="flex:3;border:1px solid #CCC;padding:5px;" id="branch" value="${version}"/></label></div>
-        <div style="margin:5px;"><label style="display:flex;"><span style="flex:1;margin-right:5px;">Workers</span><input style="flex:3;border:1px solid #CCC;padding:5px;" id="workers" value="${ws}"/></label></div>
+        <textarea id="parameters" style="width:100%;height:150px;">${JSON.stringify(d,0,2)}</textarea>
       </div>
       <div style="text-align: center;margin: 15px 0 10px 0;">
         <button class='bz-play-btn std' style='border-radius: 10px;background-color: #33F;color: #FFF;border: 1px solid #33F;padding: 2px 15px;line-height: 20px;cursor: pointer;'>Start</button>
@@ -2871,43 +2891,74 @@ input[type=number]{
     })
     
     $(".bz-play-btn").click(function(){
+      let parameters=JSON.parse($("#parameters").val())
       let d={
-        parameter:[
-          {
-            name:"workers",
-            value:$("#workers").val(),
-          },
-          {
-            "name": "test", 
-            "value": os.map(x=>{
-                      x=(x.code||x).split("-")
-                      while(x.length>2){
-                        x.pop()
-                      }
-                      return x.join(".")
-                    }).join(",")
-          }, 
-          {
-            "name": "loglevel", 
-            "value": "debug"
-          }, 
-          {
-            "name": "testreset", 
-            "value": testreset
-          }, 
-          {
-            "name": "branch", 
-            "value": $("#branch").val()
-          }
-        ],
-        statusCode: "303", 
-        redirectTo: "."
+        parameters:[]
       }
-      startWorks(d,encodeURI($("#task").val()))
+      for(let k in parameters){
+        d.parameters.push({
+          name:k,
+          value:parameters[k]
+        })
+      }
+      d.parameters.push({
+        name:"test",
+        value: os.map(x=>{
+                x=(x.code||x).split("-")
+                while(x.length>2){
+                  x.pop()
+                }
+                return x.join(".")
+              }).join(",")
+      });
+      d.parameters.push({
+        "name": "testreset", 
+        "value": testreset
+      },{
+        "name": "loglevel", 
+        "value": "debug"
+      })
+      // let d={
+      //   parameter:[
+      //     {
+      //       name:"workers",
+      //       value:$("#workers").val(),
+      //     },
+      //     {
+      //       "name": "test", 
+      //       "value": os.map(x=>{
+      //                 x=(x.code||x).split("-")
+      //                 while(x.length>2){
+      //                   x.pop()
+      //                 }
+      //                 return x.join(".")
+      //               }).join(",")
+      //     }, 
+      //     {
+      //       "name": "loglevel", 
+      //       "value": "debug"
+      //     }, 
+      //     {
+      //       "name": "testreset", 
+      //       "value": testreset
+      //     }, 
+      //     {
+      //       "name": "branch", 
+      //       "value": $("#branch").val()
+      //     }, 
+      //     {
+      //       "name": "number", 
+      //       "value": $("#number").val()
+      //     }
+      //   ],
+      //   statusCode: "303", 
+      //   redirectTo: "."
+      // }
+      startWorks(d,encodeURI(parameters.task))
     })
     function startWorks(d,pn){
       o.find(".bz-box").html(`<form method="post" target="_blank" name="parameters" action='${host}/job/${pn}/build?delay=0sec'>
-      ${d.parameter.map(x=>`<div name="parameter"><input name='name' type='hidden' value="${x.name}"/><input name='value' type='hidden' value="${x.value}"/></div>`)}
+      ${d.parameters.map(x=>`<div name="parameter"><input name='name' type='hidden' value="${x.name}"/><input name='value' type='hidden' value="${x.value}"/></div>`)}
       <input name='statusCode' type='hidden' value="303"/>
       <input name='redirectTo' type='hidden' value="."/>
       <input type="hidden" name="json" value="init"/>
