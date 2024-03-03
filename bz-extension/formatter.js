@@ -693,7 +693,7 @@ body>.bz-log-box .bz-sort-bar{
   display: none;
   right: 160px;
   position: fixed;
-  min-width: 400px;
+  max-height: 95%;
   top: 10px;
   z-index: 11111111111111111111111111;
 }
