@@ -2429,7 +2429,10 @@ input[type=number]{
         return formatter.exeFormag(v,Date.now())
       }
     }
-    formatter.chkXray(v)
+    formatter.chkXray(v);
+    setTimeout(()=>{
+      formatter.exeCITests()
+    },1000)
   },
   chkXray:function(v){
     v=v||formatter.getSetting();
@@ -2840,6 +2843,27 @@ input[type=number]{
     })
     formatter.doJKPlay(os,formatter.data.version,"//"+location.host,location.pathname.split("/")[2],formatter.data.testreset)
   },
+  exeCITests:function(){
+    let v=localStorage.getItem("ciTests")
+    if(v){
+      v=JSON.parse(v)
+      if(v.href!=location.href){
+        return
+      }
+      localStorage.removeItem("ciTests");
+      
+      for(let i in document.forms[1].name){
+        if((i+"").match(/^[0-9]+$/)){
+          let n=document.forms[1].name[i]
+          if(v[n.value]){
+            document.forms[1].value[i].value=v[n.value]
+          }
+        }
+      }
+      document.getElementsByClassName("jenkins-button--primary")[0].click()
+      
+    }
+  },
   doJKPlay:function(os,version,host,p,testreset){
     let o=$(".bz-pop-panel"),
         tn=decodeURI(p),
@@ -2892,6 +2916,11 @@ input[type=number]{
     
     $(".bz-play-btn").click(function(){
       let parameters=JSON.parse($("#parameters").val())
+      parameters.href=location.protocol+host+"/job/"+encodeURI(tn)+"/build?delay=0sec"
+      localStorage.setItem("ciTests",JSON.stringify(parameters))
+      debugger
+      location.href=parameters.href
+      return
       let d={
         parameters:[]
       }
