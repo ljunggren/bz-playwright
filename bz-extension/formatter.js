@@ -2874,7 +2874,6 @@ input[type=number]{
       x=x.split("=")
       dd[x[0]]=x[1]
     })
-
     let d={
       task:tn,
       branch:version,
@@ -2886,7 +2885,13 @@ input[type=number]{
           x.pop()
         }
         return x.join(".")
-      }).join(",")
+      }).join(","),
+      href:location.protocol+host+"/job/"+encodeURI(tn)+"/build?delay=0sec"
+    }
+
+    let template=localStorage.getItem("ciTemplate")
+    if(template){
+      d.href=template.href
     }
 
     o.find(".bz-box").html(`
@@ -2915,75 +2920,17 @@ input[type=number]{
     })
     
     $(".bz-play-btn").click(function(){
-      let parameters=JSON.parse($("#parameters").val())
-      parameters.href=location.protocol+host+"/job/"+encodeURI(tn)+"/build?delay=0sec"
-      localStorage.setItem("ciTests",JSON.stringify(parameters))
-      debugger
-      location.href=parameters.href
+      try{
+        let v=$("#parameters").val()
+        let parameters=JSON.parse(v)
+        
+        localStorage.setItem("ciTests",v)
+        localStorage.setItem("ciTemplate",v)
+        location.href=parameters.href
+      }catch(ex){
+        alert(ex.message)
+      }
       return
-      let d={
-        parameters:[]
-      }
-      for(let k in parameters){
-        d.parameters.push({
-          name:k,
-          value:parameters[k]
-        })
-      }
-      d.parameters.push({
-        name:"test",
-        value: os.map(x=>{
-                x=(x.code||x).split("-")
-                while(x.length>2){
-                  x.pop()
-                }
-                return x.join(".")
-              }).join(",")
-      });
-      d.parameters.push({
-        "name": "testreset", 
-        "value": testreset
-      },{
-        "name": "loglevel", 
-        "value": "debug"
-      })
-      // let d={
-      //   parameter:[
-      //     {
-      //       name:"workers",
-      //       value:$("#workers").val(),
-      //     },
-      //     {
-      //       "name": "test", 
-      //       "value": os.map(x=>{
-      //                 x=(x.code||x).split("-")
-      //                 while(x.length>2){
-      //                   x.pop()
-      //                 }
-      //                 return x.join(".")
-      //               }).join(",")
-      //     }, 
-      //     {
-      //       "name": "loglevel", 
-      //       "value": "debug"
-      //     }, 
-      //     {
-      //       "name": "testreset", 
-      //       "value": testreset
-      //     }, 
-      //     {
-      //       "name": "branch", 
-      //       "value": $("#branch").val()
-      //     }, 
-      //     {
-      //       "name": "number", 
-      //       "value": $("#number").val()
-      //     }
-      //   ],
-      //   statusCode: "303", 
-      //   redirectTo: "."
-      // }
-      startWorks(d,encodeURI(parameters.task))
     })
     function startWorks(d,pn){
       o.find(".bz-box").html(`<form method="post" target="_blank" name="parameters" action='${host}/job/${pn}/build?delay=0sec'>
