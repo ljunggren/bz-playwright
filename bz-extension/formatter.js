@@ -2891,7 +2891,8 @@ input[type=number]{
 
     let template=localStorage.getItem("ciTemplate")
     if(template){
-      d.href=template.href
+      template=JSON.parse(template)
+      d.href=template.href||d.href
     }
 
     o.find(".bz-box").html(`
