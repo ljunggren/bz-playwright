@@ -1676,7 +1676,6 @@ input[type=number]{
     let ss=v.match(/\n[0-9]+\: BZ-Result\:(Success|Failed|Stop)$/gm)||[],
         list=[],
         remoteList=v.match(/\n[0-9]+\: \.{4} .+ Remote \[m[0-9].+\] .+Completed in (.+) Tasks:[ 0-9\/\.]+$/gm)||[]
-
     ss.forEach(x=>{
       let ei=v.indexOf(x)
       
@@ -1845,6 +1844,22 @@ input[type=number]{
     function handleEnd(s){
       if(s.org){
         let mk=/[0-9]+\: +<+ [^\[]+Feature - Scenario \[m[0-9][^\]]+\] ([0-9\:]+) [^<]+<<<</ms;
+        let time=s.org.match(/\[ [0-9\:]+ .+\]/g)||[]
+
+        if(time.length>1){
+          time=[time.shift(),time.pop()].map(x=>x.match(/[0-9\:]+/)[0].split(":"))
+          let t1=new Date()
+          t1.setHours(parseInt(time[0][0]))
+          t1.setMinutes(parseInt(time[0][1]))
+          t1.setSeconds(parseInt(time[0][2]))
+          let t2=new Date()
+          t2.setHours(parseInt(time[1][0]))
+          t2.setMinutes(parseInt(time[1][1]))
+          t2.setSeconds(parseInt(time[1][2]))
+          time=(t2.getTime()-t1.getTime())/1000+"s"
+          s.time=time
+        }
+
         let w=formatter.splitByWord(s.org,mk);
         if(!w){
           s.details.org=s.org
