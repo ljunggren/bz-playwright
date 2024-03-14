@@ -507,7 +507,7 @@ body>.bz-log-box .bz-sort-bar{
 
 .bz-chk-replay{
   display:none;
-  margin:9px 10px 0 0 !important;
+  margin:0 10px 0 0 !important;
 }
 
 .bz-log-bar a{
@@ -895,9 +895,11 @@ input[type=number]{
       if(!auto){
         alert("There is no boozang test log")
       }else{
+        let _clicked
         for(let o of document.getElementsByTagName("A")){
           if(o.innerHTML=="Full Log"){
-              o.click()
+            _clicked=1
+            o.click()
           }
         }
         if(Date.now()-auto>30000){
@@ -905,7 +907,7 @@ input[type=number]{
         }else{
           return setTimeout(()=>{
             formatter.exeFormag(setting,auto)
-          },100)
+          },_clicked?1000:100)
         }
       }
       formatter.removeDoingInfo()
