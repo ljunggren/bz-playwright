@@ -429,7 +429,7 @@ button{
 .bz-header{
   border-radius: 5px;
   height: 35px;
-  z-index:200000000000;
+  z-index:1000;
   background-color:#EEE;
   top:0;
   position:sticky;
