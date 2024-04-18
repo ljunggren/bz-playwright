@@ -429,7 +429,7 @@ button{
 .bz-header{
   border-radius: 5px;
   height: 35px;
-  z-index:1000;
+  z-index:100000;
   background-color:#EEE;
   top:0;
   position:sticky;
@@ -686,9 +686,11 @@ body>.bz-log-box .bz-sort-bar{
   width: 15px !important;
   height: 15px !important;
 }
+/*
 .bz-camera:hover .bz-tmp-screenshot{
   display:block;
 }
+*/
 .bz-tmp-screenshot{
   display: none;
   right: 160px;
@@ -697,9 +699,11 @@ body>.bz-log-box .bz-sort-bar{
   top: 10px;
   z-index: 11111111111111111111111111;
 }
+/*
 .bz-tmp-screenshot:hover{
   display:block;
 }
+*/
 .bz-mini-img{
   margin:0 10px;
   width:200px
@@ -1070,6 +1074,9 @@ input[type=number]{
 
     $(document.body).click(function(e){
       let o=$(e.target)
+      if(!o.hasClass("bz-tmp-screenshot")){
+        $(".bz-tmp-screenshot").hide()
+      }
       if(o[0].id=="failedOnly"){
         formatter.data.failedOnly=o[0].checked
         setTimeout(()=>{
@@ -1087,7 +1094,7 @@ input[type=number]{
       }else if(o.hasClass("bz-switch")){
         switchPanel(o)
       }else if(o.hasClass("bz-tmp-screenshot")){
-        o.parent().click()
+        formatter.openWindow(formatter.getCameraPath(o.parent().attr("path")),"_blank")
       }else if(o.hasClass("bz-input-cross")){
         $(".bz-search-input").val("")
         formatter.search()
@@ -1105,7 +1112,7 @@ input[type=number]{
         switchContent(o,"declare")
       }else if(o.hasClass("bz-camera")){
         if(o.attr("path")){
-          formatter.openWindow(formatter.getCameraPath(o.attr("path")),"_blank")
+          $(o).find(".bz-tmp-screenshot").show()
         }else{
           formatter.showCameraPanel()
         }
@@ -1218,6 +1225,7 @@ input[type=number]{
       })
     })
     document.body.onkeydown=function(e){
+      $(".bz-tmp-screenshot").hide()
       if(e.keyCode==27){
         e=$(":focus")[0]
         if(!e||!["INPUT","TEXTAREA"].includes(e.tagName)){
