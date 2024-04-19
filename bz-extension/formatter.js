@@ -1168,6 +1168,18 @@ input[type=number]{
       }
     });
 
+    $(document.body).contextmenu(function(e){
+      let o=$(e.target)
+      if(o.hasClass("bz-tmp-screenshot")){
+        e.stopPropagation()
+        e.preventDefault()
+
+        $(".bz-tmp-screenshot").hide()
+
+        return false
+      }
+    })
+
     $(document.body).on("mousemove",".bz-scope .bz-title-text,.bz-scope .bz-line,fieldset",function(e){
       let _this=this
       if(!$(this).find(".bz-copy")[0]){
@@ -1234,6 +1246,7 @@ input[type=number]{
         }
       }
     }
+
     function insertScreenshot(o){
       let path=$(o).attr("path")
       if(path&&!$(o).find("img")[0]){
