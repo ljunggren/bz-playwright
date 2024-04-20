@@ -1094,7 +1094,7 @@ input[type=number]{
       }else if(o.hasClass("bz-switch")){
         switchPanel(o)
       }else if(o.hasClass("bz-tmp-screenshot")){
-        formatter.openWindow(formatter.getCameraPath(o.parent().attr("path")),"_blank")
+        $(".bz-tmp-screenshot").hide()
       }else if(o.hasClass("bz-input-cross")){
         $(".bz-search-input").val("")
         formatter.search()
@@ -1171,10 +1171,7 @@ input[type=number]{
     $(document.body).contextmenu(function(e){
       let o=$(e.target)
       if(o.hasClass("bz-tmp-screenshot")){
-        e.stopPropagation()
-        e.preventDefault()
-
-        $(".bz-tmp-screenshot").hide()
+        formatter.openWindow(formatter.getCameraPath(o.parent().attr("path")),"_blank")
 
         return false
       }
@@ -1427,7 +1424,7 @@ input[type=number]{
         <button key="${o.code}" class="bz-icon bz-declare-btn bz-declare">(${o.declare.time||""})</button>
         <button title='${o.bug&&o.bug.msg&&o.bug.msg.replace(/[<]/g,"&lt;").replace(/[>]/g,"&gt;")}' class="bz-icon bz${o.bug?o.bug.type:""}-bug ${!o.bug&&'bz-hide'}" hash="${o.bug&&o.bug.hash}" path="${o.bug&&o.bug.path}"></button>
       `;
-      (o.camera||[]).forEach(x=>{
+      [...(new Set(o.camera||[]))].forEach(x=>{
         ctrl+=`<button class="bz-icon bz-camera" path="${x}"></button>`
       })
       ctrl+=`<button class="bz-icon bz-pin-off" title=""></button>`
