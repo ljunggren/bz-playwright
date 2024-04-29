@@ -133,7 +133,7 @@ function start(reset){
   })
 
   
-  let url = result.args[0];
+  let url = result.args[0],tests;
   if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
     if (!url.endsWith("/")) {
         url += "/"
@@ -144,7 +144,7 @@ function start(reset){
 
   if(reset){
     url=url.replace(/\/run$/,"/")
-  }else if(url.includes("/run")){
+  }else if(url.endsWith("/run")){
       tests=url.match(/\/(m[mt0-9\.,]+)\/run/)
       if(tests){
         tests=tests[1]
