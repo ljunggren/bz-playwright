@@ -29,6 +29,7 @@ const opts = {
 // Remove the first two arguments, which are the 'node' binary and the name
 // of your script.
 const result = options.parse(process.argv.slice(2), opts);
+console.log("Result: ",result);
 const verbose = opts.verbose;
 const token = opts.token;
 const docker = opts.docker;
@@ -139,10 +140,11 @@ function start(reset){
     }
     url += "run"
   }
+  console.log("Url: ", url, reset);
 
   if(reset){
     url=url.replace(/\/run$/,"/")
-  }else if(url.endsWith("/run")){
+  }else if(url.includes("/run")){
       tests=url.match(/\/(m[mt0-9\.,]+)\/run/)
       if(tests){
         tests=tests[1]
