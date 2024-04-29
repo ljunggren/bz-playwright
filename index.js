@@ -166,8 +166,7 @@ function start(reset){
   console.log("#### Updated browser for PW ###")
   // Assign all log listeners
   Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray,browser);
-  console.log(2+": "+tests)
-  if(tests){
+ if(tests){
     console.log("Going to post tmp tasks .....")
     setTimeout(()=>{
       console.log("post task:"+tests)
