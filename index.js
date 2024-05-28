@@ -197,6 +197,7 @@ function start(reset){
 
   //const version = await page.browser().version();
   //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
+  console.log("Login by url with TOKEN: ", url);
   const response = await page.goto(url);
 
   Service.setPage(page,browser);
