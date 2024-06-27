@@ -2566,8 +2566,8 @@ input[type=number]{
     if(v.autoFormat){
       if(formatter.isMasterPage(v)){
         return formatter.exeFormag(v,Date.now())
-      }else if(location.href.includes("/jenkins.")){
-        formatter.insertCss()
+      // }else if(location.href.includes("/jenkins.")){
+      //   formatter.insertCss()
       }
     }
     formatter.chkXray(v);
