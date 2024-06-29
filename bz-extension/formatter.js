@@ -4,20 +4,20 @@ var formatter={
   chking:30,
   startUrl:"",
   logMap:{},
-  // insertCss:function(_try){
-  //   if(!document.body){
-  //     _try=_try||0
-  //     if(_try>10){
-  //       return
-  //     }
-  //     return setTimeout(()=>formatter.insertCss(_try+1),1000)
-  //   }
+  insertCss1:function(_try){
+    if(!document.body){
+      _try=_try||0
+      if(_try>10){
+        return
+      }
+      return setTimeout(()=>formatter.insertCss(_try+1),1000)
+    }
 
-  //   let s=document.createElement("link")
-  //   s.setAttribute("rel","stylesheet")
-  //   s.setAttribute("href","//staging-bh.boozang.com/formatter/formatter.css")
-  //   document.body.append(s)
-  // },
+    let s=document.createElement("link")
+    s.setAttribute("rel","stylesheet")
+    s.setAttribute("href","//staging-bh.boozang.com/formatter/formatter.css")
+    document.body.append(s)
+  },
   insertCss:function(_try){
     if(!document.body){
       _try=_try||0
@@ -251,16 +251,19 @@ fieldset{
   cursor:pointer;
   text-decoration:underline;
 }
-.bz-success:before{
+.bz-success::before{
   content:"✔️";
   font-size: 10px;
 }
-
-.bz-play-btn:before,
+.bz-success-large::before{
+  content:"✔️";
+  font-size: 20px;
+}
+.bz-play-btn::before,
 .bz-play:before{
   content:"▶";
 }
-.bz-play-btn:before{
+.bz-play-btn::before{
   margin-right:5px;
   color:#FFF;
 }
@@ -397,7 +400,6 @@ button:disabled{
   display: flex;
   flex-direction: column;
   margin: 2px 0px 0px 2px;
-  background-color: var(--panel-background-color);
   padding: 0px 0 10px 28px;
   width: calc(100% - 2px);
 }
@@ -572,7 +574,7 @@ button{
 }
 .bz-header input[type=text]{
   border-radius: 5px;
-  border: 1px solid #999;
+  border: 1px solid var(--box-background-color);
   height:28px;
   width: 300px;
   padding: 3px 6px;
@@ -592,8 +594,8 @@ body>.bz-log-box .bz-header input[type=text]{
 }
 .bz-exe-scope{
   position: sticky;
-  top: 60px;
-  
+  top: 38px;
+  background-color: var(--box-background-color);
   z-index: 1;
 }
 .bz-log-box>div>.bz-content:before{
@@ -619,12 +621,10 @@ body>.bz-log-box>.bz-scope>.bz-content>.bz-title{
 .bz-log-bar,
 .bz-sort-bar{
   margin: 0 10px 0 2px;
-  border: 1px solid #999;
+  border: 1px solid var(--box-background-color);
   border-radius: 5px;
   height: 28px;
   position: relative;
-  top: 3px;
-  background-color:var(--background-color);
   padding:0 5px;
 }
 
@@ -636,7 +636,7 @@ body>.bz-log-box .bz-sort-bar{
   color:#000;
   margin:0 2px;
   position:relative;
-  top:5px;
+  top:3px;
 }
 
 .bz-chk-replay{
@@ -680,7 +680,7 @@ body>.bz-log-box .bz-sort-bar{
   background-color: #000;
   padding: 20px 5px 5px 5px;
   border-radius: 5px;
-  border: 1px solid #999;
+  border: 1px solid var(--box-background-color);
   z-index: 10;
   box-shadow: 2px 2px 9px rgb(0 0 0 / 40%);
   background-position: top 5px right 5px;
@@ -965,7 +965,7 @@ input[type=number]{
 .bz-result-header{
   color:var(--header-color);
   position: sticky;
-  top: 120px;
+  top: 164px;
   background: var(--panel-background-color);
   padding: 7px;
   margin-left: 0px;
@@ -1190,15 +1190,26 @@ input[type=number]{
     }
     
     doRefresh()
+    formatter.assignFinalResult()
     function doRefresh(){
       formatter.lastRunningList=ls
       formatter.element.exePanel.html(ls.map(x=>formatter.getGroupElement(x)).join(""));
       if(ls.length){
         formatter.element.exePanel.show()
+        $(".bz-result-header").css({top:(67+ls.length*32.3333)+"px"})
       }else{
         formatter.element.exePanel.hide()
         $(".bz-result-header").css({top:"67px"})
       }
+    }
+    
+  },
+  assignFinalResult:function(){
+    debugger
+    let r=$("svg[title=Failed]")[0]
+    if(r){
+      let o=$("<span class='bz-success-large'></span>")[0]
+      r.replaceWith(o)
     }
   },
   openLastAction:function(k){
@@ -1802,6 +1813,7 @@ input[type=number]{
         formatter.element.exePanel.hide()
         $(".bz-result-header").css({top:"67px"})
         $(".bz-chk-replay,#bz-chk-replay-all").show()
+        formatter.assignFinalResult()
       }else{
         setTimeout(()=>{
           doEnd()
