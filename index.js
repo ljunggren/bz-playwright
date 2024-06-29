@@ -112,11 +112,11 @@ function start(reset){
   
 
   function appPrintStackTrace(err){
-    Service.consoleMsg(err.message,"error","app");
+    Service.consoleMsg(err.stack,"error","app");
   }
 
   function idePrintStackTrace(err){
-    Service.consoleMsg(err.message,"error","ide");
+    Service.consoleMsg(err.stack,"error","ide");
     Service.chkIDE()  
   }
 
