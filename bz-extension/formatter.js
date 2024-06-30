@@ -4,7 +4,7 @@ var formatter={
   chking:30,
   startUrl:"",
   logMap:{},
-  insertCss1:function(_try){
+  insertCss:function(_try){
     if(!document.body){
       _try=_try||0
       if(_try>10){
@@ -18,7 +18,7 @@ var formatter={
     s.setAttribute("href","//staging-bh.boozang.com/formatter/formatter.css")
     document.body.append(s)
   },
-  insertCss:function(_try){
+  insertCss1:function(_try){
     if(!document.body){
       _try=_try||0
       if(_try>10){
@@ -255,9 +255,18 @@ fieldset{
   content:"✔️";
   font-size: 10px;
 }
+.bz-success-large{
+  border:4px solid #0F0 !important;
+  border-radius: 100%;
+  width:34px;
+  height:34px;
+}
+
 .bz-success-large::before{
   content:"✔️";
   font-size: 20px;
+  top: -3px;
+  left: -1px;
 }
 .bz-play-btn::before,
 .bz-play:before{
@@ -278,7 +287,18 @@ fieldset{
 .bz-failed:before{
   content:"❌";
   font-size: 10px;
-  color: green;
+}
+.bz-failed-large{
+  border:4px solid #F00 !important;
+  border-radius: 100%;
+  width:34px;
+  height:34px;
+}
+.bz-failed-large::before{
+  content:"❌";
+  font-size: 20px;
+  top: -3px;
+  left: -1px;
 }
 
 .bz-cross:before{
@@ -993,6 +1013,7 @@ input[type=number]{
 }
 .bz-form{
   margin:5px;
+  background-color:var(--background-color);
 }
 .bz-form>div{
   margin:5px;
@@ -1205,11 +1226,16 @@ input[type=number]{
     
   },
   assignFinalResult:function(){
-    debugger
     let r=$("svg[title=Failed]")[0]
     if(r){
-      let o=$("<span class='bz-success-large'></span>")[0]
+      let o=$("<span class='bz-failed-large'></span>")[0]
       r.replaceWith(o)
+    }else{
+      r=$("svg[title=Success]")[0]
+      if(r){
+        let o=$("<span class='bz-success-large'></span>")[0]
+        r.replaceWith(o)
+      }  
     }
   },
   openLastAction:function(k){
@@ -3139,8 +3165,8 @@ input[type=number]{
         <textarea id="parameters" style="width:100%;height:150px;">${JSON.stringify(d,0,2)}</textarea>
       </div>
       <div style="text-align: center;margin: 15px 0 10px 0;">
-        <button class='bz-play-btn std' style='border-radius: 10px;background-color: #cc0;color: #000;border: 1px solid #33F;padding: 2px 15px;line-height: 20px;cursor: pointer;'>Start</button>
-        <button class='bz-cancel' style='border-radius: 10px;background-color: #000;border: 1px solid #33F;padding: 2px 15px;line-height: 20px;cursor: pointer;'>Cancel</button>
+        <button class='bz-play-btn std' style='border-radius: 10px;background-color:transparent;border: 1px solid #33F;padding: 2px 15px;line-height: 20px;cursor: pointer;'>Start</button>
+        <button class='bz-cancel' style='border-radius: 10px;background-color:transparent;border: 1px solid #33F;padding: 2px 15px;line-height: 20px;cursor: pointer;'>Cancel</button>
       </div>
     `)
     o.show()
