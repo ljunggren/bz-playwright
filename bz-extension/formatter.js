@@ -1226,12 +1226,12 @@ input[type=number]{
     
   },
   assignFinalResult:function(){
-    let r=$("svg[title=Failed]")[0]
+    let r=$("svg[tooltip=Failed]")[0]
     if(r){
       let o=$("<span class='bz-failed-large'></span>")[0]
       r.replaceWith(o)
     }else{
-      r=$("svg[title=Success]")[0]
+      r=$("svg[tooltip=Success]")[0]
       if(r){
         let o=$("<span class='bz-success-large'></span>")[0]
         r.replaceWith(o)

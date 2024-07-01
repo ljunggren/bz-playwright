@@ -1,7 +1,7 @@
 let _appUrl="https:/"+"/ai.boozang.com",_masterTabId,_masterFrameId,_masterUrl,_ctrlTabId,_ctrlWindowId,curElement,_frameIds={},_plugInCode,_bzEnvCode,_css,_status=_newStatus=0,_lastExeActionReq,_doingPopCtrl,_curTest,_data,_curAction,_shareData={},_ctrlFrameId;
 let _lastErrPage=0,_loadPageInfo,assignfirmeCall,ignoreReqs="",_topFrameId=0,_uncodeFrames=[];
 let _ignoreList=["https://vars.hotjar.com"],_lastIframeRequest=0,_dblCheckTime=0,extendTopScript="",extendEndScript="";
-let bzClient;
+let bzClient,_setCodeTimer;
 let funMap={
   cleanMaster:function(){
     cleanMaster()
@@ -539,35 +539,59 @@ function _setCodeToContent(c,id,tabId,chkFrameId){
   //for set dynamic code to current controled client tab, 
   if(tabId && !_lastErrPage){
     try{
-      chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client:"+c.length,twPage:1,tab:"master",bz:1});
+      chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client:"+c.length+`(id: ${id}, topId:${_topFrameId})`,twPage:1,tab:"master",bz:1});
+
+      clearTimeout(_setCodeTimer);
+
+      _setCodeTimer=setTimeout(()=>{
+        if(_setCodeTimer){
+          reportStartTWError()
+        }
+      },60000);
+
       if(id!==undefined){
         if(!id&&_topFrameId){
           id=_topFrameId
         }
         // chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code 1 to client:"+c.length,twPage:1,tab:"master",bz:1});
         chrome.tabs.executeScript(tabId, {code: c,matchAboutBlank:true,frameId:id},_=>{
-          //let e = chrome.runtime.lastError;
-          //if(e !== undefined){
-            //console.log(tabId, _, e);
-          //}
+          clearTimeout(_setCodeTimer);
+          let e = chrome.runtime.lastError;
+          if(e !== undefined){
+            console.log(tabId, _, e);
+            reportStartTWError()
+          }
         });
       }else{
         chrome.tabs.executeScript(tabId, {code: c,matchAboutBlank:true,allFrames:true},_=>{
+          clearTimeout(_setCodeTimer);
           let e = chrome.runtime.lastError;
           if(e !== undefined){
             chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client get error1:"+e,twPage:1,tab:"master",bz:1});
             console.log(tabId, _, e);
+            reportStartTWError()
           }
         });
       }
     }catch(e){
       chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG: Set code to extension failed: "+e.message+"\n"+e.stock,twPage:1,tab:"master",bz:1});
       console.log(e.stock)
-      
+      reportStartTWError()
       // chrome.tabs.sendMessage(_masterTabId, {scope:"console",fun:"log",data:"BZ-LOG:set code to client get error2:"+e.message,twPage:1,tab:"master",bz:1});
     }
   }
 }
+
+function reportStartTWError(){
+  chrome.tabs.sendMessage(_masterTabId, {
+    scope:"BZ",
+    fun:"loadTWError",
+    twPage:1,
+    tab:"master",
+    bz:1
+  });
+}
+
 function isIgnoreFrame(v){
   for(var i=0;i<_ignoreList.length;i++){
     if(v.startsWith(_ignoreList[i])){
