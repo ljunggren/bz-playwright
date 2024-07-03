@@ -335,7 +335,7 @@ var formatter={
     $(document.body).contextmenu(function(e){
       let o=$(e.target)
       if(o.hasClass("bz-tmp-screenshot")){
-        formatter.openWindow(formatter.getCameraPath(o.parent().attr("path")),"_blank")
+        formatter.openWindow(formatter.getCameraPath(e.target._parent.attr("path")),"_blank")
 
         return false
       }
@@ -1634,13 +1634,40 @@ var formatter={
     v.account=v.account||{}
     return v
   },
+  attachQuickLogClick:function(){
+    setTimeout(()=>{
+      if(!$(".duration").length){
+        return formatter.attachQuickLogClick()
+      }
+      let cancelClick
+      $("body").on("click",function(e){
+        if(cancelClick){
+          return
+        }
+        setTimeout(()=>{
+          if($(".stage-logs").length){
+            cancelClick=1
+            $(".stage-logs").click()
+            setTimeout(()=>{
+              $(".glyphicon-collapse-down:eq(1)").click()
+              setTimeout(()=>{
+                location.href=$(".model-link--float:last").attr("href")+`consoleFull`
+              },100)
+            },500)
+          }
+        },100)
+      })
+    },1000)
+  },
   autoLoading:function(){
     let v=formatter.getSetting();
     if(v.autoFormat){
       if(formatter.isMasterPage(v)){
         return formatter.exeFormag(v,Date.now())
-      // }else if(location.href.includes("/jenkins.")){
-      //   formatter.insertCss()
+      }else if(location.href.match(/jenkins[.].+\/job[\/]/)){
+        if(!location.href.match(/\/[0-9]+[\/]/)){
+          formatter.attachQuickLogClick()
+        }
       }
     }
     formatter.chkXray(v);
