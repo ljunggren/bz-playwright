@@ -57,7 +57,7 @@ var formatter={
         }else{
           return setTimeout(()=>{
             formatter.exeFormag(setting,auto)
-          },_clicked?1000:100)
+          },_clicked?1000:1000)
         }
       }
       formatter.removeDoingInfo()
