@@ -1664,9 +1664,12 @@ var formatter={
     if(v.autoFormat){
       if(formatter.isMasterPage(v)){
         return formatter.exeFormag(v,Date.now())
-      }else if(location.href.match(/jenkins[.].+\/job[\/]/)){
-        if(!location.href.match(/\/[0-9]+[\/]/)){
-          formatter.attachQuickLogClick()
+      }else if(location.href.match(/\/jenkins[.]/)){
+        formatter.insertCss()
+        if(location.href.match(/jenkins[.].+\/job[\/]/)){
+          if(!location.href.match(/\/[0-9]+[\/]/)){
+            formatter.attachQuickLogClick()
+          }
         }
       }
     }
