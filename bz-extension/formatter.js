@@ -1650,14 +1650,23 @@ var formatter={
             $(".stage-logs").click()
             setTimeout(()=>{
               $(".glyphicon-collapse-down:eq(1)").click()
-              setTimeout(()=>{
-                location.href=$(".model-link--float:last").attr("href")+`consoleFull`
-              },100)
-            },500)
+              finalClick()
+            },1000)
           }
-        },100)
+        },1000)
       })
     },1000)
+
+    function finalClick(){
+      setTimeout(()=>{
+        let url=$(".model-link--float:last").attr("href")
+        if(url){
+          location.href=url+`consoleFull`
+        }else{
+          finalClick()
+        }
+      },1000)
+    }
   },
   autoLoading:function(){
     let v=formatter.getSetting();
