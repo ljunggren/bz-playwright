@@ -464,7 +464,7 @@ var formatter={
       formatter.openWindow(n)
     }
     function openTest(o){
-      let v=o.attr("bz")
+      let v=o.attr("bz"),k=o.attr("worker")
       if(!v){
         v=o.text().match(/(m[0-9]+)[\.\/-](t[0-9]+)([ \.\/\-]?\(?([0-9]+)\)?)?/)
         if(v){
@@ -481,7 +481,7 @@ var formatter={
         }
       }
       if(v){
-        formatter.openIDE(v)
+        formatter.openIDE(v,k)
       }
     }
     function getCloserElementInContent(o,c){
@@ -587,6 +587,19 @@ var formatter={
     let s=formatter.data.scenarioMap[k]
     delete s.element
   },
+  getWorkInfo:function(o){
+    if(o.worker!==undefined){
+      o=o.worker
+      if(o!="master"){
+        o="worker-"+(parseInt(o)+2)
+      }else{
+        o="worker-1"
+      }
+      return `[${o}]`
+    }else{
+      debugger
+    }
+  },
   getGroupElement:function(o){
     let level=o.level,ctrl="",exPanel="",endPanel="";
     if(level=="scenario"||level=="test"){
@@ -608,11 +621,11 @@ var formatter={
     }
     
     if(level=="scenario"){
-      exPanel = formatter.getGroupElement({name:"Declare",level:"declare",type:"declare",code:o.code+"-declare",close:"cross",css:"bz-hide"})
-              + formatter.getGroupElement({name:"Initial",level:"init",type:"init",code:o.code+"-init",close:"cross",css:"bz-hide"})
+      exPanel = formatter.getGroupElement({name:"Declare",level:"declare",type:"declare",code:o.code+"-declare",worker:o.worker,close:"cross",css:"bz-hide"})
+              + formatter.getGroupElement({name:"Initial",level:"init",type:"init",code:o.code+"-init",worker:o.worker,close:"cross",css:"bz-hide"})
       endPanel=`<div class='bz-end ${o.code}-end'></div>`
     }else if(level=="test"){
-      exPanel = formatter.getGroupElement({name:"Initial",level:"init",type:"init",code:o.code+"-init",close:"cross",css:"bz-hide",details:o.init.details})
+      exPanel = formatter.getGroupElement({name:"Initial",level:"init",type:"init",code:o.code+"-init",worker:o.worker,close:"cross",css:"bz-hide",details:o.init.details})
       delete o.init.details
     }
     
@@ -621,7 +634,7 @@ var formatter={
       <div class="bz-title bz-${o.result}-title">
         <button key="${o.code}" style="background-size:${o.close?12:8}px;visibility:${o.details!==undefined&&!o.details?'hidden':'unset'}" class="bz-icon bz-${o.close||"switch"}"></button>
         <div class="bz-icon bz-${o.type}"></div>
-        <div class="bz-title-text" bz="${o.bz||""}">${o.title||o.name}</div>
+        <div class="bz-title-text" bz="${o.bz||""}" worker="${o.worker||""}">${o.title||o.name} ${formatter.getWorkInfo(o)}</div>
         ${ctrl}
         <div class="bz-time">${o.time||""}</div>
         ${o.result?`<div class="bz-result bz-icon bz-${o.result}"></div>`:""}
@@ -694,7 +707,9 @@ var formatter={
       waitingList:$("<div class='bz-scope bz-hide' bz-name='Waiting list'></div>").appendTo(p),
       end:$("<pre class='bz-scope bz-end'></pre>").appendTo(p)
     };
-    
+    if(!o.init){
+      debugger
+    }
     let popPanel=$(".bz-pop-panel");
     popPanel.mousedown(function(e) {
       if(["BUTTON","TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)){
@@ -1000,6 +1015,7 @@ var formatter={
       
       s.ckey="module-"+k,
       s.code=k+"-"+fd.curWorker
+      s.worker=fd.curWorker
 
       s.name=w[6]
       s.bz=w[3]
@@ -1338,13 +1354,13 @@ var formatter={
       buildSimpleContent(s.init.element.find(".bz-panel"),s.init.org)
       buildSimpleContent(s.declare.element.find(".bz-panel"),s.declare.org,"declare")
       if(s.details.org){
-        s.details.element.html(buildTests(s.details.org,1,s.details.start,s.endTime,s.bz))
+        s.details.element.html(buildTests(s.details.org,1,s.details.start,s.endTime,s.bz,0,s.worker))
       }
       buildSimpleContent(s.end.element,s.end.org,s.result)
     }
     return s
     
-    function buildTests(v,level,startTime,endTime,bz,test){
+    function buildTests(v,level,startTime,endTime,bz,test,worker){
       let html=""
       let ts=analyzer.getTestTreeByLevel(v,level),curTest,tt,lastTest;
       
@@ -1354,7 +1370,7 @@ var formatter={
           v=tt[1]
           curTest=retrieveTestData(t)
           curTest.start=formatter.retrieveTimeFromLog(v)
-          html+=buildActions(tt[0],startTime,curTest.start,bz,!i&&test)
+          html+=buildActions(tt[0],startTime,curTest.start,bz,!i&&test,0,worker)
           
           fd.testMap[curTest.code]=curTest
         }else{
@@ -1364,14 +1380,15 @@ var formatter={
           tt=formatter.splitByWord(v,t,1)
           startTime=formatter.retrieveTimeFromLog(tt[1])||endTime
           curTest.time=formatter.getSpendTime(curTest.start,startTime,"testTime")
-          curTest.details=buildTests(tt[0],level+1,curTest.start,startTime,curTest.bz,curTest)
+          curTest.worker=worker
+          curTest.details=buildTests(tt[0],level+1,curTest.start,startTime,curTest.bz,curTest,worker)
           html+=formatter.getGroupElement(curTest)
           delete curTest.details
           v=tt[1]
           lastTest=curTest
         }
       })
-      return html+buildActions(v,startTime,endTime,bz,!ts.length&&test,test&&test.result=="failed")
+      return html+buildActions(v,startTime,endTime,bz,!ts.length&&test,test&&test.result=="failed",worker)
       
     }
     
@@ -1394,7 +1411,7 @@ var formatter={
       }
     }
     
-    function buildActions(v,startTime,endTime,bz,test,inFailed){
+    function buildActions(v,startTime,endTime,bz,test,inFailed,worker){
       if(!v.includes("bz-json-validation")){
         v=(v||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       }
@@ -1426,6 +1443,7 @@ var formatter={
         })
         as=as.map(a=>retrieveActionData(a.k,a.c,bz))
         as.forEach((a,i)=>{
+          a.worker=worker
           a.details=a.details.split("\n").filter(x=>x&&!isIgnoreContent(x))
           a.details.shift()
           
@@ -1487,7 +1505,7 @@ var formatter={
           if(v.includes("attachScreenshotToReport")){
             screenshot=1
           }
-        }else if(type.match(/^(double|click|extract|refresh|call|load)( |$)/)){
+        }else if(type.match(/^(double|click|extract|refresh|call|load|hover|mousedown|mouseup|mousemove|drag|dragdrop)( |$)/)){
           
         }else if(type.match(/execute api/)){
           type="api"
@@ -1571,9 +1589,14 @@ var formatter={
     }
     return v
   },
-  openIDE:function(v){
-    let fd=formatter.data
-    formatter.openWindow(fd.startUrl+v.replace(".","/"),"bz-master",`width=${screen.availWidth/2},height=${screen.availHeight}`)
+  openIDE:function(v,k){
+    let fd=formatter.data,url=fd.startUrl
+    if(k&&k!="master"){
+      k=parseInt(k)+2
+      url=url.replace(/key=1/,"key="+k)
+    }
+
+    formatter.openWindow(url+v.replace(".","/"),"bz-master",`width=${screen.availWidth/2},height=${screen.availHeight}`)
   },
   getPageInfo:function(x,sendResponse){
     let c=$("a[href=consoleFull]")[0]
