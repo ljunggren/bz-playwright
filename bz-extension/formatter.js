@@ -1792,7 +1792,7 @@ var formatter={
   },
   copyText:function(w){
     let el =$("<textarea readonly style='position:absolute;left:-9999px'></textarea>").appendTo(document.body);
-    let v=(w.innerText||"").replace(/^[0-9]+\: /,"")
+    let v=(w.innerText||"").trim().replace(/^[0-9]+\: /,"")
     if(v.includes("==>")){
       v=v.split("==>")[1]
     }
