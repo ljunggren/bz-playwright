@@ -493,7 +493,7 @@ const Service = {
       fun(msg){
         msg=msg.split("BZ-Result-Final:")[1].trim()
         Service.result = msg == "Success" ? 0:2;
-        Service.consoleMsg("Exit with status code: ", Service.result);
+        console.log("Exit with status code: ", Service.result);
       },
       timeout:Service.stdTimeout
     })
