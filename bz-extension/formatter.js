@@ -1088,7 +1088,7 @@ var formatter={
 
     function handleSetting(v){
       let x=v.match(/(http.+[\/].+)\/extension.*[?&]token\=.+#.+/gm);
-      
+
       if(x){
         x=x.find(y=>y.match(/\/run/))||x[0]
         fd.center=x.split("localized=")[1]
@@ -1096,6 +1096,7 @@ var formatter={
           fd.center=fd.center.split(/[\&\#]/)[0]
         }
         fd.center=fd.center||"Boozang"
+        fd.token=x.match(/token=([^&]+)/)[1]
         x=x.match(/(http.+[\/].+)\/extension.*[?&]token\=.+#([^\/]+)[\/]([^\/]+)([\/](m[0-9]+[\/]t[0-9]+)[\/]run)?/);
 
         fd.startUrl=x[0].split("#")[0].replace(/token=[^&#]+/,"id="+x[2]).replace(/&(self|group)=[^&#]*/g,"")+"#"+x[2]+"/"+x[3]+"/"
@@ -1864,7 +1865,7 @@ var formatter={
   },
   getCameraPath:function(v){
     let fd=formatter.data
-    return location.protocol+fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg"
+    return location.protocol+fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg?token="+fd.token
   },
   showCompare:function(){
     let o=$(".bz-pop-panel");
