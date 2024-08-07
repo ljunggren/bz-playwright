@@ -489,11 +489,11 @@ const Service = {
     Service.insertStdTask("end")
     Service.setStatus("end")
     Service.addTask({
-      key:"Result:",
+      key:"BZ-Result-Final:",
       fun(msg){
-        msg=msg.split("BZ-Result:")[1].trim()
+        msg=msg.split("BZ-Result-Final:")[1].trim()
         Service.result = msg == "Success" ? 0:2;
-        Service.consoleMsg("Exit with status code: ", Service.result);
+        console.log("Exit with status code: ", Service.result);
       },
       timeout:Service.stdTimeout
     })
