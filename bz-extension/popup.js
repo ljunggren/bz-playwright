@@ -1,6 +1,6 @@
 var bzFormat;
 $("#home").click(()=>{
-  chrome.tabs.create({url: "https://www.boozang.com"});
+  chrome.tabs.create({url: "https://boozang.com"});
 })
 $("#ide").click(()=>{
   let p=bzFormat.account.project,
