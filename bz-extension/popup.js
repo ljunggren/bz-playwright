@@ -73,6 +73,8 @@ function init(){
         declareTime:6,
         initTime:2,
         autoFormat:false,
+        lineClearChk:false,
+        withToken:false,
         retrieveWorkerLog:false,
         identifyMaster:`function(url){
   return (url||location.href).match(/[\/]console(Full)?$/)
@@ -99,6 +101,9 @@ function init(){
       }
     }
     $("#autoFormat").attr("checked",bzFormat.autoFormat);
+    $("#lineClearChk").attr("checked",bzFormat.lineClearChk);
+    $("#withToken").attr("checked",bzFormat.withToken);
+    
     $("#retrieveWorkerLog").attr("checked",bzFormat.retrieveWorkerLog);
     
     $("#identifyMaster").val(bzFormat.identifyMaster)
@@ -114,7 +119,7 @@ function init(){
     $("#scenarioTime,#testTime,#declareTime,#initTime,#actionTime,#lineClear,#identifyMaster,#identifyWorker").blur(function(){
       updateSetting()
     })
-    $("#autoFormat,#retrieveWorkerLog").click(function(){
+    $("#autoFormat,#retrieveWorkerLog,#lineClearChk,#withToken").click(function(){
       updateSetting()
     })
     $("#login").click(function(){
@@ -310,12 +315,20 @@ function loadBranch(){
 
 function updateSetting(){
   bzFormat.autoFormat=$("#autoFormat")[0].checked
+  bzFormat.lineClearChk=$("#lineClearChk")[0].checked
+  bzFormat.withToken=$("#withToken")[0].checked
+  
   bzFormat.identifyMaster=$("#identifyMaster").val()
   bzFormat.lineClear=$("#lineClear").val()
   if(bzFormat.autoFormat){
     $("#pageScriptPanel").show()
   }else{
     $("#pageScriptPanel").hide()
+  }
+  if(bzFormat.lineClearChk){
+    $("#lineClearScriptPanel").show()
+  }else{
+    $("#lineClearScriptPanel").hide()
   }
 
   bzFormat.retrieveWorkerLog=$("#retrieveWorkerLog")[0].checked

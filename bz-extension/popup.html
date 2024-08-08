@@ -151,8 +151,11 @@ a{
     <div id="pageScriptPanel">
       <label style="height:15px;margin-left:5px;">Identify log page script:</label>
       <textarea id="identifyMaster"></textarea>
-
-      <label style="height:15px;margin-left:5px;">Line clear script:</label>
+    </div>
+    <div style="margin-bottom:5px;">
+      <label><input type="checkbox" id="lineClearChk"/><span style="position: relative;top: -2px;">Line clear script:</span></label>
+    </div>
+    <div id="lineClearScriptPanel">
       <textarea id="lineClear"></textarea>
     </div>
     <div style="margin:5px 0;">
@@ -161,6 +164,9 @@ a{
     <div id="workerScriptPanel">
       <label style="height:15px;margin-left:5px;">Get parallel test worker log script</label>
       <textarea id="identifyWorker"></textarea>
+    </div>
+    <div style="margin:5px 0;">
+      <label><input type="checkbox" id="withToken"/><span style="position: relative;top: -2px;">View screenshot with secure token</span></label>
     </div>
     <fieldset style="border:1px solid #CCC">
       <legend>Performance thresholds:</legend>

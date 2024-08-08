@@ -1865,7 +1865,11 @@ var formatter={
   },
   getCameraPath:function(v){
     let fd=formatter.data
-    return location.protocol+fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg?token="+fd.token
+    v= location.protocol+fd.host.replace(/^https?:/,"")+"/screenshot/"+fd.project.code+"/"+v+".jpg"
+    if(formatter.data.setting.withToken){
+      v+="?token="+fd.token
+    }
+    return v
   },
   showCompare:function(){
     let o=$(".bz-pop-panel");
