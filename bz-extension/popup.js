@@ -1,4 +1,19 @@
 var bzFormat;
+let defaultCode={
+  identifyMaster:`function(){
+  return location.href.match(/[\/]console(Full)?$/)
+      || location.href.match(/[\/]builds[\/][0-9]+[\/]logs[\/][0-9]+$/)
+}`,
+  identifyWorker:`function(){
+  let k=location.href.match(/\/([0-9]+)\//)[1];
+  return [2,3].map(x=>{
+    return location.href.replace(k+"/consoleFull","ws/out_"+k+"_"+x+".log")
+  })
+}`,
+  lineClear:`function(line){
+  return (line||"").replace(/^[0-9]{4}-[^ ]+ /,"");
+}`
+}
 $("#home").click(()=>{
   chrome.tabs.create({url: "https://www.boozang.com"});
 })
@@ -43,7 +58,9 @@ $(".bz-tab").click(function(){
   bzFormat.defTab=this.id.replace("Tab","")
   updateSetting()
 });
-
+$(".bz-refresh-code").click(function(e){
+  resetCode(this.attributes['code'].value)
+})
 // function getPageInfo(){
 //   chrome.tabs.query({active: true, currentWindow: true}, function(v){
 //     chrome.runtime.sendMessage({ pop:1,fun:"getPageInfo",data:v[0].id},(v)=>{
@@ -75,25 +92,18 @@ function init(){
         autoFormat:false,
         lineClearChk:false,
         withToken:false,
-        retrieveWorkerLog:false,
-        identifyMaster:`function(url){
-  return (url||location.href).match(/[\/]console(Full)?$/)
-}`,
-      identifyWorker:`function(url){
-  url=url||location.href;
-  let k=url.match(/\/([0-9]+)\//)[1];
-  return [2,3].map(x=>{
-    return url.replace(k+"/consoleFull","ws/out_"+k+"_"+x+".log")
-  })
-}`,
-      lineClear:`function(line){
-  return (line||"").replace(/^[0-9]{4}-[^ ]+ /,"");
-}`
+        retrieveWorkerLog:false
       }
     }
     if(d["bz-log-format"]){
       bzFormat=JSON.parse(d["bz-log-format"])
     }
+
+bzFormat.identifyMaster=bzFormat.identifyMaster||defaultCode.identifyMaster
+bzFormat.identifyWorker=bzFormat.identifyWorker||defaultCode.identifyWorker
+bzFormat.lineClear=bzFormat.lineClear||defaultCode.lineClear
+
+
     if(!bzFormat.scenarioTime){
       bzFormat.scenarioTime=180
       if(bzFormat.testTime==180){
@@ -311,6 +321,12 @@ function loadBranch(){
       alert("Retrive branch failed!")
     }
   })
+}
+
+function resetCode(k){
+  bzFormat[k]=defaultCode[k]
+  $("#"+k).val(bzFormat[k])
+  updateSetting()
 }
 
 function updateSetting(){
