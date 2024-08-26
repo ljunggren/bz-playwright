@@ -1,5 +1,5 @@
 const _apiListenerManagement={
-  _filterTypes:["xmlhttprequest", "main_frame"],
+  _filterTypes:["xmlhttprequest", "main_frame","sub_frame"],
   _init:function(){
     chrome.webRequest.onBeforeRequest.addListener(function(v){
       _apiListenerManagement._postAPIInfo(v,"addReq")

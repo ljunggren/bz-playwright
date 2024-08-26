@@ -3467,9 +3467,9 @@ var analyzer={
 
 setTimeout(()=>{
   formatter.autoLoading()
-  window.onresize=function(){
-    formatter.chkXray()
-  }
+  // window.onresize=function(){
+  //   formatter.chkXray()
+  // }
 },100)
 
 let lastUrl = location.href; 

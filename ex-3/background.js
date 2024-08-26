@@ -2,7 +2,6 @@ importScripts('background/bgUtil.js');
 importScripts('background/tabManagement.js');
 importScripts('background/apiListener.js');
 importScripts('background/bgComm.js');
-importScripts('background/bgManagement.js');
 
 chrome.action.setBadgeText({text:"AI"});
 chrome.runtime.onInstalled.addListener(addPageScript);

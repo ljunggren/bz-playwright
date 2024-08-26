@@ -26,8 +26,7 @@ var innerScript={
 
     function _end(){
       BZ.assignShareData(d)
-      _aiDataHandler._init()
-        _fun&&_fun()
+      _fun&&_fun()
     }
   },
   exeScript:function({script,$loop,$parameter,$test,$module,$project,$action,$group,$element,funMap},_fun){

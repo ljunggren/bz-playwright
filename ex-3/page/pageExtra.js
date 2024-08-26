@@ -1,1847 +1,5 @@
-window._bzEval={
-  _leftKeys:{"{":"}","[":"]","(":")"},
-  bd:{"{":"}","[":"]","(":")","'":"'",'"':'"','`':'`'},
-  db:{"}":"{","]":"[",")":"(","'":"'",'"':'"','`':'`'},
-  _tmpNum:1,
-  exeGroupCode:function(d){
-    if(!d||![String,Array].includes(d.constructor)){
-      return d
-    }
-    if(d.constructor==String){
-      return _bzEval._exeCode(d)
-    }else if(d)
-    d.forEach(x=>{
-      if(x.f){
-        x.ps=x.ps||[]
-        let xx=_bzEval._exeCode(x.f,0,0,1)
-        if(xx.n){
-          xx.d[xx.n](...x.ps)
-        }else{
-          xx.v(...x.ps)
-        }
-      }else if(x.k){
-        let xx=_bzEval._exeCode(x.k,0,0,1)
-        if(xx.n){
-          xx.d[xx.n]=x.v
-        }else{
-          window[xx.k]=x.v
-        }
-      }else{
-        _bzEval._exeCode(x.c)
-      }
-    })
-  },
-  _getTmpDataName:function(){
-    return "f"+(this._tmpNum++)
-  },
-  _throwErr:function(s){
-    alert(_bzMessage._system._error._syntaxError+s)
-  },
-  _exeFun:function(f,p,_outMap,_inMap){
-    _outMap=_bzEval._initOutMap(_outMap),_inMap=_inMap||{};
-    p=(p||[]).map(x=>_bzEval._getFinalValue(x))
-    if(f.constructor!=Function){
-      if(_bzEval._isFun(f)){
-        f={v:f}
-      }
-      if(f.v.constructor==Function){
-        if(f.n){
-          p=_buildTF(p)
-          return f.d[f.n](...p)
-        }else{
-          f=f.v
-        }
-      }else if(f.v&&(f.v.k=="function"||f.v.k=="=>")){
-        return _exe(f.v,f.d,p)
-      }else{
-        _bzEval._throwErr()
-      }
-    }
-    p=_buildTF(p)
-    p= f(...p)
-    return p
-
-    function _buildTF(p){
-      p=p.map(x=>{
-        if(x&&x._bzFun=="_bzFun"){
-          return function(){
-            return _exe(x,window,[...arguments])
-          }
-        }
-        return x
-      })
-      return p
-    }
-
-    function _exe(f,d,p){
-      let _map=_bzEval._buildScopeDataMap(_outMap,_inMap),
-      _tmpMap={}
-      f.e.forEach((x,i)=>{
-        if(x.ps){
-          _tmpMap[x.ps[0]]=p[i]
-        }else{
-          _tmpMap[x]=p[i]
-        }
-      })
-      _tmpMap.arguments=[...p]
-      _tmpMap.this=d
-      f=_bzEval._exeCode(f.c,_map,_tmpMap)
-      _bzEval._mergedataMap(_outMap,_inMap,_map)
-      if(f&&f._throw=="_return"){
-        f=_bzEval._getFinalValue(f)
-        return f
-      }
-    }
-  },
-  _exeIfElse:function(v,vs,_map,_tmpMap){
-    let r;
-    if(v.k!="else"){
-      r=_bzEval._exeCode(v.e,_map,_tmpMap)
-    }
-    if(v.k=="else"||r){
-      r=_bzEval._exeCode(v.c,_map,_tmpMap)
-      
-      while(vs[0]&&["else","else if"].includes(vs[0].k)){
-        vs.shift()
-      }
-
-    }
-    return r
-  },
-  _exeLoop:function(v,_map,_tmpMap){
-    let _first=1,r,rr;
-    while(1){
-      if(v.k=="for"&&_first){
-        _bzEval._exeCode(v.e[0],_map,_tmpMap)
-      }
-      if(v.k=="for"){
-        rr=_bzEval._exeCode(v.e[1],_map,_tmpMap)
-      }else if(v.k!=="do"||!_first){
-        rr=_bzEval._exeCode(v.e,_map,_tmpMap)
-      }
-      if((v.k=="do"&&_first)||rr){
-        _first=0
-        r=_bzEval._exeCode(v.c,_map,_tmpMap)
-        if(r&&r._throw){
-          if(r._throw!="_continue"){
-            if(r._throw=="_break"){
-              r=undefined
-            }
-            break
-          }
-          r._throw=0
-        }
-        if(v.k=="for"){
-          _bzEval._exeCode(v.e[2],_map,_tmpMap)
-        }
-      }else{
-        break
-      }
-    }
-    return r
-  },
-  _exeTry:function(v,_map,_tmpMap){
-    let r;
-    try{
-      r=_bzEval._exeCode(v.c,_map,_tmpMap)
-      return r
-    }catch(e){
-      _tmpMap={}
-      _tmpMap[v.e[0]]=e
-      r=_bzEval._exeCode(v.ec,_map,_tmpMap)
-      return r
-    }finally{
-      if(v.f){
-        _tmpMap={}
-        r=_bzEval._exeCode(v.f,_map,_tmpMap)
-      }
-      return r
-    }
-  },
-  _exeSwitch:function(v,_map,_tmpMap){
-    let vv=_bzEval._exeCode(v.e,_map,_tmpMap),_continue,r
-    v.c.find(x=>{
-      if(_continue||x.k=="default"||vv==_bzEval._getFinalValue(_bzEval._exeCode(x.v,_map,_tmpMap))){
-        r=_bzEval._exeCode(x.cs,_map,_tmpMap)
-        if(r&&_bzEval._isBzData(r)&&r._throw){
-          if(r._throw!="_continue"){
-            if(r._throw=="_break"){
-              r._throw=0
-            }
-            return 1
-          }
-          _bzEval._throwErr()
-        }
-        _continue=1
-      }
-    })
-    return r
-  },
-  _initOutMap:function(_outMap){
-    _outMap=_outMap||{
-      $parameter:window.$parameter,
-      $module:window.$module,
-      $project:window.$project,
-      $test:window.$test,
-      $loop:window.$loop,
-      $result:window.$result,
-      $element:window.$element
-    }
-    return _outMap
-  },
-  _exe:function(){
-    if(_bzEval._canEval===undefined){
-      try{
-        eval("let a=1")
-        _bzEval._canEval=1
-      }catch(ex){
-        _bzEval._canEval=0
-      }
-    }
-    if(_bzEval._canEval){
-      return eval(...arguments)
-    }
-    return _bzEval._exeCode(...arguments)
-  },
-  _exeCode:function(vs,_outMap,_inMap,_inBzData){
-    _outMap=_bzEval._initOutMap(_outMap),_inMap=_inMap||{};
-    if(vs.constructor==String){
-      vs=_bzEval._parseCode(vs)
-    }else if(vs.constructor!=Array){
-      vs=[vs]
-    }
-    let vvs=[],r,d,rs=[],_tmpFun
-    vs.forEach(x=>{
-      if(x.k=="function"||x.k=="=>"){
-        if(x.n){
-          _outMap[x.n]=x
-        }else{
-          _tmpFun=x
-        }
-        x._bzFun="_bzFun"
-      }else{
-        vvs.push(x)
-      }
-    })
-    if(!vvs.length&&_tmpFun){
-      return _tmpFun
-    }
-    while(vvs.length){
-      let v=vvs.shift()
-      if(["let","const","var","=","+=","-=","*=","/=","^=","%=","&=","|=","&&=","||="].includes(v.k)){
-        rs=[]
-        v.c=v.c||[]
-        v.c=v.c.constructor==Array?v.c.map(y=>y.constructor==Array?y[0]:y):v.c;
-        let vr=_bzEval._exeCode(v.c,_outMap,_inMap)
-        if(v.k=="var"){
-          _bzEval._setValue(v.n,_outMap,_inMap,_outMap,vr)
-        }else if(["let","const"].includes(v.k)){
-          _bzEval._setValue(v.n,_inMap,_inMap,_inMap,vr)
-        }else{
-          rs=[_bzEval._setValue(v.n,_outMap,_inMap,0,vr,v.k)]
-        }
-      }else if(["if","else if","else","for","while","do","try","switch"].includes(v.k)){
-        rs=[]
-        let _map=_bzEval._buildScopeDataMap(_outMap,_inMap),
-            _tmpMap={}
-        if(["if","else if","else"].includes(v.k)){
-          r=_bzEval._exeIfElse(v,vvs,_map,_tmpMap)
-        }else if(["for","while","do"].includes(v.k)){
-          r=_bzEval._exeLoop(v,_map,_tmpMap)
-        }else if(v.k=="try"){
-          r=_bzEval._exeTry(v,_map,_tmpMap)
-        }else{
-          r=_bzEval._exeSwitch(v,_map,_tmpMap)
-        }
-        _bzEval._mergedataMap(_outMap,_inMap,_map)
-        if(r&&_bzEval._isBzData(r)&&r._throw){
-          return r
-        }
-        if(r){
-          rs.push(r)
-        }
-      }else if(v.k=="..."){
-        r=_bzEval._getFinalValue(_bzEval._exeCode(v.c,_outMap,_inMap))
-        rs.push([...r])
-      }else if(v.k=="return"){
-        r=_bzEval._buildBzData(_bzEval._exeCode(v.c,_outMap,_inMap))
-        r._throw="_return"
-        return r
-      }else if(v.k=="break"){
-        r= _bzEval._buildBzData()
-        r._throw="_break"
-        return r
-      }else if(v.k=="continue"){
-        r= _bzEval._buildBzData()
-        r._throw="_continue"
-        return r
-      }else if(v.k=="throw"){
-        r=_bzEval._exeCode(v.c,_outMap,_inMap)
-        throw r
-      }else if(v.k=="delete"){
-        r=_bzEval._exeCode(v.c,_outMap,_inMap,1)
-        delete r.d[r.n]
-        rs.push(true)
-      }else if(v.k=="new"){
-        let x=v.c[0],rrs=[...x.cs]
-        r=rrs.shift().ps.map(y=>_bzEval._exeCode(y,_outMap,_inMap))
-        
-        if(x.dd.includes(".")){
-          let dd=x.dd.split(".")
-          let rr=window[dd.shift()]
-          while(dd.length>1){
-            rr=rr[dd.shift()]
-          }
-          r=new rr[dd[0]](...r)
-        }else{
-          r=new window[x.dd](...r)
-        }
-
-        while(rrs.length){
-          let rr=rrs.shift()
-          rr=rr.substring(1)
-          if(rrs.length){
-            let pp=rrs.shift().ps.map(y=>_bzEval._exeCode(y,_outMap,_inMap))
-            
-            r=r[rr](...pp)
-          }else{
-            r-r[rr]
-          }
-        }
-        rs.push(r)
-      }else if(v.k=="typeof"){
-        r=_bzEval._exeCode(v.c,_outMap,_inMap,1)
-        r=typeof _bzEval._getFinalValue(r)
-
-        rs.push(r)
-      }else if(v.dd){
-        let on=v.dd,nn;
-        if(v.dd[0]=="."){
-          r=_bzEval._getFinalValue(rs.pop())
-          nn=_bzEval._getTmpDataName()
-          _outMap[nn]=r
-          v.dd=nn+v.dd
-        }
-        rs.push(_bzEval._getRefData(v,_outMap,_inMap))
-        if(nn){
-          v.dd=on
-        }
-      }else{
-        if(v.k=="["){
-          r=[];
-          v.ps.forEach(x=>{
-            x=x.constructor==Array?x.map(y=>y.constructor==Array?y[0]:y):x;
-            let y=_bzEval._exeCode(x,_outMap,_inMap)
-            if(x.k=="..."){
-              r.push(...y)
-            }else{
-              r.push(y)
-            }
-          })
-          if(rs.length){
-            let rr=rs[rs.length-1]
-            if(!_bzEval._isSign(rr)){
-              r=r.pop()
-              if(_bzEval._isBzData(rr)){
-                if(rr.d&&r.n){
-                  rr.d=rr.v
-                  rr.n=r
-                  rr.v=rr.d[rr.n]
-                }else{
-                  rr.v=rr.v[r]
-                }
-              }else{
-                rr=rr[r]
-                rs[rs.length-1]=rr
-              }
-              continue
-            }
-          }
-          rs.push(_bzEval._buildBzData(r))
-        }else if(v.k=="{"){
-          r={}
-          v.ps.forEach(x=>{
-            Object.keys(x).forEach(y=>r[y]=_bzEval._exeCode(x[y],_outMap,_inMap))
-          })
-          rs.push(_bzEval._buildBzData(r))
-        }else if(v.k=="("){
-          if(rs.length){
-            let rr=rs[rs.length-1]
-            let fr=_bzEval._getFinalValue(rr)
-            if(_bzEval._isFun(fr)){
-              r=v.ps.map(x=>_bzEval._exeCode(x,_outMap,_inMap));
-              rs[rs.length-1]=_bzEval._exeFun(rr,r,_outMap,_inMap)
-              continue
-            }
-          }
-          r=_bzEval._exeCode(v.ps,_outMap,_inMap)
-          rs.push(_bzEval._buildBzData(r))
-        }else if(v.constructor==Array){
-          rs=[_bzEval._exeCode(v,_outMap,_inMap,1)]
-        }else if("'\"\`".includes(v[0])){
-          rs.push(_bzEval._buildBzData(v.substring(1,v.length-1)))
-        }else if(v[0]=="/"&&v.length>1){
-          let _idx=v.lastIndexOf("/"),op=v.substring(_idx+1)
-          r=new RegExp(v.substring(1,_idx),op)
-          rs.push(r)
-        }else if(_bzEval._isNumeric(v)){
-          rs.push(JSON.parse(v))
-        }else if(_bzEval._isSign(v[0])){
-          rs.push(v)
-        }else if(v=="undefined"){
-          rs.push(_bzEval._buildBzData(undefined))
-        }else if(v=="null"){
-          rs.push(_bzEval._buildBzData(null))
-        }else if(v=="true"){
-          rs.push(_bzEval._buildBzData(true))
-        }else if(v=="false"){
-          rs.push(_bzEval._buildBzData(false))
-        }else if(v[0]=="."){
-          v=v.split(".").filter(x=>x)
-          r=rs[rs.length-1]
-          v.forEach(x=>{
-            r.d=_bzEval._getFinalValue(r.v)
-            r.n=x
-            r.v=r.d[x]
-          })
-        }else{
-          if(_bzEval._isBzData(v)){
-            rs.push(v)
-          }else{
-            rs.push(_bzEval._getValue(v,_outMap,_inMap))
-          }
-        }
-      }
-    }
-    if(rs.find(x=>_bzEval._isSign(x))){
-      r=_bzEval._countItems(rs)
-    }else{
-      r=rs.pop()
-    }
-    if(_bzEval._isBzData(r)&&r._throw){
-      return r
-    }else if(_bzEval._isFun(r)){
-      return r
-    }
-    return _inBzData?_bzEval._buildBzData(r):_bzEval._getFinalValue(r)
-
-  },
-  _isFun:function(fr){
-    return fr&&(fr.constructor==Function||fr._bzFun=="_bzFun")
-  },
-  _getRefData:function(v,_outMap,_inMap){
-    let r=_bzEval._getValue(v.dd,_outMap,_inMap)
-    v.cs.forEach(x=>{
-      if(x.k){
-        let d=x.ps.find(y=>_bzEval._isSign(y)||y[0]==".")?_bzEval._exeCode(x.ps,_outMap,_inMap):x.ps.map(y=>{
-          if(y&&y.constructor==Array){
-            y=y.map(z=>z&&z.constructor==Array?_bzEval._exeCode(z,_outMap,_inMap,1):z)
-          }
-          return _bzEval._exeCode(y,_outMap,_inMap)
-        })
-        if(x.k=="("){
-          if(!d||d.constructor!=Array){
-            d=[d]
-          }
-          if(r.n){
-            r.v=_bzEval._exeFun(r,d,_outMap,_inMap)
-            r.n=r.d=0
-          }else{
-            r.v=_bzEval._exeFun(r,d,_outMap,_inMap)
-          }
-        }else{
-          if(d&&d.constructor==Array){
-            d=d.pop()
-          }
-          r.d=r.v
-          r.n=d
-          r.v=r.d[d]
-        }
-      }else{
-        x=x.split(".").filter(x=>x)
-        x.forEach(y=>{
-          r.d=r.v
-          r.n=y
-          r.v=r.d[y]
-        })
-      }
-    })
-    return r
-  },
-  _countItems:function(ps,c){
-    let vs=[],r,s,prs,ss;
-    ps.find((x,q)=>{
-      if(x=="?"){
-        vs=_bzEval._getFinalValue(_countGroup(vs))
-        let qs=_bzEval._findKeyOuterBlock(ps,":",q+1,{"?":":"})
-        if(vs){
-          r=_bzEval._countItems(qs.p)
-        }else{
-          r=_bzEval._countItems(qs.e)
-        }
-        return 1
-      }
-      if(!["&&","||",">","<",">=","<=","==","===","!=","!==","^","&","|"].includes(x)){
-        if(ss){
-          if(_bzEval._isBzData(x)&&x.n){
-            if(ss=="++"){
-              vs.push(x)
-              x.v+=1
-              x.d[x.n]=x.v            
-            }else if(ss=="--"){
-              vs.push(x)
-              x.v-=1
-              x.d[x.n]=x.v            
-            }else if(ss=="!"){
-              vs.push(!x.v)
-            }else if(ss=="!!"){
-              vs.push(!!x.v)
-            }else{
-              vs.push(~x.v)
-            }
-            ss=0
-          }else{
-            if(ss=="!"){
-              vs.push(!x)
-              ss=0
-            }else if(ss=="!!"){
-              vs.push(!!x)
-              ss=0
-            }else if(ss=="~"){
-              vs.push(~x)
-              ss=0
-            }else{
-              _bzEval._throwErr()
-            }
-          }
-          return
-        }
-        if(x=="*"||x=="/"||x=="%"){
-            s=x
-        }else if(s){
-          vs[vs.length-1]=_bzEval._count(vs[vs.length-1],s,x)
-          s=""
-        }else if(x=="++"||x=="--"||x=="!"||x=="~"||x=="!!"){
-          if(s||!vs.length||_bzEval._isSign(vs[vs.length-1])){
-            ss=x
-          }else{
-            let rv=vs[vs.length-1]
-            if(x=="++"){
-              rv.d[rv.n]+=1
-            }else{
-              rv.d[rv.n]-=1
-            }
-          }
-        }else{
-          vs.push(x)
-        }
-      }else{
-        vs=_bzEval._getFinalValue(_countGroup(vs))
-        if(x=="&&"){
-          if(!vs){
-            r=_bzEval._buildBzData(vs)
-            return 1
-          }
-        }else if(x=="||"){
-          if(vs){
-            r=_bzEval._buildBzData(vs)
-            return 1
-          }
-        }else{
-          prs={v:vs,c:x}
-        }
-        vs=[]
-      }
-    })
-    if(!r){
-      if(vs.length){
-        r=_countGroup(vs)
-      }
-    }
-    return _bzEval._getFinalValue(r)
-    function _countGroup(vs){
-      [["+","-"],[">>","<<"]].forEach(x=>vs=_countPs(vs,x))
-      vs=vs[0]
-      if(prs){
-        vs=_bzEval._count(prs.v,prs.c,vs)
-        prs=0
-      }
-      return vs
-    }
-    function _countPs(vs,c){
-      let rs=[],s;
-      for(let i=0;i<vs.length;i++){
-        let v=vs[i]
-        if(c.includes(v)){
-          if(!i){
-            if("+-".includes(v)){
-              rs=[0]
-              s=v
-            }else if(_bzEval._isSign(v)){
-              _bzEval._throwErr()
-            }
-          }else{
-            if(s){
-              _bzEval._throwErr()
-            }
-            s=v
-          }
-        }else if(s){
-          let v1=_bzEval._getFinalValue(rs[rs.length-1])
-          v=_bzEval._getFinalValue(v)
-          rs[rs.length-1]=_bzEval._count(v1,s,v)
-          s=""
-        }else{
-          rs.push(v)
-        }
-      }
-      return rs
-    }
-  },
-  _buildBzData:function(v,d,n){
-    if(_bzEval._isBzData(v)){
-      return v
-    }
-    return {
-      _bzData:"_bzData",
-      v:v,
-      d:d,
-      n:n
-    }
-  },
-  _isBzData:function(v){
-    return v&&v._bzData=="_bzData"
-  },
-  _getFinalValue:function(r){
-    if(_bzEval._isBzData(r)){
-      return r.v
-    }
-    return r
-  },
-  _isSign:function(c){
-    return c&&"~!=><+-*/%^&|?:".includes(c[0])
-  },
-  _count:function(d1,c,d2){
-    d1=_bzEval._getFinalValue(d1)
-    d2=_bzEval._getFinalValue(d2)
-    switch(c){
-      case "+": return d1+d2
-      case "-": return d1-d2
-      case "*": return d1*d2
-      case "/": return d1/d2
-      case "==": return d1==d2
-      case "===": return d1===d2
-      case ">": return d1>d2
-      case "<": return d1<d2
-      case ">>": return d1>>d2
-      case "<<": return d1<<d2
-      case ">=": return d1>=d2
-      case "<=": return d1<=d2
-      case "!=": return d1!=d2
-      case "!==": return d1!==d2
-      case "&": return d1&d2
-      case "|": return d1|d2
-      case "&&": return d1&&d2
-      case "||": return d1||d2
-      case "%": return d1%d2
-      case "^": return d1^d2
-    }
-  },
-  _mergedataMap:function(_outMap,_inMap,_map){
-    Object.keys(_map).forEach(k=>{
-      if(Object.keys(_inMap).includes(k)){
-        _inMap[k]=_map[k]
-      }else{
-        _outMap[k]=_map[k]
-      }
-    })
-  },
-  _isNumeric:function(a){
-    var b = a && a.toString();
-    return (!a||a.constructor!=Array) && b - parseFloat(b) + 1 >= 0
-  },
-  _getValue:function(n,_outMap,_inMap){
-    let ns=n.split("."),_map;
-    n=ns.shift()
-    if(n=="eval"){
-      return _bzEval._buildBzData(_bzEval._exeCode,_bzEval,"_exeCode");
-    }else if(_bzEval._isNumeric(n)||n.match(/^['"`].*[`"']$/)){
-      let nn=_bzEval._getTmpDataName()
-      _outMap[nn]=_bzEval._exeCode(n)
-      n=nn
-    }
-    if(Object.keys(_inMap).includes(n)){
-      _map=_inMap
-    }else if(Object.keys(_outMap).includes(n)){
-      _map=_outMap
-    }else{
-      _map=window
-    }
-    while(ns.length){
-      _map=_map[n]
-      n=ns.shift()
-    }
-
-    return {
-      d:_map,
-      n:n,
-      v:_map[n],
-      _bzData:"_bzData"
-    }
-  },
-  _setValue:function(n,_outMap,_inMap,_defMap,v,_sign){
-    let _map,ns;
-    if(n.constructor==String){
-      ns=n.split(".")
-      if(ns.find(x=>!_bzEval._isVarName(x))){
-        throw new Error("SyntaxError on: "+ns)
-      }
-      n=ns.shift()
-  
-      _map=_bzEval._getDataMap(n,_outMap,_inMap,_defMap)
-    }else{
-      _map=_bzEval._getRefData(n,_outMap,_inMap)
-    }
-    if(n.constructor!=String||!_defMap||_map==_defMap){
-      if(n.constructor==String){
-        while(ns.length){
-          _map=_map[n]
-          n=ns.shift()
-        }
-      }else{
-        n=_map.n
-        _map=_map.d
-      }
-      switch(_sign){
-        case "+=":return _map[n]+=v;
-        case "-=":return _map[n]-=v;
-        case "*=":return _map[n]*=v;
-        case "/=":return _map[n]/=v;
-        case "%=":return _map[n]%=v;
-        case "^=":return _map[n]^=v;
-        case "&=":return _map[n]&=v;
-        case "|=":return _map[n]|=v;
-        case "&&=":return _map[n]&&=v;
-        case "||=":return _map[n]||=v;
-      }
-      return _map[n]=v
-    }else{
-      throw new Error("")
-    }
-  },
-  _isVarName:function(n){
-    return n.match(/^[a-z_\$\u4E00-\u9FCC][a-z0-9_\$\u4E00-\u9FCC]*$/i)
-  },
-  _getDataMap:function(n,_outMap,_inMap,_defMap){
-    if(Object.keys(_inMap).includes(n)){
-      return _inMap
-    }
-    if(Object.keys(_outMap).includes(n)){
-      return _outMap
-    }
-    return _defMap||window
-  },
-  _buildScopeDataMap:function(_outMap,_inMap){
-    let _map=Object.assign({},_outMap)
-    _map=Object.assign(_map,_inMap)
-    return _map
-  },
-  _findKeyOuterBlock:function(vs,tk,_start,bs,_noRegex){
-    bs=bs||_bzEval.bd
-    let k,b,c,s;
-    _init()
-    if(vs.push){
-      vs=[...vs]
-    }
-    if(_start){
-      vs=vs.push?vs.splice(_start):vs.substring(_start)
-    }
-    for(let i=0;i<vs.length;i++){
-      c=vs[i]
-      if(c=="\\"){
-        b=!b
-      }else if(b){
-        b=0
-      }else if(!_noRegex&&k=="/"&&c=="/"){
-        _init()
-        continue
-      }else if(!_noRegex&&!k&&c=="/"&&(!s||s.trim().match(/[\(\[\=\?\:]$/))){
-        k="/"
-        continue
-      }else if(k){
-        if(k.r==c){
-          if(k.n){
-            k.n--
-          }else{
-            _init()
-          }
-        }else if(k.l==c){
-          k.n++
-        }
-        continue
-      }else if(bs[c]){ //([{
-        k={l:c,r:bs[c],n:0,p:{k:c}}
-      }
-      s.push?s.push(c):s+=c;
-
-      let kk=_isKey(s,c)
-      if(kk){
-        if(vs.pop){
-          return {
-            e:vs.splice(i+1),
-            p:vs.splice(0,i),
-            k:kk
-          }
-        }
-        return {
-          p:vs.substring(0,i-kk.length+1),
-          k:kk,
-          e:vs.substring(i+1)
-        }
-      }
-    }
-
-    function _init(){
-      k=0
-      s=vs.constructor==Array?[]:"";
-    }
-
-    function _isKey(s,c){
-      if(tk.constructor==Function){
-        return tk(s)
-      }else if(tk.constructor==RegExp){
-        s=s.match(tk)
-        return s&&s[0]
-      }
-      return (tk==s||tk==c)&&tk
-    }
-  },
-  _parseCode:function(v,_case){
-    let vs=_bzEval._parseLine(v)
-    if(_case){
-      let ss=[]
-      vs.forEach(x=>{
-        while(1){
-          let k=x.match(/^(case|default)(:|\s|\'\"\`\{)/)
-          if(k){
-            k=k[1]
-            x=x.substring(k.length).trim()
-            v=_bzEval._findKeyOuterBlock(x,":")
-
-            if(v.e.match(/^(case|default)(:|\s|\'\"\`\{)/)){
-              x=v.e
-              ss.push({k:k,v:v.p.trim(),cs:[]})
-              continue
-            }
-            ss.push({k:k,v:v.p.trim(),cs:[v.e]})
-          }else if(ss[0]){
-            ss[ss.length-1].cs.push(x)
-          }
-          break
-        }
-      })
-      ss.forEach(x=>{
-        x.cs=x.cs.map(y=>_bzEval._parseItem(y))
-      })
-
-      return ss
-    }
-    vs=vs.map(x=>_bzEval._parseItem(x))
-
-    return vs
-  },
-  _parseItem:function(v){
-    let ps=[],pps=[],
-        b,p,
-        c,cc=[],
-        s="",_inpp,
-        k,kk,inSingle,
-        df, //var, let, const
-        ok, //for, if, whilte, do, function,switch
-        op; //delete, continue, break
-
-    v=v.trim()
-
-    ok=v.match(/^(if|for|while|function|do|try|switch|else +if|else)(\s|\(|\{)/)
-    if(ok){
-      ok={
-        k:ok[1]
-      }
-      v=v.substring(ok.k.length).trim()
-      if(ok.k=="function"){
-        ok.n=v.substring(0,v.indexOf("("))
-        v=v.substring(ok.n.length)
-        ok.n=ok.n.trim()
-      }
-    }else{
-      ok=v.match(/^\(?([^=,\(\)\{\}\[\]]*)\)?=>/)
-
-      if(ok){
-        let vv=v.substring(ok[0].length).trim();
-        let e=_bzEval._findKeyOuterBlock(vv,")")
-        if(!e){
-          v=vv
-          if(v[0]!="{"){
-            v="return "+v
-          }
-          ok={
-            k:"=>",
-            e:_bzEval._parseItem(ok[1]||" ")
-          }
-        }else{
-          ok=0
-        }
-      }else{
-        let vv=v.match(/^(let|var|const)\s+([^=,\s]+)(\=|\,|$|;)/)
-        if(vv){
-          v=v.substring(vv[0].length)
-          df={
-            k:vv[1],
-            n:vv[2]
-          }
-          ps.push(df)
-        }else{
-          df=v.match(/^([^=\{\[\("'`\!><\s]+\=)[^>=]/);
-          if(df){
-            v=v.substring(df[1].length)
-            df={
-              k:"=",
-              n:df[1].replace("=","").trim()
-            }
-            k=df.n.match(/[\+\-\*\/\%\^]$/)
-            if(k){
-              k=k[0]
-              df.k=k+df.k
-              df.n=df.n.replace(k,"").trim()
-            }
-            ps.push(df)
-          }else{
-            df=v.match(/^(return|delete|throw|typeof|break|continue|new)(\s|$|\[|\{|\()/)||v.match(/^(\.\.\.)/)
-            if(df){
-              v=v.substring(df[1].length).trim()
-              df={
-                k:df[1]
-              }
-              if(["return","break","continue","throw"].includes(df.k)){
-                df.c=_bzEval._parseCode(v)
-                return df
-              }
-              op=df
-              ps.push(op)
-              df=0
-            }else{
-              df=v.match(/^(function)(\s|\()/)
-              if(df){
-                ok={
-                  k:df[1]
-                }
-                v=v.substring(0,df[1].length).trim()
-                df=v.match(/^([^\(]+)/)
-                if(df){
-                  ok.n=df[1].trim()
-                  v=v.substring(0,ok.n.length).trim()
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    for(let i=0;i<v.length;i++){
-      c=v[i]
-      let p=ps[ps.length-1]
-      if(c=="\\"){
-        b=!b
-      }else if(b){
-        b=0
-      }else if(kk){
-        if(kk==c){
-          kk=0
-          if(_inpp){
-            _inpp=0
-            if(s){
-              ps.push("+")
-              ps.push('"'+s+'"')
-            }
-            continue
-          }
-        }else if(kk=="`"&&s.match(/\$\{$/)){
-          let ss=_bzEval._findKeyOuterBlock(v,"}",i)
-          if(ss){
-            ps.push('"'+s.substring(1,s.length-2)+'"')
-            ps.push("+")
-            v=_bzEval._parseItem(ss.p)
-            if(v.constructor==Array){
-              v=v[0]
-            }
-            ps.push(v)
-            v=ss.e
-            i=-1
-            _inpp=1
-            s=""
-            continue
-          }
-        }
-      }else if("`'\"".includes(c)){
-        kk=c
-      }else if(k=="/"){
-        if(c=="["){
-          inSingle=1
-        }else if(c=="]"){
-          inSingle=0
-        }else if(inSingle){
-        }else if(c=="/"){
-          k=0
-        }
-      }else if(!k&&!ps.length&&c=="/"&&(!s||s.trim().match(/[\(\[\=\?\:]$/))){
-        k="/"
-      }else if(!s&&(c==" "||c=="\n")){
-        continue
-      }else if(k){
-        if(k.r==c){
-          if(k.n){
-            k.n--
-          }else{
-            if(ok){
-              if(ok.k=="do"){
-                if(ok.c){
-                  ok.e=_bzEval._parseItem(s)
-                  return ok
-                }else if(s[0]=="{"){
-                  ok.c=_bzEval._parseCode(s.substring(1))
-                }else{
-                  k=0
-                  s+=c
-                  continue
-                }
-              }else if(ok.k=="try"){
-                if(!ok.c){
-                  ok.c=_bzEval._parseCode(s)
-                }else if(!ok.e){
-                  ok.e=_bzEval._parseItem(s)
-                }else if(!ok.ec){
-                  ok.ec=_bzEval._parseCode(s)
-                }else{
-                  ok.f=_bzEval._parseCode(s)
-                }
-                if(i==v.length-1){
-                  return ok
-                }
-                s=""
-                k=0
-                continue
-              }else if(ok.k=="=>"){
-                if(k.l=="{"){
-                }else{
-                  s+=c
-                }
-                k=0
-                continue
-              }else if(k.l=="("){
-                if(ok.k=="for"){
-                  ok.e=_bzEval._parseCode(s)
-                }else{
-                  ok.e=_bzEval._parseItem(s)
-                }
-                v=v.substring(i+1).trim()
-                if(["for","if","else if"].includes(ok.k)){
-                  if(v.match(/^\{.*\}$/s)){
-                    v=v.substring(1,v.length-1)
-                  }
-                  ok.c=_bzEval._parseCode(v,ok.k=="switch")
-                  return ok
-                }else{
-                  if(v.match(/^\{.*\}$/s)){
-                    v=v.substring(1,v.length-1)
-                    ok.c=_bzEval._parseCode(v,ok.k=="switch")
-                    return ok
-                  }
-                }
-                i=-1
-              }else if(ok.k=="function"){
-                k=0
-                continue
-              }else{
-                ok.c=_bzEval._parseCode(s)
-                return ok
-              }
-            }else if(df||op){
-              s+=c
-              k=0
-              continue
-            }else{
-              k.p.ps=k.l=="{"?_parseObj(s):s?_bzEval._parseItem(s):[]
-              if(k.p.ps.constructor!=Array){
-                k.p.ps=[k.p.ps]
-              }
-            }
-            k=0
-            s=""
-            continue
-          }
-        }else if(k.l==c){
-          k.n++
-        }
-      }else if(_bzEval.bd[c]){ //([{
-        k={l:c,r:_bzEval.bd[c],n:0,p:{k:c}}
-        s=s.trim()
-        if(ok&&ok.k=="do"){
-          if(ok.c){
-            s=""
-            continue
-          }
-        }else if(ok&&["=>","function"].includes(ok.k)){
-          if(s){
-            s+=c
-          }
-          continue
-        }else if(df||op){
-        }else if(p&&p.cs){
-          if(s){
-            p.cs.push(s)
-            s=""
-          }
-          k.p.d=1
-          p.cs.push(k.p)
-          continue
-        }else if(s){
-          k.p.d=1
-          ps.push({
-            dd:s,
-            cs:[k.p]
-          })
-          s=""
-          continue
-        }else{
-          ps.push(k.p)
-          continue
-        }
-      }else if(c=="\n"){
-        if(!df||op){
-          _init()
-          continue
-        }
-      // }else if(c==";"){
-      //   if(df){
-      //     df.c=_bzEval._parseItem(s)
-      //     s=""
-      //     ps.push(..._bzEval._parseItem(v.substring(i+1)))
-      //     ps=ps.filter(x=>x)
-      //     ps.forEach(x=>x.k=ps[0].k)
-      //     return ps
-      //   }else if(op){
-      //     op.c=_bzEval._parseItem(s)
-          
-      //   }else if(ok&&(ok.k=="=>"||ok.k=="function")){
-      //     ok.c=_bzEval._parseCode(s)
-      //     ps.push(ok)
-      //     ps.push(..._bzEval._parseItem(v.substring(i+1)))
-      //     return ps
-      //   }
-      //   _init()
-      //   continue
-      }else if(c==","){
-        if(df){
-          df.c=_bzEval._parseItem(s)
-          _parsePartItem(v.substring(i+1),ps)
-          ps=ps.filter(x=>x)
-          ps.forEach(x=>x.k=ps[0].k)
-          return ps
-        }else if(op){
-          op.c=_bzEval._parseItem(s)
-          _parsePartItem(v.substring(i+1),ps)
-          return ps
-        }else if(ok&&(ok.k=="=>"||ok.k=="function")){
-          ok.c=_bzEval._parseCode(s)
-          ps.push(ok)
-          _parsePartItem(v.substring(i+1),ps)
-          return ps
-        }else if(!s.trim()){
-          if(v.substring(0,i).trim().endsWith(",")){
-            ps.push([])
-          }
-          _parsePartItem(v.substring(i+1),ps)
-          return ps
-        }else{
-          s=`(${s})`
-          p=_bzEval._parseItem(s)
-          if(p.constructor==Array&&!ps.length){
-            ps=p
-          }else{
-            ps.push(p)
-            ps=[ps]
-          }
-          v=v.substring(i+1)
-          while(1){
-            let vv=_bzEval._findKeyOuterBlock(v,",")
-            if(vv){
-              ps.push(_bzEval._parseItem(`(${vv.p})`)[0])
-              v=vv.e
-            }else{
-              ps.push(_bzEval._parseItem(`(${v})`)[0])
-              return ps
-            }
-          }
-        }
-      }else if(df||ok||op){
-      }else if(_bzEval._isSign(c)){
-        if(df||op){
-          s+=c
-          continue
-        }
-        _init()
-        p=ps[ps.length-1]
-        if(!p||p.constructor!=String){
-          ps.push(c)
-        }else if("~!==+-*/<>&|".includes(p)){
-          p+=c
-          if(["--","++","==","===","!=","!==","+=","-=","*=","/=","&&","||",">=","<=",">>","<<","^=","&=","|=","!!","%="].includes(p)){
-            ps[ps.length-1]=p
-          }else{
-            ps.push(c)
-          }
-        }else{
-          ps.push(c)
-        }
-        p=ps[ps.length-1]
-        if(v[i+1]!="="&&["=","+=","-=","/=","*=","^=","%=","&=","|=","&&=","||="].includes(p)){
-          ps.pop()
-          df={
-            k:p,
-            n:ps.pop()
-          }
-          ps.push(df)
-        }
-        continue
-      }
-      s+=c
-    }
-    _init()
-    if(pps.length){
-      if(!pps.includes(ps)){
-        pps.push(ps)
-      }
-      return pps
-    }
-    if(!ps.length&&ok){
-      return ok
-    }
-    return ps
-
-    function _parsePartItem(v,ps){
-      p=_bzEval._parseItem(v)
-      if(!p||p.constructor!=Array){
-        p=[p]
-      }
-      ps.push(...p)
-    }
-
-    function _init(){
-      s=s.trim()
-      if(s){
-        if(ok&&ok.k=="do"){
-          ok.c=_bzEval._parseCode(s)
-        }else if(ok&&ok.k=="else"){
-          if(!ok.c){
-            ok.c=_bzEval._parseItem(s)
-            s=""
-          }
-        }else if(ok&&(ok.k=="=>"||ok.k=="function")){
-          ok.c=_bzEval._parseCode(s)
-          ps.push(ok)
-        }else if(df){
-          df.c=_bzEval._parseItem(s)
-        }else if(op){
-          op.c=_bzEval._parseItem(s)
-        }else if(s.match(/^(delete|typeof)\s/)||s.match(/^\.\.\./)){
-          ps.push(_bzEval._parseItem(s))
-        }else if(s.match(/^\./)){
-          if(ps.length&&ps[ps.length-1].ps){
-            ps[ps.length-1].ps.push(s)
-          }else{
-            ps.push(s)
-          }
-        }else{
-          ps.push(s)
-        }
-        s=""
-      }
-    }
-
-    function _parseObj(o){
-      let d={},k,s="",b,ks=[],l;
-      o=o.trim()
-      if(!o){
-        return d
-      }
-      for(let i=0;i<o.length;i++){
-        let c=o[i]
-        if(b){
-        }else if(c=="\\"){
-          b=!b
-          continue
-        }else if(!k){
-          if(!ks.length&&c==":"){
-            if(s=="null"){
-              k=[null]
-            }else if(s=="undefined"){
-              k=[undefined]
-            }else if(s=="false"){
-              k=[false]
-            }else if(s=="true"){
-              k=[true]
-            }else{
-              s=s.trim().replace(/^['"]|['"]$/g,"")
-              k=[s]
-            }
-            s=""
-            continue
-          }
-        }else if(!s&&c.match(/\s/)){
-          continue
-        }else if(c==ks[0]){
-          ks.shift()
-        }else if("\"'`".includes(ks[0])){
-        }else if("({['\"`".includes(c)){
-          ks.unshift(_bzEval.bd[c])
-        }else if(c==","&&!ks.length){
-          d[k[0]]=_bzEval._parseItem(s)
-          k=""
-          s=""
-          continue
-        }
-        s+=c
-      }
-      if(s){
-        d[k[0]]=_bzEval._parseItem(s)
-      }
-      return d
-    }
-  },
-  _parseLine:function(v){
-    let s="",ps=[],b,k,kk,_endExpress=[],_comment,_inDo,_oneLine=[];
-    v=v.trim()
-
-    for(let i=0;i<v.length;i++){
-      let c=v[i]
-
-      if(_comment=="/"+"/"){
-        if(c=="\n"){
-          _comment=0
-        }else{
-          continue
-        }
-      }else if(_comment=="/"+"*"){
-        if(c=="/"&&v[i-1]=="*"){
-          _comment=0
-        }
-        continue
-      }
-      if(!s&&c.match(/\s/)){
-        continue
-      }else if(c=="\\"){
-        b=!b
-      }else if(b){
-        b=0
-      }else if(kk){
-        if(kk==c){
-          kk=0
-        }
-      }else if("`'\"".includes(c)){
-        kk=c
-      }else if(k=="/"&&c=="/"){
-        k=0
-      }else if(!k&&c=="/"&&s.trim().match(/[\(\[\=\?\:]$/)){
-        k="/"
-      }else if(c==" "&&("+-*/([{%!\?\:".includes(v[i+1])||s.match(/([\s\(\{\[\+\-\*\?\:\/\%\&\|\^\~])$/))){
-        continue
-      }else if((c=="/"||c=="*")&&s.match(/[^\\]\/$/)){
-        _comment="/"+c
-        s=s.replace(/[\/]$/,"")
-        continue
-      }else if(k){
-        if(k.r==c){
-          if(k.n){
-            k.n--
-          }else{
-            if(_endExpress[0]&&s.includes(_endExpress[0])&&s.substring(_endExpress[0].length).trim()[0]!="{"){
-            }else if(k.l=="{"){
-              if(s.match(/^(for|if|while|switch|function|else|do|try)[\s\(\{]/)){
-                s+=c
-                if(!s.match(/^(do|try)/)){
-                  _init()
-                }
-                k=0
-                continue
-              }
-            }else if(k.l=="("&&s.match(/^(if|for|while|switch|function|else if)[\s|\(]/)){
-              _endExpress.unshift(s+")")
-              let vv=v.substring(i+1).trim();
-              if(vv.match(/^(for|if|while|do|try)(\s|\{|\(|$)/)){
-                v=vv
-                i=-1
-                _oneLine.push(_endExpress[0])
-                _endExpress=[]
-                s=""
-                continue
-              }
-            }
-            k=0
-          }
-        }else if(k.l==c){
-          k.n++
-        }else if(c.match(/\s/)){
-          let vr=v.substring(i+1).trim(),
-              vl=v.substring(0,i)
-          if(_uselessSpace(vr,vl,c)){
-            continue
-          }
-        }
-      }else if(c=="\n"){
-        if((_endExpress[0]||"").replace(/ /g,"")==(s||"").replace(/ /g,"")){
-          continue
-        }
-        s=s.trim()
-        if(s.match(/^do([\s\{]|$)/)&&!_inDo){
-          if(!s.match(/^do\s*\{.+while.+\)/s)){
-            s+=c
-            _inDo=1
-          }else{
-            _init()
-          }
-          continue
-        }
-
-
-        let vr=v.substring(i+1).trim(),
-            vl=v.substring(0,i)
-        if(_uselessSpace(vr,vl,c)){
-          continue
-        }
-        if(_inDo==1){
-          if(!vr.match(/^while(\s|\()/)){
-            _inDo=0
-            _init()
-          }else{
-            s+=c
-          }
-          continue
-        }
-        if(vl.endsWith("}")&&vr.match(/^(catch|while)(\s|\()/)){
-          continue
-        }else if(s.trim()=="else"){
-          s="else "
-          continue
-        }
-        _init()
-        continue
-      }else if(c==";"){
-        let vr=v.substring(i+1).trim()
-        if((!_inDo||!vr.match(/^while(\s|\()/))&&_endExpress[0]!=s){
-          ps.push(s.trim())
-          s=""
-          _init()
-          continue
-        }
-      }else if(_bzEval.bd[c]){
-        s=s.trim()
-        k={l:c,r:_bzEval.bd[c],n:0}
-      }
-      s+=c
-    }
-    _init()
-    return ps
-
-    function _uselessSpace(vr,vl,c){
-      if(vl.match(/([^-]-|[^+]\+|[^\/]\/|[\*=~!&\|\^%><?:,;\.\(\[\{])$/)||vr.match(/^(-[^-]|\!\=|\+[^+]|\/[^\/\*]|[\*%\^&|=><?:,;\.\(\)\[\]\}])/)||vl.match(/([\+][\+][\+]|---)$/)){
-        return 1
-      }else if(vr[0]=="{"){
-        return c!="\n"
-      }
-    }
-
-    function _init(){
-      s=s.trim()
-      if(_oneLine.length){
-        s=_oneLine.join(" ")+s
-        _oneLine=[]
-      }
-      if(s){
-        ps.push(s)
-        s=""
-      }
-      _endExpress.shift()
-      _inDo=0
-    }
-  },
-  /**/
-  _chkParameter:function(){
-    let vs=[]
-    for(let i=0;i<arguments.length;i++){
-      vs.push(arguments[i])
-    }
-    return vs
-  },
-  _testCode:function(_simpleExe,_repeat){
-    let vs=[
-      {c:`let a=/[a-z]+\\/[0-9]+/ig,b="89a/999B/3d2c/4";b.match(a)`,r:['a/999', 'B/3', 'c/4']},
-      {c:"!1+2*3+(~4+5)/3*6+7%2+3^4+!!2<<2+3>>2",r:34},
-      {c:"1<2*3&&(4+5)/3*6+7%2>3^4+2<<2+3>>2",r:49},
-      {c:"let a=1;!a",r:false},
-      {c:"let a=1;~a+5",r:3},
-      {c:"_IDE._data._curTest._data.name",r:"demo"},
-      {c:"_IDE._data._curTest._data.name+(9+6)*10+'px'",r:"demo150px"},
-      {c:"_IDE._data._curTest._data.name+(9+6)*10+1",r:"demo1501"},
-      {c:"[1,2,3,null,undefined,0]",r:[1,2,3,null,undefined,0]},
-      {c:"({a:2}).a",r:2},
-      {c:"[1,2,3][0]",r:1},
-      {c:"_Util._replaceAll('lws','w','ok')",r:"loks"},
-      {c:"_Util._replaceAll('lws','w','ok')[2]",r:"k"},
-      {c:"_ideTestManagement._getStdDescription(_IDE._data._curTest)",r:"[m5.t4] demo"},
-      {c:"_ideTestManagement._getStdDescription(_IDE._data._curTest)+' '+_ideTestManagement._getStdDescription(_IDE._data._curTest)",r:"[m5.t4] demo [m5.t4] demo"},
-      {c:"_ideTestManagement._getStdDescription(_IDE._data._curTest).length+10*10",r:112},
-      {c:"_bzEval._chkParameter(0)",r:[0]},
-      {c:"_bzEval._chkParameter(undefined)",r:[undefined]},
-      {c:"_bzEval._chkParameter()",r:[]},
-      {c:"_bzEval._chkParameter(1,2,3)",r:[1,2,3]},
-      {c:"_bzEval._chkParameter({})",r:[{}]},
-      {c:"[]",r:[]},
-      {c:"[0]",r:[0]},
-      {c:"[undefined]",r:[undefined]},
-      {c:"0",r:0},
-      {c:"0.1",r:0.1},
-      {c:"''",r:""},
-      {c:"undefined",r:undefined},
-      {c:"null",r:null},
-      {c:"true",r:true},
-      {c:"false",r:false},
-      {c:`let a=true
-        if(a){
-          a=11
-        }
-      `,r:11},
-      {c:"(1,2,3)",r:3},
-      {c:"let a=3;a*_IDE._data._curTest._data.actions.length;",r:6},
-      {c:`let a="lws",b="w",c=3;_Util._replaceAll(a,b,c)+5`,r:"l3s5"},
-      {c:`let a={a:3},b=3,c=5;b=3+delete a.a+5,b`,r:9},
-      {c:`let a={a:3},b=3,c=5;b=3+typeof a.a+5,b`,r:"3number5"},
-      {
-        c:`let a=1
-        if(a){
-          a=3
-        }`,
-        r:3
-      },
-      {
-        c:`let a=1
-        for (let i = 0; i < 10; i++) {
-            a+=1
-        }`,
-        r:11
-      },
-      {
-        c:`let a=1
-        for (let i = 0; i < 10; i++) 
-            a+=1
-        `,
-        r:11
-      },
-      {
-        c:`let a=1,i=0
-        do{
-            a+=7
-            i++
-        }while(a<100)`,
-        r:14
-      },
-      {
-        c:`let a=1
-        do
-            a+=7
-        while(a<100)`,
-        r:106
-      },
-      {
-        c:`
-        let a=2,b=3;
-        if(a){
-          let b=222
-          a+=b
-        }
-        `,
-        r:224
-      },
-      {
-        c:`
-        let a=2,b=3;
-        if(a)
-          a+=b
-        `,
-        r:5
-      },
-      {
-        c:`let a=3,b=34;
-        lws(3,a,b)+lws(3,b,a)
-        function lws(v,a,b) {
-          if(a>b){
-            a+=1
-          }else{
-            a+=b
-          }
-          return v+2+a*b
-        }
-        `,
-        r:1373
-      },
-      {
-        c:`let a=3,b=34;
-        lws(3,a,b)+lws(3,b,a)
-        function lws(v,a,b) {
-          if(a>b)
-            a+=1
-          else
-            a+=b
-          
-          return v+2+a*b
-        }
-        `,
-        r:1373
-      },
-      {
-        c:`let a=3,b=34;
-        lws(function(x){return x*10},a,b)
-        function lws(v,a,b) {
-          if(a>b){
-            a+=1
-          }else{
-            a+=b
-          }
-          v=v(a)
-          return v+2+a*b
-        }`,
-        r:1630
-      },
-      {
-        c:`let a=3,b=34;
-        lws(x=>x*10,a,b)
-        function lws(v,a,b) {
-          if(a>b){
-            a+=1
-          }else{
-            a+=b
-          }
-          v=v(a)
-          return v+2+a*b
-        }
-        `,
-        r:1630
-      },
-      {
-        c:`let a=3,b=34;
-        lws((x)=>x*10,a,b)
-        function lws(v,a,b) {
-          if(a>b){
-            a+=1
-          }else{
-            a+=b
-          }
-          v=v(a)
-          return v+2+a*b
-        }
-        `,
-        r:1630
-      },
-      {
-        c:`let a=3,b=34;
-        lws(()=>10,a,b)
-        function lws(v,a,b) {
-          if(a>b){
-            a+=1
-          }else{
-            a+=b
-          }
-          v=v(a)
-          return v+2+a*b
-        }
-        `,
-        r:1270
-      },
-      {
-        c:`let lws=function(x){return x+9};lws(3)`,
-        r:12
-      // },
-      // {
-      //   c:`let lws=${_Util._replaceAll.toString()};lws(_bzEval._testCode.toString(),"a","999")`
-      },
-      {
-        c:`b={c:33,d:334},a={a:function(){
-          return b
-        }}
-        delete a.a().c
-        b`,
-        r:{d:334}
-      },
-      {c:"let a=[1,2,3];[a][0][1]",r:2},
-      {c:"let a={a:3},b=3,c=5;b=[3+delete a.a+5,b,a];b",r:[9, 3, {}]},
-      {c:"let a={a:3},b=3,c=5;b=[3+typeof a.a+5,b,a];b",r:["3number5", 3, {a:3}]},
-      {c:`let a=function(){
-              arguments[1]+=100;
-              return [...arguments]
-          }
-          a(1,2,3)`,r:[1,102,3]
-      },
-      {c:"let a=new Date();a.getTime()>100",r:true},
-      {
-        c:`
-        let i,j=10;
-        for(i=0;i<10;i++){
-          j++
-          if(i>3){
-            if(i){
-               continue
-            }
-          }
-          j++
-        }
-        j`,
-        r:24
-      },
-      {
-        c:`
-        let i,j=10;
-        for(i=0;i<10;i++){
-          j++
-          if(i>3){
-            if(i){
-               break
-            }
-          }
-          j++
-        }
-        j`,
-        r:19
-      },
-      {
-        c:`let a=function(){
-            let msg;
-            try{
-                let a=2;
-            if(a){
-              throw new Error("lws")
-            }
-                return 1
-            }catch(ex){
-                msg=ex.message
-            }finally{
-                return msg+3
-            }
-          }
-          a()`,
-        r:"lws3"
-      },
-      {
-        c:`let a={
-          v:"lws",
-          a:function(v){
-            return v+this.v+this.b(3)
-          },
-          b:function(v){
-            return v*10
-          }
-        }
-        a.a(10)`,
-        r:"10lws30"
-      },
-      {
-        c:`[0,1,2].filter(x=>x).map(x=>x*12)`,
-        r:[12, 24]
-      },
-      {
-        c:`let lws=function(a){
-          let c;
-          switch(a){
-          case 1:c="+";break;
-          case 2:c="-";break;
-          case 3:
-          case 4:c="*";break;
-          default:c="%"
-          }
-          return eval(10+c+3)
-          };
-          ([0,1,2,3,4]).map(x=>lws(x))`,
-        r:[1, 13, 7, 30, 30]
-      },
-      {
-        c:`a=1,b=0;if(a)for(;a<10;a++)
-        b+=3
-        b`,
-        r:27
-      },
-      {
-        c:"(v=>v+1)(1)",
-        r:2
-      },
-      {
-        c:`[lws(10),lws(9),lws(2),lws(7)]
-        function lws(v) {
-            return v%2?v%3?11:21:v%5?111:112
-        }`,
-        r:[112, 21, 111, 11]
-      },
-      {
-        c:`\`lws-\${_Util._replaceAll(name,'bz','123')}\``,
-        r:"lws-123-master"
-      },
-      {
-        c:"new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(22);",
-        r:"$22.00"
-      }
-    ]
-    let t=Date.now()
-    if(!_simpleExe){
-      vs.push(
-        {
-          c:`let a={a:3,b:3}
-          debugger
-  
-          delete a.a
-          a
-          `,
-          r:{b:3}
-        },
-        {c:"{a:33,b:'lws',c:{d:\"aa\",'e':[33,334,34],f:true,g:false}}",r:{a:33,b:'lws',c:{d:"aa",'e':[33,334,34],f:true,g:false}}},
-        {c:"{a:0,b:undefined,c:null,'':1,null:2,undefined:2}",r:{a:0,b:undefined,c:null,'':1,null:2,undefined:2}}
-      )
-    }else if(_simpleExe=="bz"){
-      vs.forEach(x=>x.c=_bzEval._parseCode(x.c))
-      t=Date.now()
-    }
-    _repeat=_repeat||1
-    for(let j=0;j<_repeat;j++){
-      let v=vs.forEach(x=>{
-        try{
-          if(_simpleExe=="js"){
-            eval(x.c)
-          }else{
-            let c=JSON.stringify(_bzEval._exeCode(x.c))
-            if(!_simpleExe&&_repeat<2){
-              if(c!=JSON.stringify(x.r)){
-                console.log("Failed on:"+x.c+" ==> "+c)
-                return 1
-              }
-            }else{
-
-            }
-          }
-        }catch(ex){
-          console.log("Get Error: "+ex.message+"\n\n"+x.c)
-        }
-      })
-    }
-    console.log("Spent time: "+(Date.now()-t))
-  }
-};var $util={
+console.log("Insert $$$$$$$$$$$$$$")
+var $util={
   extractData:function(d,k){
     return _extractData._extract(d,k)
   },
@@ -1902,7 +60,7 @@ window._bzEval={
       _pos="extendTopScript"
     }
     d[_pos]=`try{${c}}catch(ex){alert(ex.message)}`
-    _bzStdComm.postToBackground({
+    bzComm.postToBackground({
       fun:"setTmpCode",
       scope:"bzUtil",
       ps:[_pos,c]
@@ -2237,7 +395,7 @@ window._bzEval={
   log:function(){
     let v=_Util._log(...arguments)
     if(window.extensionContent){
-      _bzStdComm.postToIDE({scope:"$console",fun:"output",ps:["App: "+v]});
+      bzComm.postToIDE({scope:"$console",fun:"output",ps:["App: "+v]});
       return
     }
     $console.output(v)
@@ -2249,7 +407,7 @@ window._bzEval={
     let f=(bf)=>{
       _callBack=bf
     }
-    _bzStdComm.postToBackground({
+    bzComm.postToBackground({
       scope:"bgUtil",
       fun:"getScreenshot",
       return:(v)=>{
@@ -2481,16 +639,16 @@ window._bzEval={
     if(d){
       try{
         if(d.constructor==String){
-          d=_bzEval._exe(d)
+          d=eval(d)
           _ideDataManagement._initRandomValue(d)
         }
         if(p.length>1){
           for(let i=1;i<p.length;i++){
             d=d[p[i]]
           }
-          _bzEval._exe(pp+"=d")
+          eval(pp+"=d",{},"set",pp,d)
         }else{
-          pp=_bzEval._exe(pp)
+          pp=eval(pp)
           for(var k in d){
             pp[k]=d[k]
           }
@@ -2581,7 +739,7 @@ window._bzEval={
         r=_JSHandler._prepareData(r)
         return _return(r)
       }else if(_Util._hasCode(r)){
-        r=_bzEval._exe(r)
+        r=eval(r)
         return _return(r)
       }
       
@@ -4133,7 +2291,7 @@ function _extendJQuery(){
       if(a && a.value){
         try{
           if(_Util._isRegexData(v2)){
-            v2=_bzEval._exe(v2)
+            v2=eval(v2)
             return a.value.match(v2)
           }
           if(v2.endsWith("\" i")||v2.endsWith("\i i")){
@@ -4310,7 +2468,7 @@ function _extendJQuery(){
     if(!_Util._isRegexData(m)){
       m="/"+m+"/"
     }
-    m=_bzEval._exe(m)
+    m=eval(m)
     return (a.innerText||"").trim().match(m)
     
   }
@@ -4562,7 +2720,7 @@ function _extendJQuery(){
       v2=_Util._toTrimSign(v2.toLowerCase());
       v2=v2.replace(/\s+/," ")
     }else{
-      _inRegex=_bzEval._exe(v2)
+      _inRegex=eval(v2)
     }
     if(a.nodeType!=1){
       return
@@ -5011,7 +3169,7 @@ function _extendJQuery(){
     let t=jQuery(a).text().trim().toLowerCase(),_match
     m=m[3].trim().toLowerCase()
     if(_Util._isRegexData(m)){
-      m=_bzEval._exe(m)
+      m=eval(m)
       return !!t.match(m)
     }
     return t==m
@@ -5204,7 +3362,7 @@ function _extendJQuery(){
   jQuery.expr[":"].value=function(a,i,m){
     let v=m[3],vv=(a.value||"").toString()
     if(_Util._isRegexData(v)){
-      v=_bzEval._exe(v)
+      v=eval(v)
       return vv.match(v)
     }
     return v==vv
@@ -5213,7 +3371,7 @@ function _extendJQuery(){
   jQuery.expr[":"].val=function(a,i,m){
     let v=m[3],vv=(a.value||"").toString()
     if(_Util._isRegexData(v)){
-      v=_bzEval._exe(v)
+      v=eval(v)
       return vv.match(v)
     }
     return vv.includes(v)
@@ -5246,7 +3404,8 @@ function _extendJQuery(){
   }
 }
 
-_extendJQuery();var _cssHandler={
+_extendJQuery();
+var _cssHandler={
   _cssMap:{},
   _maxTextLength:100,
   _findElementKey:function(e){
@@ -5552,683 +3711,6 @@ _extendJQuery();var _cssHandler={
     }
     return o;
   },
-  /**/
-  _newCustomize:function(_type){
-    BZ._data._uiSwitch.cc=_cssHandler._getInitCustomizeSetting(_type)
-    _Util._confirmMessage({
-      _tag:"div",
-      _attr:{"class":"input-group"},
-      _items:[
-        {
-          _tag:"label",
-          _attr:{"class":"input-group-addon"},
-          _text:"_bzMessage._common._name"
-        },
-        {
-          _tag:"input",
-          _attr:{"class":"form-control bz-key-input"},
-          _dataModel:"BZ._data._uiSwitch.cc.name"
-        }
-      ]
-    },[{
-      _title:_bzMessage._common._ok,
-      _click:function(c){
-        let cc=BZ._data._uiSwitch.cc,
-            _list=_IDE._data._setting.objectLib.component.find(v=>{return v.key==_type}).items
-        
-        if(!cc.name){
-          return alert(_bzMessage._system._error._requiredField,_bzMessage._common._name)
-        }
-        _list.push(cc)
-        _ideVersionManagement._autoSave(function(){
-          cc=_list.find(v=>{
-            return v.name==cc.name
-          })
-          if(cc){
-            BZ._setSharedData({"_IDE._data._curVersion.setting.objectLib.component":_IDE._data._curVersion.setting.objectLib.component})
-            _cssHandler._openCustomize(cc,_type,_list)
-          }
-        })
-        c._ctrl._close()
-      }
-    }])
-  },
-  _openCustomize:function(_curData,_type,_items){
-    if(!_Util._isBZTWOpened()){
-      BZ._launchCurEnvUrl(0)
-    }
-    BZ._data._uiSwitch.cc=_curData
-
-    BZ._data._uiSwitch._showDefCssSource=0
-    let _setting=_cssHandler._getComponeDefinitionSetting(_type);
-    
-    _Util._confirmMessage(
-      {
-        _tag:"div",
-        _update:function(){
-          _ideVersionManagement._autoSave(function(){
-            BZ._setSharedData({"_IDE._data._curVersion.setting.objectLib.component":_IDE._data._curVersion.setting.objectLib.component})
-          })
-        },
-        _items:[
-          {
-            _tag:"label",
-            _attr:{style:"position: absolute;right: 20px;margin-top: -40px;"},
-            _items:[
-              {
-                _tag:"input",
-                _attr:{type:"checkbox"},
-                _noUpdate:1,
-                _dataModel:"BZ._data._uiSwitch._showDefCssSource"
-              },
-              {_text:"_bzMessage._setting._objectLib[BZ._data._uiSwitch._showDefCssSource?'_showSource':'_showDefUI']"}
-            ]
-          },
-          {
-            _if:"BZ._data._uiSwitch._showDefCssSource",
-            _tag:"textarea",
-            _noUpdate:1,
-            _attr:{
-              "class":"bz-editor",
-              spellcheck:false,
-              style:function(){
-                return "height:"+$(".bz-modal-body pre")[0].getBoundingClientRect().height+"px"
-              },
-              onfocus:"this.select()"
-            },
-            _dataModel:"BZ._data._uiSwitch.cc",
-            _formatSet:function(v){
-              try{
-                return JSON.parse(v)
-              }catch(e){
-                alert(_bzMessage._system._error._dataFormat)
-              }
-            },
-            _formatGet:function(v){
-              return JSON.stringify(v,0,2)
-            }
-          },
-          {
-            _if:"!BZ._data._uiSwitch._showDefCssSource",
-            _tag:"div",
-            _items:[
-              //Name
-              {
-                _tag:"div",_attr:{"class":"input-group"},
-                _items:[
-                  {
-                    _tag:"div",_attr:{"class":"input-group-addon"},
-                    _items:[
-                      {
-                        _tag:"label",
-                        _required:1,
-                        _text:"_bzMessage._common._name"
-                      }
-                    ]
-                  },
-                  {
-                    _tag:"input",_attr:{"class":"form-control",disabled:_curData},
-                    _required:1,
-                    _dataModel:"BZ._data._uiSwitch.cc.name"
-                  }
-                ]
-              },
-              //Toggle & Panel
-              {
-                _tag:"div",
-                _items:[
-                  {
-                    _if:"['_toggle'].includes(_data._item._text)",
-                    _tag:"fieldset",
-                    _items:[
-                      {
-                        _tag:"legend",
-                        _required:"_data._item._required",
-                        _text:"_bzMessage._setting._objectLib[_data._item._text]"
-                      },
-                      {
-                        _tag:"div",_attr:{"class":"input-group"},
-                        _items:[
-                          {
-                            _tag:"div",_attr:{"class":"input-group-addon"},
-                            _items:[
-                              {
-                                _tag:"label",
-                                _required:"_data._item._required",
-                                _text:"_bzMessage._setting._objectLib._path"
-                              }
-                            ]
-                          },
-                          {
-                            _tag:"input",_attr:{"class":"form-control"},
-                            _required:"_data._item._required",
-                            _dataModel:"BZ._data._uiSwitch.cc[_data._item._value]",
-                            _jqext:{
-                              focus:function(){
-                                var c=BZ._data._uiSwitch.cc
-                                let v=_Util._clone(c[this._data._item._value])
-                                v.forEach((w,i)=>{
-                                  v[i]=w.replace("$label",c.$label).replace("$header",c.$header)
-                                })
-                                
-                                _bzDomPicker._flashTmpCover([c.tmpTW].concat(v).concat(0))
-                              }
-                            },
-                            _formatGet:function(d){
-                              return d?d.join(" "):""
-                            },
-                            _formatSet:function(d){
-                              return _cssHandler._parseElementPath(d)
-                            }
-                          },
-                          {
-                            _tag:"div",_attr:{"class":"input-group-btn"},
-                            _items:[
-                              {
-                                _tag:"button",
-                                _attr:{
-                                  "class":"btn btn-icon bz-small-btn bz-dompicker"
-                                },
-                                _jqext:{
-                                  click:function(){
-                                    var c=BZ._data._uiSwitch.cc,_this=this
-                                    
-                                    var _this=this
-                                    _bzDomPicker._pickElement({_path:0,_simple:1},function(p){
-                                      _bzDomPicker._pickElement({_path:p},function(p){
-                                        c.tmpTW=p.shift()
-                                        p.pop()
-                                        
-                                        p.reverse()
-                                        let _header,_label
-                                        p.forEach((v,i)=>{
-                                          if(!c.$label){
-                                            c.$label=_descAnalysis._retrieveTextForElementPathItem(v)
-                                            if(c.$label){
-                                              p[i]=v.replace(c.$label,"$label")
-                                            }
-                                          }else{
-                                            c.$header=_descAnalysis._retrieveTextForElementPathItem(v)
-                                            if(c.$header){
-                                              p[i]=v.replace(c.$header,"$header")
-                                            }
-                                          }
-                                        })
-                                        c.toggle=p.reverse()
-                                      })
-                                    })
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      //Header, Label
-                      {
-                        _tag:"div",
-                        _attr:{"class":"input-group"},
-                        _items:[
-                          {
-                            _tag:"label",
-                            _attr:{"class":"input-group-addon"},
-                            _text:"_bzMessage._root._attributeMap._example"
-                          },
-                          {
-                            _tag:"label",
-                            _attr:{"class":"input-group-addon"},
-                            _text:"$header"
-                          },
-                          {
-                            _tag:"input",
-                            _attr:{"class":"form-control"},
-                            _dataModel:"BZ._data._uiSwitch.cc.$header",
-                          },
-                          {
-                            _tag:"label",
-                            _attr:{"class":"input-group-addon"},
-                            _text:"$label"
-                          },
-                          {
-                            _tag:"input",
-                            _attr:{"class":"form-control"},
-                            _dataModel:"BZ._data._uiSwitch.cc.$label",
-                          }
-                        ]
-                      },
-                    ]
-                  },
-                  {
-                    _if:"!['_toggle'].includes(_data._item._text)",
-                    _tag:"div",
-                    _items:[
-                      {
-                        _tag:"div",_attr:{"class":"input-group"},
-                        _items:[
-                          {
-                            _tag:"div",_attr:{"class":"input-group-addon"},
-                            _items:[
-                              {
-                                _tag:"label",
-                                _required:"_data._item._required",
-                                _text:"_bzMessage._setting._objectLib[_data._item._text]"
-                              }
-                            ]
-                          },
-                          {
-                            _tag:"input",_attr:{"class":"form-control"},
-                            _required:"_data._item._required",
-                            _dataModel:"BZ._data._uiSwitch.cc[_data._item._value]",
-                            _jqext:{
-                              focus:function(){
-                                var c=BZ._data._uiSwitch.cc
-                                
-                                _bzDomPicker._flashTmpCover([c.tmpTW].concat(c[this._data._item._value]).concat(0))
-                              }
-                            },
-                            _formatGet:function(d){
-                              return d?d.join(" "):""
-                            },
-                            _formatSet:function(d){
-                              return _cssHandler._parseElementPath(d)
-                            }
-                          },
-                          {
-                            _tag:"div",_attr:{"class":"input-group-btn"},
-                            _items:[
-                              {
-                                _tag:"button",
-                                _attr:{
-                                  "class":"btn btn-icon bz-small-btn bz-dompicker"
-                                },
-                                _jqext:{
-                                  click:function(){
-                                    var c=BZ._data._uiSwitch.cc,_this=this
-                                    
-                                    if(c.toggle&&["dropdownInput","menu"].includes(_type)&&this._data._item._value=="panel"){
-                                      _triggerToggle(c)
-                                    }
-                                    
-                                    var _this=this
-                                    _bzDomPicker._pickElement({_noText:1,_path:0,_simple:1},function(p){
-                                      _bzDomPicker._pickElement({_path:p,_noText:1},function(p){
-                                        c.tmpTW=p.shift()
-                                        p.pop()
-                                        
-                                        c[_this._data._item._value]=p
-                                        if(c.panel){
-                                          _cssHandler._setCurPanel(c.panel.join(" "))
-                                          _ideTask._triggerTmpClickAction(["BZ.TW.document","BODY",0]);
-                                        }
-                                      })
-                                    })
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ],
-                _dataRepeat:_setting
-              },
-              //Value Format & Record/Stop & Steps
-              {
-                _if:function(d){
-                  return ['dropdownInput','rangeSlider'].includes(_type)
-                },
-                _tag:"div",
-                _items:[
-                  //Value Format
-                  {
-                    _tag:"label",_attr:{"class":"col-xs-12"},
-                    _items:[
-                      {
-                        _text:"_bzMessage._setting._objectLib._valueFormat"
-                      },
-                      {
-                        _tag:"input",
-                        _attr:{
-                          "class":"form-control",
-                          placeholder:"_bzMessage._setting._objectLib._valueFormatDesc",
-                          style:"font-family: courier;"
-                        },
-                        _dataModel:"BZ._data._uiSwitch.cc.format"
-                      }
-                    ]
-                  },
-                  //extract data/record
-                  {
-                    _tag:"div",_attr:{"class":"col-xs-12"},
-                    _items:[
-                      {
-                        _if:"!BZ._isRecording()",
-                        _tag:"button",
-                        _attr:{
-                          "class":"btn btn-secondary bz-record btn-icon-text"
-                        },
-                        _jqext:{
-                          click:function(){
-                            var c=BZ._data._uiSwitch.cc;
-                            if(!c.panel){
-                              return alert(_bzMessage._setting._objectLib._missPanel)
-                            }else if(!c.format){
-                              return alert(_bzMessage._setting._objectLib._missFormat)
-                            }else if(c.toggle&&c.toggle!=c.panel){
-                              return _triggerToggle(c,function(){
-                                _doIt()
-                              })
-                            }
-                            _doIt()
-                            function _doIt(){
-                              _ideRecorder._start(function(p){
-                                let cc=BZ._data._uiSwitch.cc
-                                cc.tmpTW=p.element.shift();
-                                while(1){
-                                  let v=p.element.shift();
-                                  if(!cc.panel.includes(v)){
-                                    p.element.unshift(v)
-                                    break
-                                  }
-                                }
-                                delete p._tmpUrl
-                                var f=c.format
-                                if(f){
-                                  if(f!="$1"){
-                                    f=_cssHandler._getValiableParameterBySteps(f,c.steps)
-                                  }
-                                  if(f){
-                                    if(p.event.type=="change"){
-                                      if(f){
-                                        p.event.value=f
-                                      }
-                                    }else{
-                                      for(var i=p.element.length-1;i>=0;i--){
-                                        var v=p.element[i]
-                                        var vv=_descAnalysis._retrieveTextForElementPathItem(v)
-                                        if(vv){
-                                          v=v.replace(vv,f)
-                                          p.element[i]=v
-                                          break
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-                                c.steps.push(p)
-                                
-                                setTimeout("_Util._resizeModelWindow()",1)
-                              })
-                            }
-                          }
-                        },
-                        _text:"_bzMessage._setting._objectLib._recordSteps"
-                      },
-                      {
-                        _if:function(){
-                          return BZ._isRecording()
-                        },
-                        _tag:"button",
-                        _attr:{
-                          "class":"btn btn-secondary bz-stop btn-icon-text"
-                        },
-                        _jqext:{
-                          click:function(){
-                            _ideRecorder._end()
-                            _ideVersionManagement._autoSave(function(){
-                              BZ._setSharedData({"_IDE._data._curVersion.setting.objectLib.component":_IDE._data._curVersion.setting.objectLib.component})
-                            })
-                          }
-                        },
-                        _text:"_bzMessage._method._stop"
-                      },
-                      {
-                        _tag:"button",
-                        _attr:{
-                          "class":"btn btn-icon bz-small-btn bz-extract pull-right"
-                        },
-                        _jqext:{
-                          click:function(){
-                            var c=BZ._data._uiSwitch.cc;
-                            if(!c.panel){
-                              return alert(_bzMessage._setting._objectLib._missPanel)
-                            }else if(c.toggle&&c.toggle!=c.panel){
-                              return _ideTask._triggerTmpClickAction([c.tmpTW,...BZ._data._uiSwitch.cc.toggle,0],function(){
-                                setTimeout(function(){
-                                  _doIt()
-                                },100)
-                              });
-                            }
-                            var _this=this
-                            _bzDomPicker._pickElement(0,function(p){
-                              _bzDomPicker._pickElement(p,function(p){
-                                c.tmpTW=p.shift()
-                                BZ._data._uiSwitch.cc.steps.push({element:p,type:_ideActionData._type._extractData,method:0})
-                                
-                                setTimeout("_Util._resizeModelWindow()",1)
-                              })
-                            })
-                          }
-                        }
-                      }, 
-                    ]
-                  },
-                  //Steps
-                  {
-                    _tag:"div",_attr:{"class":"bz-steps"},
-                    _items:[
-                      {
-                        _tag:"div",
-                        _attr:{"class":"col-xs-12 input-group",style:"margin:0"},
-                        _items:[
-                          {
-                            _tag:"div",
-                            _attr:{"class":function(d){
-                              if(d._item.type==_ideActionData._type._extractData||(d._item.type==_ideActionData._type._triggerEvent&&d._item.event.type=="change")){
-                                return "col-xs-9"
-                              }
-                              return "col-xs-12"
-                            },style:"margin:0"},
-                            _items:[
-                              {
-                                _tag:"input",_attr:{"class":"form-control"},
-                                _dataModel:"_data._item",
-                                _formatSet:function(v,d){
-                                  d._item.element=_cssHandler._parseElementPath(v)
-                                  return d._item
-                                },
-                                _formatGet:function(d){
-                                  return d.element.join(" ")
-                                },
-                                _jqext:{
-                                  focus:function(){
-                                    var c=BZ._data._uiSwitch.cc
-                                    var v=_Util._clone(this._data._item.element)
-                                    v.forEach(function(vv,i){
-                                      if(vv.constructor==String){
-                                        v[i]=v[i].replace(/\:[a-z]+[(]\$[0-9]+[)]/i,"")
-                                      }
-                                    })
-                                    v.unshift(c.panel.join(" "))
-                                    v.unshift(c.tmpTW)
-                                    _bzDomPicker._flashTmpCover(v)
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          {
-                            _if:"(_data._item.type==_ideActionData._type._triggerEvent&&_data._item.event.type=='change')||_data._item.type==_ideActionData._type._extractData",
-                            _tag:"div",_attr:{"class":"col-xs-3",style:"margin:0"},
-                            _items:[
-                              {
-                                _tag:"input",_attr:{"class":"form-control"},
-                                _dataModel:"_data._item.event.value"
-                              }
-                            ]
-                          },
-                          {
-                            _tag:"div",_attr:{"class":"input-group-btn"},
-                            _items:[
-                              {
-                                _tag:"button",
-                                _attr:{
-                                  "class":"btn btn-icon bz-small-btn bz-edit"
-                                },
-                                _jqext:{
-                                  click:function(){
-                                    var v=_Util._clone(this._data._item.element)
-
-                                    v.unshift(BZ._data._uiSwitch.cc.panel.join(" "))
-                                    v.unshift(BZ._data._uiSwitch.cc.tmpTW)
-                                    var _this=this
-                                    _bzDomPicker._editPath(v,function(p){
-                                      p.shift();
-                                      let vs=_Util._clone(BZ._data._uiSwitch.cc.panel)
-                                      while(1){
-                                        let v=p.shift();
-                                        let vv=vs.shift()
-                                        if(vv!=v){
-                                          p.unshift(v)
-                                          break
-                                        }
-                                      }
-                                      _this._data._item.element=p
-                                    })
-                                  }
-                                }
-                              },
-                              {
-                                _tag:"button",
-                                _attr:{
-                                  "class":"btn btn-icon bz-small-btn bz-delete"
-                                },
-                                _jqext:{
-                                  click:function(){
-                                    BZ._data._uiSwitch.cc.steps.splice(this._data._idx,1)
-                                    setTimeout("_Util._resizeModelWindow()",1)
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        ],
-                        _dataRepeat:"BZ._data._uiSwitch.cc.steps"
-                      }
-                    ]
-                  },
-                  //Try
-                  {
-                    _if:"BZ._data._uiSwitch.cc.steps.length",
-                    _tag:"label",_attr:{"class":"col-xs-12"},
-                    _items:[
-                      {
-                        _text:"_bzMessage._method._tryIt"
-                      },
-                      {
-                        _tag:"div",
-                        _attr:{"class":"input-group",style:"margin:0"},
-                        _items:[
-                          {
-                            _tag:"input",
-                            _attr:{
-                              "class":"form-control",
-                              placeholder:"_bzMessage._common._parameter"
-                            },
-                            _dataModel:"BZ._data._uiSwitch.cc.tryValue"
-                          },
-                          {
-                            _tag:"div",_attr:{"class":"input-group-btn"},
-                            _items:[
-                              {
-                                _tag:"button",
-                                _attr:{
-                                  "class":"btn btn-icon bz-small-btn bz-play"
-                                },
-                                _jqext:{
-                                  click:function(){
-                                    var c=BZ._data._uiSwitch.cc,ss=_IDE._data._curVersion.setting.customizeInputs,bk
-                                    if(!_curData){
-                                      if(_cssHandler._isDuplicateCssKey(c.name)){
-                                        return alert(_bzMessage._system._error._duplicateName,c.name)
-                                      }
-                                      ss.push(c)
-                                    }else{
-                                      bk=_Util._clone(_curData);
-                                      $.extend(_curData,c)
-                                    }
-                                    
-                                    var p=[c.tmpTW].concat(_getTogglePath(c))
-                                    p.push(0)
-                                    _ideTask._start({
-                                      type:1,
-                                      element:p,
-                                      event:{type:"change",value:BZ._data._uiSwitch.cc.tryValue},
-                                      _actionIdx:"_tmp"
-                                    },function(){
-                                      if(!_curData){
-                                        ss.pop()
-                                      }else{
-                                        Object.assign(_curData,bk)
-                                      }
-                                    })
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      [
-        {
-          _title:_bzMessage._common._ok,
-          _click:function(c){
-            var cc=BZ._data._uiSwitch.cc,k
-            _setting.forEach((v)=>{
-              if(!cc[v._value]&&v._required&&!k){
-                k=_bzMessage._setting._objectLib[v._text]
-                alert(_bzMessage._system._error._requiredField,k)
-              }
-            })
-            
-            for(var k in BZ._data._uiSwitch.cc){
-              _curData[k]=BZ._data._uiSwitch.cc[k]
-            } 
-
-            setTimeout(function(){_ideVersionManagement._autoSave()},1)
-            if(BZ._isRecording()){
-              _ideRecorder._end()
-            }
-            _cssHandler._setCurPanel()
-            c._ctrl._close()
-          }
-        },
-      ],_Util._formatMessage(_bzMessage._setting._objectLib._identifyCss,[_bzMessage._setting._objectLib._options.component[_type]]),500,0,function(){_cssHandler._setCurPanel()}
-    )
-    function _getTogglePath(c){
-      let _toggle=_Util._clone(c.toggle)
-      _toggle.forEach((v,i)=>{
-        _toggle[i]=v.replace("$header",c.$header).replace("$label",c.$label)
-      })
-      return _toggle
-    }
-    function _triggerToggle(c,_fun){
-      _ideTask._triggerTmpClickAction(["BZ.TW.document",..._getTogglePath(c),0]);
-      setTimeout(function(){
-        _fun&&_fun()
-      },100)
-    }
-  },
   _lookLikeInput:function(l,i){
     return !_Util._isHidden(i)&&(_Util._isInputObj(i)||(_isInputSize(i)&&_isInputPos(l,i)))
     function _isInputSize(o){
@@ -6255,10 +3737,10 @@ _extendJQuery();var _cssHandler={
     let ws=[],_fun;
     if(_Util._isRegexData(v)){
       _fun=_match
-      v=_bzEval._exe(v+`i`)
+      v=eval(v+`i`)
     }else if(v.includes("|")){
       _fun=_match
-      v=_bzEval._exe(`/${v}/i`)
+      v=eval(`/${v}/i`)
     }else{
       v=v.toLowerCase()
     }
@@ -7645,7 +5127,7 @@ _extendJQuery();var _cssHandler={
         s=`/${m._back}|${m._previous}|back|previous/i`
     }
     
-    return w.match(_bzEval._exe(s))
+    return w.match(eval(s))
   },
   _findForm:function(_root){
     _root=_root||document.body
@@ -8970,7 +6452,7 @@ _extendJQuery();var _cssHandler={
   },
   _isElementReady:function(ts,_fun){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({fun:"_isElementReady",scope:"_cssHandler",ps:[ts],insertCallFun:1,return:_fun});
+      bzComm.postToAppExtension({fun:"_isElementReady",scope:"_cssHandler",ps:[ts],insertCallFun:1,return:_fun});
       return
     }
     var rs=[],_withElement=ts._withElement
@@ -9384,16 +6866,19 @@ _extendJQuery();var _cssHandler={
       return e.innerText
     }
   }
-};class dataMap{
-  
-};class $$module{
+};
+;
+/*
+class $$module{
   constructor({code,name,type,data,tests}){
     this.name = 'module';
   }
   getName(){
     return this.name;
   }
-};const _scriptUtil={
+}
+*/;
+const _scriptUtil={
   _prepareActions:function(_actions){
     if(_actions){
       if(_actions.constructor==Function){
@@ -9617,7 +7102,8 @@ const $script={
   getTaskQueue:function(){
     return _ideTask._data._taskQueue
   }
-};const _scriptActionHandler={
+};
+const _scriptActionHandler={
   _action:{
     ".":"continue",
     "..":"stop",
@@ -9661,7 +7147,7 @@ const $script={
   },
   _scriptToAction:function(s,_fun){
     try{
-      s=_bzEval._exe(s)
+      s=eval(s)
       _fun(s)
     }catch(ex){
       alert(ex.message)
@@ -9950,7 +7436,8 @@ const $script={
       return `()=>{\n  ${s.replace(/\n/g,"\n  ")}\n}`
     }
   }
-};class $$Test {
+};
+class $$Test {
   constructor({code,name,data,loopData,defParameter,type,actions}) {
     this.code = code;
     this.name = name;
@@ -9964,7 +7451,8 @@ const $script={
   exe($parameter){
     _ideTask._addScriptGenerateAction(this)
   }
-};class $$action{
+};
+class $$action{
   constructor(action){
     for(let k in action){
       this[k]=action[k]
@@ -10181,7 +7669,8 @@ const $script={
     this.flag=f
     return this
   }
-};class $$element{
+};
+class $$element{
   constructor(element){
     this.element = element
   }
@@ -10261,7 +7750,8 @@ const $script={
   isUnChecked(){
     return new $$validChecked(this.element,{expectation:"false"})
   } 
-};class $$elementAction extends $$action{
+};
+class $$elementAction extends $$action{
   constructor(element,options){
     super({
       ...options,
@@ -10330,7 +7820,8 @@ const $script={
 
   }
 
-};class $$API extends $$action{
+};
+class $$API extends $$action{
   constructor(request){
     _Util._cleanJson(request)
 
@@ -10393,7 +7884,8 @@ class $$request{
     this.query=query
     this.body=data
   }
-};class $$plugInTestAction extends $$action{
+};
+class $$plugInTestAction extends $$action{
   constructor(test,parameter,options){
     super({
       ...options,
@@ -10421,7 +7913,8 @@ class $$request{
       return `$script.callTest("${d.refOfSuccess}")`
     }
   }
-};class $$commentAction extends $$elementAction{
+};
+class $$commentAction extends $$elementAction{
   constructor(element,comment,options){
     super(element,{
       ...options,
@@ -10448,7 +7941,8 @@ class $$request{
     return new $$commentAction(d.element,d.description,d)
   }
 
-};class $$eventAction extends $$elementAction{
+};
+class $$eventAction extends $$elementAction{
   constructor(element,event,options){
     super(element,{
       ...options,
@@ -10841,7 +8335,8 @@ class $$typing extends $$eventAction{
     super.mapToScript(list)
     return _scriptActionHandler._joinScript(list);
   }
-};class $$get extends $$elementAction{
+};
+class $$get extends $$elementAction{
   constructor(element,variableName,options){
     super(element,{
       ...options,
@@ -10860,7 +8355,8 @@ class $$typing extends $$eventAction{
     super.mapToScript(list)
     return _scriptActionHandler._joinScript(list);
   }
-};class $$group extends $$action{
+};
+class $$group extends $$action{
   constructor(actions,type,options){
     super({
       ...options,
@@ -11091,7 +8587,8 @@ class $$finally extends $$group{
   constructor(actions){
     super(actions,"finally")
   }
-};class $$loadPageAction extends $$action{
+};
+class $$loadPageAction extends $$action{
   constructor(url,hostId,options){
     hostId=hostId||BZ._getHostIdx(url)||"0"
     let _url=_ideVersionManagement._getHostById(hostId)
@@ -11144,7 +8641,8 @@ class $$finally extends $$group{
     return new $$loadPageAction(d.loadURL,d.hostId,d)
   }
 
-};class $$scriptAction extends $$action{
+};
+class $$scriptAction extends $$action{
   constructor(script,element,options){
     super({
       ...options,
@@ -11196,7 +8694,8 @@ class $$finally extends $$group{
   static jsonToObject(d){
     return new $$scriptAction(d.script,d.element,d)
   }
-};class $$validAction extends $$action{
+};
+class $$validAction extends $$action{
   constructor(options){
     super({
       method:0,

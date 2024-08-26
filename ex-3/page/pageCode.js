@@ -11,6 +11,9 @@ window._Util={
   _matchAllSign:/[^$\_\wÀ-Üà-øoù-ÿŒœ\u4E00-\u9FCC]+/g,
   _trimSign:/(^[^\(\[\{\wÀ-Üà-øoù-ÿŒœ\u4E00-\u9FCC]+|[^\wÀ-Üà-øoù-ÿŒœ\u4E00-\u9FCC\)\]\}]+$)/g,
   _dataRegex:/(((\$(project|module|test|loop|data|group|action|parameter)((\.|\[|$)([a-zA-Z0-9\u4E00-\u9FCC_\$\'\"\(\)]+[\.|\[|\]]*)*)*|(\'|\").*(\'|\"))+( *(\+|\-|\*|\/) *)*)+)/g,
+  _isVarName:function(n){
+    return n.match(/^[a-z_\$\u4E00-\u9FCC][a-z0-9_\$\u4E00-\u9FCC]*$/i)
+  },
   _formatJSONToString:function(v,_level){
     let _list=[]
     _level=_level||""
@@ -101,7 +104,7 @@ window._Util={
     return BZ.TW&&!BZ.TW.closed&&!window.extensionContent
   },
   _openBZTW:function(_url,ws){
-    BZ.TW=window.open(SERVER_HOST+"/empty.html?bzIde="+_bzStdComm.getIdeTabId()+"#"+_url,"bz-client",ws);
+    BZ.TW=window.open(SERVER_HOST+"/empty.html?bzIde="+bzComm.getIdeTabId()+"#"+_url,"bz-client",ws);
   },
   _parseStdJson:function(v){
     try{
@@ -160,7 +163,7 @@ window._Util={
   _toRegExp:function(v){
     try{
       if(_Util._isRegexData(v)){
-        v=_bzEval._exe(v)
+        v=eval(v)
       }
       if(v&&v.constructor==RegExp){
         return v
@@ -222,7 +225,7 @@ window._Util={
       p=ps.join("\n")
     }
     if(window.extensionContent){
-      _bzStdComm.postToIDE({scope:"_Util",fun:"_log",ps:[p]});
+      bzComm.postToIDE({scope:"_Util",fun:"_log",ps:[p]});
       return p
     }
     if(p.startsWith("video-img:")){
@@ -688,7 +691,7 @@ window._Util={
       d[k]=v
     }catch(e){
       try{
-        _bzEval._exe(k+"=v")
+        eval(k+"=v",{},"set",k,v)
       }catch(ee){}
     }
   },
@@ -1078,7 +1081,7 @@ window._Util={
     function _isErr(v){
       try{
         let x;
-        _bzEval._exe("x="+v)
+        x=eval("x="+v)
       }catch(ex){
         return 1
       }
@@ -1206,7 +1209,7 @@ window._Util={
         a.url="http:"+a.url
       }
 
-      _bzStdComm.postToBackground({
+      bzComm.postToBackground({
         fun:"ajax",
         scope:"bzUtil",
         return:function(r){
@@ -1260,7 +1263,7 @@ window._Util={
       }else{
         try{
           if(v&&"[{".includes(v.trim()[0])){
-            _bzEval._exe("v="+v)
+            v=eval("v="+v)
           }
         }catch(e){}
       }
@@ -1278,7 +1281,7 @@ window._Util={
   },
   _originAJax:function(d,_fun){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_originAJax",
         scope:"_Util",
         ps:[d],
@@ -1474,7 +1477,7 @@ window._Util={
       }catch(ex){}
       try{
         if(v.match(_Util._dataRegex)){
-          _bzEval._exe("v="+v)
+          v=eval("v="+v)
         }
       }catch(ex){}
       return v
@@ -1507,7 +1510,7 @@ window._Util={
           n=_Util._strToJson(v)
         }else{
           if(_Util._isFunction(v)){
-            _bzEval._exe("n="+v)
+            n=eval("n="+v)
           }else{
             let vv=v.trim().split("\n")
             while(vv.length&&!vv[vv.length-1].trim().replace(/;/g,"")){
@@ -1519,7 +1522,7 @@ window._Util={
                 vv[vv.length-1]="return "+vv[vv.length-1]
               }
               vv=vv.join("\n")
-              _bzEval._exe(`n=(()=>{\n${vv}\n})()`)
+              n=eval(`n=(()=>{\n${vv}\n})()`)
             }
           }
         }
@@ -1540,7 +1543,7 @@ window._Util={
           }
         }else if(n&&n.constructor==Function){
           n=n()
-        }else if(_bzEval._isFun(n)){
+        }else if(window._bzEval&&_bzEval._isFun(n)){
           n=_bzEval._exeFun(n)
         }
       }catch(e){
@@ -1820,7 +1823,7 @@ window._Util={
   _stringToObj:function(s){
     if(s&&s.constructor==String){
       try{
-        _bzEval._exe("s="+s)
+        s=eval("s="+s)
       }catch(e){}
     }
     return s
@@ -1865,7 +1868,7 @@ window._Util={
   },
   _formatStrAsJson:function(w){
     try{
-      _bzEval._exe("v="+w)
+      v=eval("v="+w)
       if(JSON.stringify(v)==w){
         return JSON.stringify(v,0,2)
       }
@@ -1922,7 +1925,7 @@ window._Util={
           if(s.match(/^\{\{.+\}\}$/)){
             s=_JSHandler._prepareData(s)
           }else{
-            s=_bzEval._exe("s="+s)
+            s=eval("s="+s)
           }
           if(s&&s.constructor==RegExp){
             s=s.toString()
@@ -2021,7 +2024,7 @@ window._Util={
     if(v&&v.constructor==String){
       v=v.trim()
       try{
-        _bzEval._exe("v="+v)
+        v=eval("v="+v)
       }catch(e){
         if(v.includes("=")){
           v=v.split("&")
@@ -2707,7 +2710,7 @@ window._Util={
         v="/"+v+"/"
       }
       try{
-        _bzEval._exe("v="+v)
+        v=eval("v="+v)
         return v
       }catch(e){
         alert(e.message)
@@ -4414,7 +4417,16 @@ window._Util={
     var _content=$("<pre class='pull-left bz-dlg-content' style='word-break: break-word;white-space: pre-wrap;max-width:100%;width:100%;margin: 0;'></pre>")
     
     try{
-      _body=_body||_Util._getCurDocument().body
+      if(bzComm._isAppExtension()){
+        $("#bz-dialog").remove()
+        let o=$("<div id='bz-dialog' style='position:fixed;width:0;height:0;z-index:"+Number.MAX_SAFE_INTEGER+"'></div>").appendTo(document.body.parentElement)
+        _body=o[0].attachShadow({mode:"open"})
+        _body.innerHTML=`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.max.css'>`
+                       +`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.icons.css'>`
+                       +`<style>.bz-bg>*{background:#FFF;box-shadow: inset 2px 2px 2px hsla(0,0%,100%,.25), inset -2px -2px 2px rgba(0,0,0,.25);border: 2px solid #CCC;border-radius: 10px;}</style>`
+      }else{
+        _body=_body||_Util._getCurDocument().body
+      }
     }catch(e){}
     if(!_body){
       _body=window.document.body
@@ -4739,11 +4751,6 @@ window._Util={
 
     w.BZ=BZ;
 
-    w._IDE=_IDE;
-    w._Util=_Util;
-    w.$util=$util
-    w.root=null;    
-    w.$=$;
     
     _Util._handlePrePanel(d)
     
@@ -4756,7 +4763,7 @@ window._Util={
     _CtrlDriver._setupKeyInput(d)
     _CtrlDriver._execute({},{},_viewDef,d.body);
 
-    d.insertBefore(d.implementation.createDocumentType('html','',''), d.childNodes[0]);
+    // d.insertBefore(d.implementation.createDocumentType('html','',''), d.childNodes[0]);
     setTimeout(function(){
       if(curUser.uiModel){
         $(w.document.body.parentElement).addClass("bz-in-"+curUser.uiModel)
@@ -5227,7 +5234,7 @@ tbody td:first-child,tbody td:last-child{
     if(BZ._autoRecording){
       return []
     }
-    return BZ._documents?BZ._documents.find(tag+"[name='"+name+"']"):[];
+    return $(tag+"[name='"+name+"']").toArray()
   },
   _removeAllLinkTarget:function(){
     $("A").toArray().forEach(a=>{
@@ -5241,19 +5248,27 @@ tbody td:first-child,tbody td:last-child{
   },
   _getFileFromUrl:function(_url,_fun){
     if(_url.match(/^[\/]?example\..+$/)){
-      _url="http:"+SERVER_HOST+"/file/"+_url.replace("/","")
+      _url="http:"+SERVER_HOST.replace(/^https?:/,"")+"/file/"+_url.replace("/","")
     }else{
       _url=_url.replace("/"+"/www.dropbox.com/","/"+"/dl.dropbox.com/");
     }
     if(!_url.match(/^http/)){
       _url=location.protocol+_url
     }
-    _bzStdComm.postToBackground({
+    bzComm.postToBackground({
       scope:"bgUtil",
       fun:"ajax",
       ps:[{url:_url,method:"GET",responseType:'arraybuffer'}],
       return:_fun
     })
+  },
+  _isFileData:function(v){
+    try{
+      if(v && v.constructor==String){
+        v=JSON.parse(v)[0]
+      }
+      return v.base64Link
+    }catch(e){}
   },
   _removeLinkTarget:function(e){
     while(e){
@@ -5263,7 +5278,7 @@ tbody td:first-child,tbody td:last-child{
         }
         var _target=$(e).attr("target");
         if(_target){
-          if(_target!='_'+'parent'&&_target!='_'+'top'&&!_Util._getDomsByTagAndName("IFRAME",_target).length){
+          if(!_target.match(/^_(parent|self|top)$/)&&!bzComm._getIframeByAttr("uId",_target)){
             $(e).attr("target","_"+"self")
           }
         }else{
@@ -6162,7 +6177,7 @@ tbody td:first-child,tbody td:last-child{
       v=v.trim()
       if(v.match(/(^\[.*\]$)|(^\{.*\}$)/s)){
         try{
-          _bzEval._exe("v="+v)
+          v=eval("v="+v)
           return v
         }catch(e){}
       }
@@ -6546,7 +6561,7 @@ tbody td:first-child,tbody td:last-child{
     if(_paths.constructor==String){
       _paths=_paths.split("\n")
     }
-    if(!_bzStdComm._isIDE()){
+    if(!bzComm._isIDE()){
       let p=_paths[0]
       if(p&&p.constructor==String&&p.includes("frame")){
         _paths[0]="BZ.TW.document"
@@ -6814,7 +6829,6 @@ tbody td:first-child,tbody td:last-child{
       _domActionTask._reportAppInfo("Error on findDoms: "+e.message)
       console.log(e.stack)
       if(os && os.constructor==String && !_bRetry){
-        BZ._prepareDocument();
         return this._findDoms(_paths,_errOnHidden,1);
       }
     }
@@ -7550,11 +7564,12 @@ tbody td:first-child,tbody td:last-child{
       return gs
     }
   }
-};var BZ={
+};
+window.BZ={
   _curShareData:0,
   _codeToKeyDataMap:{
     "BZ._data._autoRunning":"autoRunning",
-    "_IDE._data._setting":"setting",
+    "_IDE._data._setting":"ideSetting",
     "_config":"config",
     "BZ._curEnv":"curEnv",
     "_aiAuthHandler._data":"aiAuthHandler",
@@ -7566,7 +7581,16 @@ tbody td:first-child,tbody td:last-child{
     "_aiDataHandler":"aiDataHandler",
     "_cooperatorHandler._data":"cooperatorHandler",
     "BZ._hasVideo":"hasVideo",
-    _dictionaryConfig:"dictionaryConfig"
+    _dictionaryConfig:"dictionaryConfig",
+    "BZ._data._status":"bzStatus",
+    "_ideDataBind._data._key":"ideDataBindKey",
+    "_ideDataBind._data._limit":"ideDataBindLimit",
+    "_cssHandler._curPanel":"cssHandlerCurPanel",
+    "_innerWin._data._dataBind._showDataBind":"dataBindShowDataBind",
+    "_comCss":"comCss",
+    "curUser._curProject.setting":"curProjectSetting",
+    "_appWordHandler._wordMap":"appWordHandlerWordMap",
+    "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
   },
   _data:{},
   _log:function(o){
@@ -7593,28 +7617,28 @@ tbody td:first-child,tbody td:last-child{
     }
   },
   _setStatus:function(d,_done){
-    if(_bzStdComm._isAppExtension()){
+    if(bzComm._isAppExtension()){
       var p=_innerWin._data._pos;
       let s=BZ._data._status
       if(s!=d){
         if(!d){
           if(s=="record"){
-            _bzStdComm.postToIDE({fun:"_end",scope:"_ideRecorder"})
+            bzComm.postToIDE({fun:"_end",scope:"_ideRecorder"})
           }else if(s=="play"&&s=="pause"){
-            _bzStdComm.postToIDE({fun:"_end",scope:"_ideTask",ps:[1]})
+            bzComm.postToIDE({fun:"_end",scope:"_ideTask",ps:[1]})
             p._inMin=p._inMin==2?1:0;
           }
         }else{
           if(d=="record"){
-            _bzStdComm.postToIDE({fun:"_start",scope:"_ideRecorder"})
+            bzComm.postToIDE({fun:"_start",scope:"_ideRecorder"})
           }else if(d=="play"||d=="pause"){
-            _bzStdComm.postToIDE({fun:"_start",scope:"_ideTask"})
+            bzComm.postToIDE({fun:"_start",scope:"_ideTask"})
             p._inMin=p._inMin?2:1;
           }
         }
       }
-    }else if(_bzStdComm._isApp()){
-      _bzStdComm.postToAppExtension({
+    }else if(bzComm._isApp()){
+      bzComm.postToAppExtension({
         fun:"_setStatus",
         scope:"BZ",
         ps:[d]
@@ -7629,20 +7653,20 @@ tbody td:first-child,tbody td:last-child{
       debugger    
     },
     resize:function(o){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"resize",
         scope:"_innerWin"
       })
     },
     addValidation:function(){
-      _bzStdComm.postToIDE({
+      bzComm.postToIDE({
         fun:"_newItem",
         scope:"_ideActionManagement",
         ps:[0]
       })
     },
     addComment:function(){
-      _bzStdComm.postToIDE({
+      bzComm.postToIDE({
         fun:"_newItem",
         scope:"_ideActionManagement",
         ps:[5]
@@ -7681,11 +7705,11 @@ tbody td:first-child,tbody td:last-child{
   },
   setDataBindSwitch:function(v){
     _innerWin._data._dataBind._showDataBind=v;
-    bzStdComm.postToIDE("setDataBindSwitch","BZ",v);
+    bzComm.postToIDE("setDataBindSwitch","BZ",v);
   },
   initData:function(){
-    if(window.extensionContent&&_bzStdComm.getIdeTabId()&&_bzStdComm._isAppExtension()){
-      _bzStdComm.postToIDE({
+    if(window.extensionContent&&bzComm.getIdeTabId()&&bzComm._isAppExtension()){
+      bzComm.postToIDE({
         fun:"getSharedData",
         scope:"BZ",
         return:function(d){
@@ -7698,20 +7722,22 @@ tbody td:first-child,tbody td:last-child{
                 _domRecorder._handleFileInput()
               },100)
             }else if(BZ._data._status){
-              _bzStdComm.postToApp({
+              bzComm.postToApp({
                 fun:"_takeoverWin",
                 scope:"TWHandler",
                 ps:[1]
               })
             }
-            _innerWin._insertCtrls();
-            _innerWin._setToolbarStatus()
-            _bzStdComm.postToApp({
+
+            bzComm.postToApp({
               fun:"initScript",
               scope:"innerScript",
               ps:[chrome.runtime.getURL(''),d],
               return:function(){
-                _bzStdComm.postToIDE({fun:"infoAppReady",scope:"_ideTask"})
+                if(BZ._isRecording()||BZ._isAutoRunning()){
+                  _domRecorder._refresh()
+                }
+                BZ._pageReady=1
               }
             })
           }
@@ -7719,20 +7745,8 @@ tbody td:first-child,tbody td:last-child{
       })
     }
   },
-  assignId:function(d){
-    for(let k in d){
-      document.documentElement.setAttribute(k,d[k])
-    }
-    BZ.initData()
-  },
-  getIds:function(_fun){
-    let v={
-      ide:document.documentElement.getAttribute('ide'),
-      app:document.documentElement.getAttribute('app'),
-      appIFrames:document.documentElement.getAttribute('appIFrames')
-    }
-    _fun&&_fun(v)
-    return v
+  _isAutoRunning:function(){
+    return BZ._data._autoRunning
   },
   isIgnoreReq:function(r){
     let c=_IDE._data._curVersion.setting.content;
@@ -7764,7 +7778,7 @@ tbody td:first-child,tbody td:last-child{
     BZ._curShareData={...BZ._curShareData,...d}
     d=_Util._changeObjectKeys(BZ._curShareData,BZ._codeToKeyDataMap)
 
-    _bzStdComm.postToAppExtension({
+    bzComm.postToAppExtension({
       fun:"assignShareData",
       scope:"BZ",
       ps:[d]
@@ -7820,6 +7834,11 @@ tbody td:first-child,tbody td:last-child{
       _parseData(ks,v)
     }
 
+    if(bzComm._isAppExtension()){
+      _innerWin._insertCtrls()
+      _innerWin._setToolbarStatus()
+    }
+
     function _parseData(ks,d,r){
       let k=ks.shift()
       r=r||window
@@ -7833,8 +7852,8 @@ tbody td:first-child,tbody td:last-child{
   },
   setCheckout:function(v,_done){
     BZ._data._checkout=v
-    if(_bzStdComm._isIDE()){
-      _bzStdComm.postToAppExtension({fun:"setCheckout",scope:"BZ",ps:[v]})
+    if(bzComm._isIDE()){
+      bzComm.postToAppExtension({fun:"setCheckout",scope:"BZ",ps:[v]})
     }else{
       _innerWin._setToolbarStatus()
     }
@@ -7844,8 +7863,9 @@ tbody td:first-child,tbody td:last-child{
     _fun&&_fun(v)
     return v
   },
-};if(!window._bzStdComm){
-  window._bzStdComm={
+};
+if(!window.bzComm){
+  window.bzComm={
     _shareData:{},
     _callBackMap:{},
     _newId:Date.now(),
@@ -7866,30 +7886,76 @@ tbody td:first-child,tbody td:last-child{
       bzIdeExtension:{
         key:'bzIdeExtension',
         getTabId:function(){
-          return _bzStdComm.getIdeTabId()
+          return bzComm.getIdeTabId()
         }
       },
       bzAppExtension:{
         key:'bzAppExtension',
         getTabId:function(){
-          return _bzStdComm.getAppTabId()
+          return bzComm.getAppTabId()
         }
       },
       bzIde:{
         key:'bzIde',
         getTabId:function(){
-          return _bzStdComm.getIdeTabId()
+          return bzComm.getIdeTabId()
         }
       },
       bzApp:{
         key:'bzApp',
         getTabId:function(){
-          return _bzStdComm.getAppTabId()
+          return bzComm.getAppTabId()
         }
       },
       bzBg:{
         key:'bzBg',
         getTabId:function(){}
+      }
+    },
+    init:function(d){
+      if(d){
+        bzComm.assignId(d)
+      }
+  
+      if(window._startComm){
+        return _end()
+      }
+      window._startComm=1
+      let cp=bzComm.getCurPageType();
+  
+      window.addEventListener(cp.key, (event) => {
+        console.log("Received message on "+cp.key+" and from the same page",event.detail)
+        bzComm.handleMessage(event.detail)
+      });
+      if(window.extensionContent){
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+          console.log("Received message on "+cp.key+" and from remote",message)
+          bzComm.handleMessage(message)
+          sendResponse(0)
+        });
+      }
+      if(parent!=window){
+        window.addEventListener('message', (e) => {
+          if (e.data.type==='bz-set-iframe-idx') {
+            bzComm.postToBackground({
+              fun:"updateIframeIdx",
+              scope:"bgComm",
+              ps:[bzComm.getIframeId(),e.data.idx]
+            })
+            bzComm.buildIFrameMap()
+          }else if(e.data.type==='bz-exe'){
+            window[e.data.scope][e.data.fun](...e.data.ps)
+          }
+        });
+      }
+      _end()
+      function _end(){
+        if(bzComm._isAppExtension()){
+          bzComm.postToBackground({
+            fun:"tabReady",
+            scope:"bgComm"
+          })
+        }
       }
     },
     getBZId:function(){
@@ -7902,11 +7968,173 @@ tbody td:first-child,tbody td:last-child{
       return document.documentElement.getAttribute("app");
     },
     getAppIFrames:function(){
-      return document.documentElement.getAttribute("appIFrames");
+      let v=document.documentElement.getAttribute("appIFrames")
+      if(v){
+        v=v.replace(/'/g,'"');
+        v=JSON.parse(v)
+        return v
+      }
     },
+    _getNotReadyIFrame:function(){
+      let v= bzComm._findIFrame((x)=>{return !x.bzCommReady})
+      if(v){
+        console.log("Missing bzCommReady:",v)
+      }else{
+        v=bzComm._findIFrame((x)=>{return x.idx===undefined})
+        if(v){
+          console.log("Missing idx:"+v)
+        }else{
+          console.log("Not missing")
+          bzComm._findIFrame(x=>console.log(x))
+        }
+      }
+    },
+    _forEachIFrame:function(fun,fs){
+      _doIt(fs||bzComm.getAppIFrames())
+      function _doIt(d){
+        for(let k in d){
+          if(d[k]&&d[k].constructor==Object){
+            fun(d[k],k)
+            _doIt(d[k])
+          }
+        }
+      }
+
+    },
+    _findIFrame:function(fun,fs){
+      return _doIt(fs||bzComm.getAppIFrames())
+      function _doIt(d){
+        for(let k in d){
+          if(d[k]&&d[k].constructor==Object){
+            if(fun(d[k],k)){
+              return {v:d[k],k:k}
+            }
+            let r=_doIt(d[k])
+            if(r){
+              return r
+            }
+          }
+        }
+      }
+    },
+    _filterIFrame:function(fun,fs){
+      let r=[]
+      bzComm._forEachIFrame((x,k)=>{
+        if(fun(x,k)){
+          r.push(x)
+        }
+      },fs)
+      return r;
+    },
+    getIframeId:function(v){
+      return window.curBZIframeId||parseInt(document.documentElement.getAttribute("iframeId")||0);
+    },
+    assignId:function(d){
+      for(let k in d){
+        document.documentElement.setAttribute(k,d[k])
+      }
+      if(window.curBZIframeId){
+        document.documentElement.setAttribute("iframeId",curBZIframeId)
+      }
+      delete d.iframeId
+
+      bzComm._exeInIframes({
+        fun:"assignId",
+        scope:"bzComm",
+        ps:[d]
+      })
+    },
+    _exeInIframes:function(d){
+      d.type="bz-exe"
+      $("IFRAME").toArray().forEach((x)=>{x.contentWindow.postMessage(d, "*")})
+    },
+    getIds:function(_fun){
+      let v={
+        ide:bzComm.getIdeTabId(),
+        app:bzComm.getAppTabId(),
+        appIFrames:bzComm.getAppIFrames()
+      }
+      _fun&&_fun(v)
+      return v
+    },  
+    _getIframeByAttr:function(k,v,fs){
+      fs=fs||bzComm.getAppIFrames()
+      return _find(fs)
+      function _find(f){
+        if((v&&f[k]==v)){
+          return f
+        }else if(!v&&f[k]){
+          return f[k]
+        }
+        let r;
+        if(f.constructor==Object){
+          Object.values(f).find((x)=>{
+            r=_find(x)
+            return r
+          })
+        }
+        return r
+      }
+    },
+    _updateIframe:function(k,v,fs){
+      fs=fs||bzComm.getAppIFrames()
+      _find(fs)
+      bzComm.updateAppIFrameMap(fs)
+      function _find(f){
+        if(f[k]){
+          f[k]=v
+          return 1
+        }
+
+        if(f.constructor==Object){
+          Object.values(f).find((x)=>{
+            return _find(x)
+          })
+        }
+      }
+    },
+    updateAppIFrameMap:function(v,_updateSubIframe){
+      document.documentElement.setAttribute("appIFrames",JSON.stringify(v).replace(/"/g,"'"))
+      if(_updateSubIframe){
+        let d=bzComm._getIframeByAttr(bzComm.getIframeId(),0,v)
+        Object.keys(d).forEach((k)=>{
+          k=parseInt(k)
+          if(!Number.isNaN(k)){
+            bzComm.postToAppExtension({
+              fun:"updateAppIFrameMap",
+              scope:"bzComm",
+              toIFrameId:k,
+              ps:[v,1]
+            })
+          }
+        })
+      }
+    },
+    buildIFrameMap: function (fs) {
+      fs=fs||$("IFRAME").toArray()
+      fs.forEach((x,i)=>{
+        if(x.contentDocument&&x.contentWindow&&!x.contentWindow.bzComm){
+          bzComm.postToBackground({
+            fun:"updateIframeIdx",
+            scope:"bgComm",
+            ps:[x.contentWindow.curBZIframeId,i]
+          })
+          bzComm.buildIFrameMap($(x.contentDocument).find("IFRAME").toArray())
+        }else{
+          x.contentWindow.postMessage({type:"bz-set-iframe-idx",idx:i}, "*")
+        }
+      })
+    },
+    reportIFrameResize:function(v){
+      let f=bzComm._curResizeIFrame
+      if(f){
+        delete bzComm._curResizeIFrame
+        f._fun(v)
+      }
+    },  
     getCurPageType:function(){
-      if(!_bzStdComm._curPageType){
-        let pt=_bzStdComm.pageType,p,e="";
+      if(!bzComm._curPageType){
+        let pt=bzComm.pageType,p,e="";
         if(window.name=="bz-master"){
           p="Ide"
         }else{
@@ -7915,24 +8143,9 @@ tbody td:first-child,tbody td:last-child{
         if(window.extensionContent){
           e="Extension"
         }
-        _bzStdComm._curPageType=pt["bz"+p+e];
+        bzComm._curPageType=pt["bz"+p+e];
       }
-      return _bzStdComm._curPageType;
-    },
-    init:function(){
-      let cp=_bzStdComm.getCurPageType();
-  
-      window.addEventListener(cp.key, (event) => {
-        console.log("Received message on "+cp.key+" and from the same page")
-        _bzStdComm.handleMessage(event.detail)
-      });
-      if(window.extensionContent){
-        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-          console.log("Received message on "+cp.key+" and from remote")
-          _bzStdComm.handleMessage(message)
-          sendResponse(0)
-        });
-      }
+      return bzComm._curPageType;
     },
     _isIDE:function(){
       return window.name=="bz-master"&&!window.extensionContent
@@ -7950,20 +8163,20 @@ tbody td:first-child,tbody td:last-child{
       if(!v){
         return
       }
-      let cp=_bzStdComm.getCurPageType();
+      let cp=bzComm.getCurPageType();
   
-      _bzStdComm._codeToKeyMap=_bzStdComm._codeToKeyMap||_Util._invertObject(_bzStdComm._keyToCodeMap)
-      v.scope=_bzStdComm._codeToKeyMap[v.scope]||v.scope
-      v.fun=_bzStdComm._codeToKeyMap[v.fun]||v.fun
+      bzComm._codeToKeyMap=bzComm._codeToKeyMap||_Util._invertObject(bzComm._keyToCodeMap)
+      v.scope=bzComm._codeToKeyMap[v.scope]||v.scope
+      v.fun=bzComm._codeToKeyMap[v.fun]||v.fun
   
-      if(v.page&&v.page!=cp.key){
-        return _bzStdComm._postMessage(v)
+      if(v.toPage&&v.toPage!=cp.key){
+        return bzComm._postMessage(v)
       }else if(v.result){
         return _handleResult(v)
       }
       try{
         if(v.eval){
-          v.result={value:window._bzEval?_bzEval._exe(v.eval):eval(v.eval)}
+          v.result={value:eval(v.eval)}
         }else if(v.insertCallFun){
           return window[v.scope][v.fun](...(v.ps||[]),(r)=>{
             v.result={value:r}
@@ -7986,17 +8199,19 @@ tbody td:first-child,tbody td:last-child{
       }
       
       function _postCallBack(rv,v){
-        rv.page=v.fromPage
+        rv.toPage=v.fromPage
         rv.toId=v.fromId
+        rv.toIFrameId=v.fromIFrameId
         delete rv.fromPage;
         delete rv.fromId;
-        _bzStdComm._postMessage(rv)
+        delete rv.fromIFrameId
+        bzComm._postMessage(rv)
       }
   
       function _handleResult(v){
         if(v.return){
-          let fun=_bzStdComm._callBackMap[v.return].return;
-          delete _bzStdComm._callBackMap[v.return];
+          let fun=bzComm._callBackMap[v.return].return;
+          delete bzComm._callBackMap[v.return];
           if(v.result){
             if(v.result.error){
               if(cp.key=="bzIde"){
@@ -8013,38 +8228,30 @@ tbody td:first-child,tbody td:last-child{
         }
       }
     },
-    _retryFuns:function(){
-      let vs={..._bzStdComm._callBackMap}
-      _bzStdComm._callBackMap={}
-      console.log("Retry funs",vs)
-      Object.values(vs).forEach((v)=>{
-        _bzStdComm._postMessage(v)
-      })
-    },
     _postMessage:function(v){
-      let cp=_bzStdComm.getCurPageType()
+      let cp=bzComm.getCurPageType()
       console.log("Send message from "+cp.key)
-      if(cp.getTabId()==v.toId){
-        window.dispatchEvent(new CustomEvent(v.page, {detail:v}));
+      if(cp.getTabId()==v.toId&&v.toIFrameId==bzComm.getIframeId()){
+        window.dispatchEvent(new CustomEvent(v.toPage, {detail:v}));
       }else{
         let _bkFun=function(r){
           console.log("Get response message on "+cp.key+" and from remote page")
   
-          _bzStdComm.handleMessage(r)
+          bzComm.handleMessage(r)
         }
     
         if(window.extensionContent){
           chrome.runtime.sendMessage(v)
         }else if(window.name=="bz-master"){
-          chrome.runtime.sendMessage(_bzStdComm.getBZId(), v);
+          chrome.runtime.sendMessage(bzComm.getBZId(), v);
         }else{
           window.dispatchEvent(new CustomEvent("bzAppExtension", {detail:v}));
         }
       }
     },
     _prepareDataAndPost:function(to,v,fun){
-      let cp=_bzStdComm.getCurPageType()
-      if(cp==to){
+      let cp=bzComm.getCurPageType()
+      if(cp==to&&v.toIFrameId==bzComm.getIframeId()){
         return
       }
       if(v.constructor==String){
@@ -8052,64 +8259,72 @@ tbody td:first-child,tbody td:last-child{
           eval:v
         }
       }
-      v.page=to.key;
+      v.toPage=to.key;
       v.toId=to.getTabId();
+
       v.fromPage=cp.key;
       v.fromId=cp.getTabId();
+      v.fromIFrameId=bzComm.getIframeId()||0
+      if(v.toIFrameId===undefined||v.toIFrameId===null){
+        if(v.toId==v.fromId){
+          v.toIFrameId=v.fromIFrameId
+        }else{
+          v.toIFrameId=0
+        }
+      }
+      v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
+      v.scope=bzComm._keyToCodeMap[v.scope]||v.scope
   
-      v.fun=_bzStdComm._keyToCodeMap[v.fun]||v.fun
-      v.scope=_bzStdComm._keyToCodeMap[v.scope]||v.scope
-  
-      _bzStdComm._handleReturnFun(v,fun)
-      _bzStdComm._postMessage(v)
+      bzComm._handleReturnFun(v,fun)
+      bzComm._postMessage(v)
     },
     _setCmd:function(v){
-      let cp=_bzStdComm.getCurPageType()
+      let cp=bzComm.getCurPageType()
       v={
         eval:v
       }
       if(cp.key=="bzIde"){
-        _bzStdComm.postToAppExtension(v)
+        bzComm.postToAppExtension(v)
       }else{
-        _bzStdComm.postToIDE(v)
+        bzComm.postToIDE(v)
       }
     },
     postToIDE:function(v,fun){
-      _bzStdComm._prepareDataAndPost(_bzStdComm.pageType.bzIde,v,fun)
+      bzComm._prepareDataAndPost(bzComm.pageType.bzIde,v,fun)
     },
     postToIDEExtension:function(v,fun){
-      _bzStdComm._prepareDataAndPost(_bzStdComm.pageType.bzIdeExtension,v,fun)
+      bzComm._prepareDataAndPost(bzComm.pageType.bzIdeExtension,v,fun)
     },
     postToApp:function(v,fun){
-      _bzStdComm._prepareDataAndPost(_bzStdComm.pageType.bzApp,v,fun)
+      bzComm._prepareDataAndPost(bzComm.pageType.bzApp,v,fun)
     },
     postToAppExtension:function(v,fun){
-      _bzStdComm._prepareDataAndPost(_bzStdComm.pageType.bzAppExtension,v,fun)
+      bzComm._prepareDataAndPost(bzComm.pageType.bzAppExtension,v,fun)
     },
     postToBackground:function(v,fun){
-      _bzStdComm._prepareDataAndPost(_bzStdComm.pageType.bzBg,v,fun)
+      bzComm._prepareDataAndPost(bzComm.pageType.bzBg,v,fun)
     },
     _handleReturnFun:function(v,fun){
       fun=v.return||fun
       if(fun&&fun.constructor==Function){
-        let rd=_bzStdComm._newId++;
+        let rd=bzComm._newId++;
         v.return=v.return||fun
-        _bzStdComm._callBackMap[rd]={...v}
+        bzComm._callBackMap[rd]={...v}
         v.return=rd
       }
     },
     _transferCallBetweenIDEAndAppExtension:function(d,fun){
-      let cp=_bzStdComm.getCurPageType()
+      let cp=bzComm.getCurPageType()
       if(cp.key=="bzIde"){
-        _bzStdComm.postToAppExtension(d,fun)
+        bzComm.postToAppExtension(d,fun)
       }else{
-        _bzStdComm.postToIDE(d,fun)
+        bzComm.postToIDE(d,fun)
       }
     }
   }
   if(window.name=="bz-client"){
-    _bzStdComm.init()
-    BZ.initData()
+    bzComm.init()
+    // BZ.initData()
   }else if(window.name=="bz-master"){
     if(!opener){
       if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
@@ -8126,18 +8341,1699 @@ tbody td:first-child,tbody td:last-child{
         window.close()
       }
     }else{
-      _bzStdComm.init()
-      if(window.extensionContent){
+      bzComm.init()
+    }
+  }
+};
+var _domRecorder={
+  _uploadFileTypes:["avi","bat", "css", "docx", "epub", "gif", "html", "jpg", "js", "json", "odt","ogv","pdf", "png", "rtf", "sh", "txt", "zip"],
+  _tmpPath:[],
+  _curAPI:0,
+  _listenEvents:{
+    change: "1",
+    dblclick: "1",
+    dragDrop: "1",
+    click: "1"
+  },
+  unTmpClass:new Set(),
+  _monitorList:[],
+  _start:function(){
+    bzComm.postToIDE({scope:"_ideTestManagement",fun:"_insertInitRefresh",ps:[location.href]});
+    _domRecorder._lastStep=null;
+    _domRecorder._refresh();
+  },
+  _refresh:function(){
+    _domRecorder._setEventListenerOnAllDoms();
+  },
+  _end:function(){
+    // _elementMonitor._handleMonitor();
+    // _elementMonitor._close();
+    _domRecorder._closeObserver();
+    _domRecorder._removeEventListener();
+    _domRecorder._setBackPopMsg();
+    BZ._recording=0;
+    
+  },
+  _observerTime:Date.now(),
+  _observer:new MutationObserver(function(_mutations) {
+    let _hasNew;
+    if(_mutations.find(_mutation=>{
+      let a=_mutation.addedNodes[0]
+      
+      return a&&a.nodeType==1&&!_domRecorder._isBZElement(a)
+    })){
+      if(_domRecorder._clickInputStep){
+        _domRecorder._createRecordAction(_domRecorder._clickInputStep,1)
+        _domRecorder._clickInputStep=0
+      }
+      clearTimeout(_domRecorder._newInsertTrigger);
+    }
+  }),
+  _isBZElement:function(t){
+    return t&&($(t).hasClass("BZIgnore")||$(".BZIgnore").find(t).length)
+  },
+  _handleFileInput:function(){
+    $("input[type=file]").off("click",_domRecorder._clickFileFun)
+    $("input[type=file]").on("click",_domRecorder._clickFileFun)
+  },
+  _clickFileFun:function(e){
+    if(BZ._isRecording()){
+      bzComm.postToIDE({scope:"_domRecorder",fun:"_setClickFileInput"});
+      e.stopPropagation()
+      e.preventDefault()
+      _domRecorder._selectUploadFileOption(this)
+    }else if(BZ._isPlaying()){
+      e.stopPropagation()
+      e.preventDefault()
+    }
+  },
+  _getCurFileData:function(){
+    let ds={
+          $test:$test||{},
+          $module:$module||{},
+          $project:$project||{}
+        },
+        fs=[];
+    Object.keys(ds).forEach(x=>{
+      for(let k in ds[x]){
+        let v=ds[x][k]
+        if(_Util._isFileData(v)){
+          fs.push(x+"."+k)
+        }
+      }
+    })
+    return fs
+  },
+  _selectUploadFileOption:function(e){
+    window._uiSwitch=_CtrlDriver._buildProxy({_uploadFileFrom:"std"});
+    
+    let fs=_domRecorder._getCurFileData()
+    
+    if(fs.length){
+      _uiSwitch._uploadFileFrom="_exist"
+    }
+    if(this._domPickerWindow){
+      this._domPickerWindow.close()
+    }
+    let _viewDef={
+      _tag:"div",
+      _attr:{
+        style:"flex-direction: column;display: flex;line-height: 30px;height:350px;font-size:13px;padding:10px;"
+      },
+      _items:[
+        {
+          _tag:"div",
+          _text:"_bzMessage._action._ifUploadFile"
+        },
+        //exist file data
+        {
+          _if:function(){
+            return fs.length
+          },
+          _tag:"label",
+          _attr:{
+            style:"height: 25px;padding: 8px;line-height: normal;line-height: normal;"
+          },
+          _items:[
+            {
+              _tag:"input",
+              _attr:{
+                style:"margin-right:10px;height: 10px;",
+                type:"radio",
+                value:"_exist"
+              },
+              _dataModel:"_uiSwitch._uploadFileFrom"
+            },
+            {
+              _text:"_bzMessage._action._existFileData"
+            }
+          ]
+        },
+        {
+          _if:function(){
+            return _uiSwitch._uploadFileFrom=='_exist'&&fs.length
+          },
+          _tag:"div",
+          _attr:{
+            style:"display:flex;"
+          },
+          _items:[
+            {
+              _tag:"select",
+              _attr:{
+                style:"height:25px;width:100%;margin-left:30px;margin-right:10px;"
+              },
+              _dataModel:"_uiSwitch._uploadUrl",
+              _items:[
+                {
+                  _tag:"option",
+                  _attr:{
+                    style:"font-size:13px",
+                    value:function(d){
+                      return '{{'+d._item+'}}'
+                    }
+                  },
+                  _text:function(d){
+                    d=d._item
+                    let v=eval(d)
+                    if(v.constructor==Function){
+                      v=_ideDataHandler._getOrgDataSettingFromNamePath(d).url
+                    }
+                    if(v.constructor==String){
+                      d=`${d} (${v})`
+                    }
+                    return d
+                  },
+                  _dataRepeat:function(){
+                    return fs
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        //std files
+        {
+          _tag:"label",
+          _attr:{
+            style:"height: 25px;padding: 8px;line-height: normal;"
+          },
+          _items:[
+            {
+              _tag:"input",
+              _attr:{
+                style:"margin-right:10px;height: 10px;",
+                type:"radio",
+                value:"std"
+              },
+              _dataModel:"_uiSwitch._uploadFileFrom"
+            },
+            {
+              _text:"_bzMessage._action._uploadInStdFiles"
+            }
+          ]
+        },
+        {
+          _if:"_uiSwitch._uploadFileFrom=='std'",
+          _tag:"div",
+          _attr:{
+            style:"display:flex;"
+          },
+          _items:[
+            {
+              _tag:"select",
+              _attr:{
+                style:"height:25px;width:100%;margin-left:30px;margin-right:10px;"
+              },
+              _dataModel:"_uiSwitch._uploadUrl",
+              _items:[
+                {
+                  _tag:"option",
+                  _attr:{
+                    style:"font-size:13px",
+                    value:function(d){
+                      return d._item
+                    }
+                  },
+                  _text:function(d){
+                    return d._item
+                  },
+                  _dataRepeat:function(){
+                    let vs=_domRecorder._uploadFileTypes
+                    return vs.map(x=>'example.'+x)
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        //url
+        {
+          _tag:"label",
+          _attr:{
+            style:"height: 25px;padding: 8px;line-height: normal;"
+          },
+          _items:[
+            {
+              _tag:"input",
+              _attr:{
+                style:"margin-right:10px;height: 10px;",
+                type:"radio",
+                value:"url"
+              },
+              _dataModel:"_uiSwitch._uploadFileFrom"
+            },
+            {
+              _text:"_bzMessage._action._uploadInUrlFile"
+            }
+          ]
+        },
+        {
+          _if:function(){
+            let r=_uiSwitch._uploadFileFrom=='url'
+            if(r&&!_uiSwitch._uploadUrl){
+              _uiSwitch._uploadUrl="/"+"/"
+            }
+            return r
+          },
+          _tag:"div",
+          _attr:{
+            style:"display:flex;"
+          },
+          _items:[
+            {
+              _tag:"input",
+              _attr:{
+                style:"flex:1;height:25px;margin-left:30px;margin-right:10px;"
+              },
+              _dataModel:"_uiSwitch._uploadUrl",
+            }
+          ]
+        },
+        {
+          _tag:"label",
+          _attr:{
+            style:"height: 25px;padding: 8px;line-height: normal;"
+          },
+          _items:[
+            {
+              _tag:"input",
+              _attr:{
+                style:"margin-right:10px;height: 10px;",
+                type:"radio",
+                value:"local"
+              },
+              _dataModel:"_uiSwitch._uploadFileFrom"
+            },
+            {
+              _text:"_bzMessage._action._uploadFromDesk"
+            }
+          ]
+        },
+        {
+          _if:"_uiSwitch._uploadUrl&&_uiSwitch._uploadFileFrom!='local'",
+          _tag:"div",
+          _items:[
+            {
+              _if:"_uiSwitch._uploadUrl&&_uiSwitch._uploadUrl.match(/[.](docx|html|odt|epub|avi|pdf|rtf|zip)$/)",
+              _tag:"a",
+              _attr:{
+                style:"cursor:pointer;",
+                href:"_uiSwitch._uploadUrl",
+                target:"_"+"blank"
+              },
+              _text:"_bzMessage._action._reviewByDownload"
+            },
+            {
+              _if:"_uiSwitch._uploadUrl&&_uiSwitch._uploadUrl.endsWith('.ogv')",
+              _tag:"video",
+              _attr:{
+                width:200,
+                controls:1,
+                style:"margin-top:5px;"
+              },
+              _items:[
+                {
+                  _tag:"source",
+                  _attr:{
+                    src:"_uiSwitch._uploadUrl"
+                  },
+                  _text:"Your browser does not support HTML video."
+                }
+              ]
+            },
+            {
+              _if:"_uiSwitch._uploadUrl&&_uiSwitch._uploadUrl.match(/[.](png|jpg|gif)$/)",
+              _tag:"img",
+              _attr:{
+                onerror:"this.style.display='none'",
+                onload:"this.style.display='block'",
+                src:function(){
+                  return SERVER_HOST.replace(/^https?:/,"")+"/file/"+_uiSwitch._uploadUrl
+                },
+                style:"max-width:50px;max-height:50px;",
+                onmouseover:"this.style.position='fixed';this.style.maxWidth='unset';this.style.maxHeight='unset';",
+                onmouseout:"this.style.position='unset';this.style.maxWidth='50px';this.style.maxHeight='50px';",
+              }
+            },
+            {
+              _if:function(){
+                let s=_uiSwitch._uploadUrl
+                if(s&&s.match(/[.](bat|js|sh|css|json|txt)$/)){
+                  $.get(s,function(d){
+                    _uiSwitch._tmpContent=d
+                  })
+                  return 1
+                }
+              },
+              _tag:"div",
+              _attr:{
+                style:"line-height:20px;padding:10px 0;"
+              },
+              _text:function(){
+                if(_uiSwitch._uploadUrl.endsWith(".json")){
+                  return JSON.stringify(_uiSwitch._tmpContent,0,2)
+                }else{
+                  return _uiSwitch._tmpContent
+                }
+              }
+            }
+          ]
+        },
+        {
+          _tag:"div",
+          _attr:{
+            style:"display:flex;justify-content: space-between;margin-top:10px;bottom: 10px;position: fixed;width: calc(100% - 40px);border-top: var(--bz-border);padding: 10px 10px 0 10px;"
+          },
+          _items:[
+            {
+              _tag:"button",
+              _attr:{
+                class:"btn btn-primary",
+              },
+              _text:"_bzMessage._method._continue",
+              _jqext:{
+                click:function(c){
+                  if(_uiSwitch._uploadFileFrom!="local"&&!_uiSwitch._uploadUrl){
+                    return alert(_bzMessage._action._missingUploadFile)
+                  }else if(_uiSwitch._uploadFileFrom=="local"){
+                    _uiSwitch._uploadUrl=""
+                    $(e).click()
+                  }else{
+                    let _url=_uiSwitch._uploadUrl
+                    if(_uiSwitch._uploadFileFrom=="_exist"){
+                      _url=eval(_url.replace(/[\{\}]/g,""))
+                    }
+                    if(_url.constructor==String){
+                      _Util._setUrlFileToInput(_url,e)
+                    }else{
+                      $util.triggerChangeEvent(e,_url,1);
+                    }
+                  }
+                  setTimeout(()=>{
+                    _uiSwitch._uploadFileFrom=""
+                    this.ownerDocument.defaultView.close()
+                  },100)
+                }
+              }
+            },
+            {
+              _tag:"button",
+              _attr:{
+                class:"btn btn-secondary",
+              },
+              _text:"_bzMessage._method._cancel",
+              _jqext:{
+                click:function(c){
+                  _uiSwitch._uploadFileFrom=0
+                  _uiSwitch._uploadUrl=0
+                  this.ownerDocument.defaultView.close()
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+    this._domPickerWindow = _Util._popWin("","_selectFile",null,400,400,_viewDef,_bzMessage._action._selectUploadFile);
+
+    // _Util._confirmMessage(,[{
+    //   _title:_bzMessage._method._continue,
+    //   _style:"background-color: #0069FF !important;color: #FFF !important;border: 1px solid #999 !important;border-radius: 6px !important;padding: 6px 10px !important;font-size:15px !important;",
+    //   _click:function(c){
+    //     if(_uiSwitch._uploadFileFrom!="local"&&!_uiSwitch._uploadUrl){
+    //       return alert(_bzMessage._action._missingUploadFile)
+    //     }else if(_uiSwitch._uploadFileFrom=="local"){
+    //       _uiSwitch._uploadUrl=""
+    //       $(e).click()
+    //     }else{
+    //       let _url=_uiSwitch._uploadUrl
+    //       if(_uiSwitch._uploadFileFrom=="_exist"){
+    //         _url=eval(_url.replace(/[\{\}]/g,""))
+    //       }
+    //       if(_url.constructor==String){
+    //         _Util._setUrlFileToInput(_url,e)
+    //       }else{
+    //         $util.triggerChangeEvent(e,_url,1);
+    //       }
+    //     }
+    //     setTimeout(()=>{
+    //       _uiSwitch._uploadFileFrom=""
+    //     },100)
+    //     c._ctrl._close()
+    //   }
+    // },{
+    //   _title:_bzMessage._method._cancel,
+    //   _style:"background-color: #FFF !important;color: #000 !important;float: right !important;border: 1px solid #999 !important;border-radius: 6px !important;padding: 6px 10px !important;font-size:15px !important;",
+    //   _click:function(c){
+    //     _uiSwitch._uploadFileFrom=0
+    //     _uiSwitch._uploadUrl=0
+        
+    //     c._ctrl._close()
+    //   }
+    // }],0,0,1,0,1)
+    // setTimeout(()=>{
+    //   $(".bz-modal-window").css({height:"480px","font-size":"11px"})
+    // },20)
+  },
+  _setClickFileInput:function(){
+    _domRecorder._lastClickFileInput=Date.now()
+    if(_domRecorder._lastNewActionTime&&_domRecorder._lastClickFileInput-_domRecorder._lastNewActionTime.t<200){
+      let a=_domRecorder._lastNewActionTime.a,
+          g=_ideActionManagement._getCurGroup(a),
+          _idx=_ideActionManagement._getCurIdx(a);
+
+      _ideTestManagement._removeAction(_IDE._data._curTest,_domRecorder._lastNewActionTime.a)
+      a=_ideActionManagement._findActionByPath(_idx)
+      if(!a){
+        a=g.actions._last()||g
+      }
+      BZ._setHash(a)
+    }
+  },
+  _setBackPopMsg:function(){
+    if(window.extensionContent){
+      return window.postMessage({bz:1,_setBackPopMsg:1}, "*");
+    }
+    _doIt(window)
+    function _doIt(w){
+      try{
+        w.alert=w.BZ_Recording_Alert;
+        w.confirm=w.BZ_Recording_Confirm;
+        w.prompt=w.BZ_Recording_Prompt;
+        
+        if(w.BZ_Recording_Onbeforeunload){
+          w.onbeforeunload= w.BZ_Recording_Onbeforeunload;
+        }
+        
+        w.BZ_Recording_Alert=w.BZ_Recording_Confirm=w.BZ_Recording_Confirm=0
+        
+        if(w.XMLHttpRequest.prototype.BZ_Ajax){
+          w.eval("window.XMLHttpRequest.prototype.open=window.XMLHttpRequest.prototype.BZ_Ajax");
+          w.eval("window.XMLHttpRequest.prototype.send=window.XMLHttpRequest.prototype.BZ_AjaxSend");
+          w.eval("window.XMLHttpRequest.prototype.setRequestHeader=window.XMLHttpRequest.prototype.BZ_SetHeader");
+        }
+      }catch(e){
+      }
+    }
+  },
+  _closeObserver:function(){
+    try{
+      this._observer.disconnect();
+    }catch(e){}
+    this._monitorList=[];
+  },
+  _setEventListenerOnAllDoms:function(){
+    _domRecorder._setDomEventListener(document)
+  },
+  _setDomEventListener:function(_document){
+    let b=_document
+    if(b._inListening){
+      return;
+    }
+    b._inListening=true;
+    if(window.extensionContent){
+      bzComm.postToApp({
+        fun:"_takeoverPopMsg",
+        scope:"_domRecorder"
+      }, "*");
+    }else{
+      _domRecorder._takeoverPopMsg(b.defaultView);
+    }
+    _domRecorder._removeDomEventListener(_document);
+    _domRecorder._monitor(b);
+    _domRecorder._handleFileInput();
+
+    $(b).on("mousedown","*",_domRecorder._bindFun);
+    
+    $(b).on("mouseup","*",_domRecorder._bindFun);
+    $(b).on("mousemove","*",_domRecorder._bindFun);
+    $(b).on("dblclick","*",_domRecorder._bindFun);
+    $(b).on("click","*",_domRecorder._bindFun);
+    $(b).on("keyup","*",_domRecorder._bindFun);
+    $(b).on("keydown","*",_domRecorder._bindKeydown);
+    $(b).on("change","input,textarea,select",_domRecorder._bindFun);
+    $(b).on("focus","input,textarea,select",_domRecorder._bindFocus);
+    $(b).on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+
+    // for(var k in _domRecorder._listenEvents){
+    //   if (k=="click") {
+    //     $(_document).find("*").not("style,script").bind("mousedown",_domRecorder._bindFun);
+    //   }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
+    //     continue;
+    //   }else if (k=="focus") {
+    //     continue;
+    //   }else if(k=="dragDrop"){
+    //     $(_document).find("*").not("style,script").bind("mouseup",_domRecorder._bindFun);
+    //     $(_document).find("*").not("style,script").bind("mousemove",_domRecorder._bindFun);
+    //     if(!_domRecorder._listenEvents.mousedown && !_domRecorder._listenEvents.click){
+    //       $(_document).find("*").bind("mousedown",_domRecorder._bindFun);
+    //     }
+    //     continue;
+    //   }else if(k=="change"){
+    //     $(_document).find("input,textarea,select").bind(k,_domRecorder._bindFun);
+    //   }else{
+    //     $(_document).find("*").not("style,script").bind(k,_domRecorder._bindFun);
+    //   }
+    // }
+    // $(_document).find("*").not("style,script").bind("keyup",_domRecorder._bindFun);
+    // $(_document).find("*").not("style,script").bind("keydown",_domRecorder._bindKeydown);
+    /*
+    let iframes=$(_document).find("IFRAME")
+    if(iframes[0]){
+      iframes=iframes.toArray();
+      iframes.forEach(function(v){
+        if(!v.src){
+          _domRecorder._setDomEventListener(v.contentDocument)
+        }
+      })
+    }
+    */
+  },
+  _buildTmpPath:function(o,_last){
+    _last=_last||[]
+    if(_last[0]==o){
+      return _last
+    }
+    var _tmpPath=[]
+    while(o && o.tagName!="BODY"){
+      _tmpPath.push(o)
+      o=o.parentNode||o.host
+    }
+    return _tmpPath
+  },
+  _retrievePath:function(p,x,y,_ignoreTxt){
+    var _removedElement=[],_body
+    if(p.length){
+      delete p[0].bzTxtElement
+      _body=p[0].ownerDocument.body
+    }else{
+      return
+    }
+    if(!_cssHandler._isInShadowDom(p[0])){
+      let _lastPath=p[0].bzTmp
+      while(p[0]&&!$(p[0].ownerDocument).find(p[0]).length){
+        _removedElement.push(p.shift())
+        if(!p.length){
+          p=this._lastPaths
+          _removedElement=[]
+        }
+      }
+      if(!p[0]){
+        return {
+          _elementPath:_lastPath,
+          W:{
+            HH:[],
+            LL:{}
+          }
+        }
+      }
+    }else{
+      while(!p[0].getBoundingClientRect().width){
+        p.shift()
+      }
+    }
+    if(!p.length){
+      p.push(_body)
+    }
+    let pp=0;
+    if(p[0].tagName=="CANVAS"){
+      p[0].bzTxtElement=TWHandler._getCanvasTextElementByMousePos(p[0],x,y,_ignoreTxt)
+      pp=p[0]
+    }
+    p[0].bzShortCut=0
+    p=_cssHandler._findPath(p[0],1,_removedElement.length?2:0);
+    if(_removedElement.length){
+      var i=p._elementPath.pop();
+      if(!$.isNumeric(i)){
+        p._elementPath.push(i)
+      }
+      var e=_cssHandler._findCellElement(_removedElement[0]);
+      var i=_removedElement.indexOf(e);
+      _removedElement.splice(i+1)
+      while(_removedElement.length){
+        if(_removedElement[0]==e){
+          break
+        }
+        _removedElement.shift()
+      }
+      while(_removedElement.length){
+        e=_removedElement.pop()
+        var d={e:e,oe:e,ps:[],ee:1,_headers:[]};
+        _cssHandler._findAttributes(d)
+        d=d._result._main
+        if(d){
+          d=d.join("")
+        }else{
+          d=e.tagName
+        }
+        p._elementPath.push(d);
+      }
+      if(e&&!_cssHandler._isInput(e)){
+        var w=_Util._filterTxt($util.getElementText(e))
+        if(w){
+          p._elementPath[p._elementPath.length-1]+=":Contains("+w+")"
+        }
+      }
+      p._elementPath.push(0)
+    }
+
+    return p;
+  },
+  _takeoverPopMsg:function(){
+    let w=window
+    try{
+      var _beforeunload=w.onbeforeunload || (_checkJQueryEvent().beforeunload?_checkJQueryEvent().beforeunload[0].handler:null);
+      if((!w.BZ_Recording_Onbeforeunload && _beforeunload) || (w.BZ_Recording_Onbeforeunload_fun && w.BZ_Recording_Onbeforeunload_fun!=_beforeunload)){
+        w.BZ_Recording_Onbeforeunload=_beforeunload;
+        if(_beforeunload){
+          _beforeunload=function(){
+            var _msg=w.BZ_Recording_Onbeforeunload();
+            if(_msg){
+              _domRecorder._curPopMsg={_type:"onbeforeunload",_msg:_msg,_time:Date.now()};
+              var r=_domRecorder._curPopMsg._returnValue=_domRecorder._curPopMsg._msg;
+              _domRecorder._setPopMsg();
+              return r;
+            }
+          }
+          if(w.onbeforeunload){
+            w.onbeforeunload=_beforeunload;
+          }else{
+            _checkJQueryEvent().beforeunload[0].handler=_beforeunload;
+          }
+        }
+        w.BZ_Recording_Onbeforeunload_fun=_beforeunload;
+      }
+      TWHandler._takeoverCanvas(w)
+      
+      if(!w.BZ_Recording_Alert||w.BZ_Recording_Alert==w.alert){
+        w.BZ_Recording_Alert=w.alert
+        w.alert=function(m){
+          _domRecorder._curPopMsg={_type:"alert",_msg:m,_time:Date.now()};
+          _domRecorder._setPopMsg();
+          w.BZ_Recording_Alert(m);
+        }
+      }
+      if(!w.BZ_Recording_Confirm||w.BZ_Recording_Confirm==w.confirm){
+        w.BZ_Recording_Confirm=w.confirm
+        w.confirm=function(m){
+          _domRecorder._curPopMsg={_type:"confirm",_msg:m,_time:Date.now()};
+          var r=_domRecorder._curPopMsg._returnValue=w.BZ_Recording_Confirm(m);
+          _domRecorder._setPopMsg();
+          return r
+        }
+      }
+      if(!w.BZ_Recording_Prompt||w.BZ_Recording_Prompt==w.prompt){
+        w.BZ_Recording_Prompt=w.prompt
+        w.prompt=function(m){
+          _domRecorder._curPopMsg={_type:"prompt",_msg:m,_time:Date.now()};
+          var r=_domRecorder._curPopMsg._returnValue=w.BZ_Recording_Prompt(m);
+          _domRecorder._setPopMsg();
+          return r
+        }
+      }
+    }catch(e){}
+    function _checkJQueryEvent(e){
+      try{
+        return $["_"+"data"](e,"events") || {};
+      }catch(e){}
+      return {};
+    }
+  },
+  _setPopMsg:function(_popMsg){
+    _popMsg=_popMsg||_domRecorder._curPopMsg;
+    _domRecorder._curPopMsg=null;
+    if(!bzComm._isIDE()){
+      bzComm.postToIDE({
+        fun:"_setPopMsg",
+        ps:[_popMsg],
+        scope:"_domRecorder"
+      });
+    }else{
+      _domRecorder._curPopMsg=_popMsg;
+    }
+  },
+  _showSetAlert:function(v){
+    _Util._confirmMessage({
+      _tag:"div",
+      _data:v,
+      _items:[
+        {
+          _tag:"div",_attr:{"class":"input-group"},
+          _items:[
+            {
+              _tag:"div",_attr:{"class":"input-group-addon"},
+              _items:[
+                {
+                  _tag:"label",
+                  _text:"_bzMessage._action._popType"
+                }
+              ]
+            },
+            {
+              _tag:"select",
+              _attr:{
+                "disabled":"!BZ._isCheckout()",
+                "class":"form-control",
+              },
+              _dataModel:"_data.popType",
+              _items:[
+                {
+                 _tag:"option",
+                  _attr:{
+                    value:"_data._item"
+                  },
+                  _text:"_data._item",
+                  _dataRepeat:["","alert","confirm","prompt","onbeforeunload"]
+                }
+              ]
+            }
+          ]
+        },
+        //Compare
+        {
+          _tag:"div",_attr:{"class":"input-group"},
+          _items:[
+            {
+              _tag:"div",_attr:{"class":"input-group-addon"},
+              _items:[
+                {
+                  _tag:"label",_text:"_bzMessage._action._compare"
+                }
+              ]
+            },
+            {
+              _tag:"select",
+              _attr:{
+                "disabled":"!BZ._isCheckout()",
+                "class":"form-control"
+              },
+              _items:[
+                {
+                  _tag:"option",
+                  _attr:{
+                    value:"_data._item"
+                  },
+                  _text:function(d){
+                    return d._item.includes("clude")?_bzMessage._common[d._item]:d._item;
+                  },
+                  _dataRepeat:["==",">",">=","<","<=","!=","regex","include","exclude"]
+                }
+              ],
+              _dataModel:"_data.compareMark"
+            }
+          ]
+        },
+        {
+          _tag:"div",
+          _attr:{
+            "class":"input-group"
+          },
+          _items:[
+            {
+              _tag:"div",_attr:{"class":"input-group-addon"},
+              _items:[
+                {
+                  _tag:"label",
+                  _text:"_bzMessage._action._expectation"
+                },
+              ]
+            },
+            //expectation value
+            {
+              _tag:"input",
+              _attr:{
+                "class":"form-control",
+                placeholder:"_bzMessage._action._dataSizeWarning"
+              },
+              _dataModel:"_data.expectation"
+            }
+          ]
+        },
+        //return value
+        {
+          _if:function(d){
+            return d.popType=='confirm' || d.popType=='prompt';
+          },
+          _tag:"div",_attr:{"class":"input-group"},
+          _items:[
+            {
+              _tag:"div",_attr:{"class":"input-group-addon"},
+              _items:[
+                {
+                  _tag:"label",
+                  _text:"_bzMessage._action._returnValue"
+                }
+              ]
+            },
+            {
+              _tag:"input",
+              _attr:{
+                "disabled":"!BZ._isCheckout()",
+                type:"text",
+                "class":"form-control"
+              },
+              _dataModel:"_data.returnValue"
+            }
+          ]
+        }
+      ]
+    },[{
+      _title:_bzMessage._method._close,
+      _click:function(c){
+        c._ctrl._close()
+        _ideTestManagement._save()
+      }
+    }],0,0,1,0,1)
+  },
+  _isIgnoreClickElement:function(e){
+    return ["INPUT","TEXTAREA","SELECT"].includes(e.tagName) && !["reset","submit","button","image"].includes(e.type)
+  },
+  _monitorSetInputActions:{
+    _mergeForSetAction:function(e,a){
+      let _this=this
+      if(e._coverChkRadio){
         setTimeout(()=>{
-          _bzStdComm.postToIDE({
-            fun:"_retryFuns",
-            scope:"_bzStdComm"
+          a._txt=e._coverChkRadio.checked&&"on"
+          _buildMergeData([a],e._coverChkRadio)
+        },100)
+      }else if(!_cssHandler._isCover(e)&&_this._isInMonitoredScope(e)&&(a._type=="click"||a._type=="change")){
+        let as=_this._curMonitorElement._actions
+        if(as.length==2){
+          if(a._type!="click"||as[1]._type=="click"){
+            _setLastAction(a)
+            return
+          }
+        }else if(as.length>2){
+          _setLastAction(a)
+          return
+        }
+        as.push(a)
+        if(a._type=="click"){
+          _Util._clearPreEventElements()
+          _this._curMonitorElement._diffList=[]
+          clearTimeout(_domRecorder._mergeSetActionTime)
+          _Util._preTriggerEvent()
+
+          _domRecorder._mergeSetActionTime=setTimeout(()=>{
+            _doIt(as)
+          },500)
+        }
+      }else{
+        _setLastAction(a)
+      }
+            
+      function _doIt(as){
+        if(_Util._isHidden(_this._curMonitorElement._element)&&_domRecorder._lastAction._tmpUrl==location.href){
+          let _targetElement=as[0]._element
+          if(_Util._isHidden(_targetElement)||(_targetElement.innerText||_targetElement.value||"").toLowerCase().trim().includes((a._element.innerText||a._element.value||"").toLowerCase().trim())){
+            _buildMergeData(as,_targetElement)
+          }
+          _this._lastAction=_this._curMonitorElement=0
+        }else{
+          _this._lastAction=a
+          _this._curMonitorElement._actions=[a]
+        }
+      }
+
+      function _buildMergeData(as,_targetElement){
+        as={
+          _actions:as,
+          _data:{
+            _value:a._txt,
+            _elementType:_targetElement.type||_targetElement.tagName,
+          }
+        }
+        
+        if(_innerWin._data._dataBind._showDataBind&&_targetElement){
+          if(_Util._isHidden(_targetElement)){
+            let ee=$(":text("+a._txt+")")
+            if(ee.length==1){
+              _targetElement=ee[0]||_targetElement
+            }else{
+              _targetElement=_Util._getClosestElement(a._element,a._element,ee)||ee[0]
+            }
+          }
+
+          as._data._inputPath=_cssHandler._findInputPath(_targetElement)
+          
+          let p=_ideDataBind._getBindData(_targetElement)
+          if(p){
+            if(p.includes("$")){
+              p="{{"+p+"}}"
+            }
+            as._data._name=p
+          }
+        }
+        if(!window.extensionContent){
+          _ideActionManagement._mergeToSetAction(as);
+        }else{
+          bzComm.postToIDE({ps: [as],scope:"_ideActionManagement",fun:"_mergeToSetAction"});
+        }
+        _Util._preTriggerEvent()
+      }
+
+      function _setLastAction(a,_noclear){
+        if(a._type=="click"){
+          _this._lastAction=a
+        }else{
+          if(Date.now()-_domRecorder._monitorSetInputActions._chkTime>300){
+            _Util._clearPreEventElements()
+          }
+          _this._lastAction=0
+        }
+        _this._curMonitorElement=0
+      }
+    },
+    _chkElementUpdate:function(e){
+      if(this._isInMonitoredScope(e)){
+        return
+      }
+
+      let ds=_Util._getDiffAfterTriggerEvent(1,1)
+      this._chkTime=Date.now()
+      if(ds.includes(e)&&this._lastAction){
+        this._curMonitorElement={
+          _element:e,
+          _diffList:ds,
+          _actions:[this._lastAction]
+        }
+      }else{
+        this._curMonitorElement=0
+        this._lastAction=0
+      }
+    },
+    _isInMonitoredScope:function(e){
+      return this._curMonitorElement&&this._curMonitorElement._diffList.includes(e)
+    }
+  },
+  _recordEvent:function(_action,_value){
+    // if(_domRecorder._lastChkAction){
+    //   if(_domRecorder._lastChkAction._type==_action.type&&_domRecorder._lastChkAction._target==_action.target){
+    //     return
+    //   }
+    // }
+    // _domRecorder._lastChkAction={
+    //   _type:_action.type,
+    //   _target:_action.target
+    // }
+    if(!_domRecorder._hiddenItems){
+      _domRecorder._hiddenItems=_Util._findAllHiddenElements()
+    }else{
+      let v=_Util._findAllHiddenElements()
+      if(v.length>_domRecorder._hiddenItems.length){
+        _domRecorder._hiddenItems=v
+      }
+    }
+    if(_action.type=="mousemove"&&!_action.target._coverChkRadio&&!_Util._isStdInputElement(_action.target)&&!_Util._isInContentEditable(_action.target)){
+      _action.target._coverChkRadio=_cssHandler._findChkRadio(_action.target)
+    }
+
+    var _element=_action.currentTarget;
+    if(["mousedown"].includes(_action.type)){
+      _domRecorder._monitorSetInputActions._chkElementUpdate(_element)
+    }
+
+    if(_action.type=="change"){
+      _element=_action.target;
+      if(_element.type=="hidden"){
+        return;
+      }
+    }
+    _Util._removeLinkTarget(_element);
+
+    if(_cssHandler._isInput(_element) && !_element.readOnly && !$("#BZ_Win").find(_element).length && "focusin"==_action.type){
+      // setTimeout(function(){
+        // _ideDataBind._showMe(_element)
+      // },100);
+      return
+    }else if(_Util._isInContentEditable(_element) && !$("#BZ_Win").find(_element).length && "mousedown"==_action.type){
+      // setTimeout(function(){
+        // _ideDataBind._showMe(_element)
+      // },100);
+    }else if(!$(BZ.TW.document).find(".BZIgnore").find(_element).length){
+      if(_action.type=="blur" && !_domRecorder._typed){
+        return;
+      }
+    }
+    //ignore tab on input/select
+    var _keyCode=_Util._checkKeycode(_action)
+    if(_keyCode==9 && ["A","BUTTON","INPUT","SELECT","TEXTAREA"].includes(_element.tagName)){
+      return
+    }else if([40,38,39,37].includes(_keyCode) && ["SELECT","TEXTAREA"].includes(_element.tagName)){
+      return
+    // }else if(13==_keyCode && ["TEXTAREA"].includes(_element.tagName)){
+    //   return 
+    }
+    var _paths;
+    if(!this._lastPaths || this._lastPaths[0]!=_element){
+      this._lastPaths=_paths=_domRecorder._buildTmpPath(_element);
+    }else{
+      _paths=this._lastPaths
+    }
+
+    if(["click","dblclick","mousedown"].includes(_action.type) && this._isIgnoreClickElement(_element)){
+      if(_element.type=="file"){
+        console.log("click file")
+      }else if(_element.tagName!="SELECT"){
+        this._lastStep._action=_action.type=="mousedown"?"click":_action.type;
+        this._clickInputStep=this._lastStep
+      }
+      this._lastStep=0
+      return;
+    }
+
+    var _step={
+      _element:_element,
+      _type:_ideActionData._type._triggerEvent,
+      _paths:_paths,
+      _action:_action.type,
+      _ctrl:_action.ctrlKey,
+      _alt:_action.altKey,
+      _code:_keyCode,
+      _char:_Util._checkCharcode(_action),
+      _shift:_action.shiftKey,
+      _value:_value,
+      _button:_action.buttons||_action.button,
+      _pageX:_action.pageX,
+      _pageY:_action.pageY,
+      _time:Date.now(),
+      _tmpUrl:BZ.TW.location.href,
+      _domXY:_Util._getDomXY(_element),
+      _keyName:_action.key
+    };
+
+    if(_action.type=="mouseup"){
+      if(!this._lastStep){
+      }else if(this._listenEvents.dragDrop && this._lastStep._inDragdrop){
+        _step._element=this._lastStep._element;
+        _step._paths=this._lastStep._paths;
+        _step._action="dragdrop";
+        _step._orgPath=this._lastStep._orgPath;
+        _step._tmpUrl=this._lastStep._tmpUrl;
+        _step._startPos=_domRecorder._mousedownStep._domXY
+        _domRecorder._createRecordAction(_step);
+        this._lastStep=_step
+      }else if(this._lastStep._action=="mousemove"){
+        this._lastStep._action="click";
+        _domRecorder._createRecordAction(this._lastStep);
+        this._lastStep=0
+      }
+      return;
+    }
+    var _this=this;
+    if (_action.type=="mousedown") {
+      this._lastStep=_domRecorder._mousedownStep=_step;
+      _step._orgPath=_domRecorder._retrievePath(_step._paths,_action.pageX,_action.pageY)
+      return;
+    }else if(_action.type=="mousemove"){
+      if(!_step._button){
+        if(this._lastStep && this._lastStep._action=="mousedown"){
+          if(this._lastStep._element.draggable && (Math.abs(_step._pageX-this._lastStep._pageX)>10||Math.abs(_step._pageY-this._lastStep._pageY)>10)){
+            this._lastStep._action="dragdrop";
+            this._lastStep._pageX=_action.clientX
+            this._lastStep._pageY=_action.clientY
+            this._lastStep._targetElement=_Util._getElementByXY(this._lastStep._element.ownerDocument,_action.clientX,_action.clientY,this._lastStep._element)
+            if(this._lastStep._targetElement){
+              this._lastStep._targetElement=_cssHandler._findPath(this._lastStep._targetElement)
+            }
+          }else{
+            this._lastStep._action="click";
+          }
+          _domRecorder._createRecordAction(this._lastStep);
+          this._lastStep=0
+        }else{
+          this._lastStep=_step;
+        }
+      }else{
+        if(this._lastStep && this._lastStep._element==_step._element && (this._lastStep._domXY.x!=_step._domXY.x || this._lastStep._domXY.y!=_step._domXY.y)){
+          this._lastStep._inDragdrop=1
+        }
+      }
+      return;
+    }else if(_action.type=="click"){
+      if(!this._lastStep){
+        return
+      }else if(this._lastStep._action=="dragdrop"){
+        this._lastStep=0;
+        return;
+      }
+      
+      if(this._lastStep._action!=="mousedown"){
+        return _domRecorder._createRecordAction(_step);
+        /*
+        var _tmpClick=_step;
+        return setTimeout(function(){
+          _domRecorder._createRecordAction(_tmpClick);
+        },100)
+        */
+      }else if(this._lastStep && this._lastStep._action=="mousedown"){
+        if((_action.pageX||_action.pageY)&&(Math.abs(_action.pageX-_domRecorder._lastStep._pageX)>50||Math.abs(_action.pageY-_domRecorder._lastStep._pageY)>50)){
+          this._lastStep._action="dragdrop"
+          this._lastStep._pageX=_action.pageX
+          this._lastStep._pageY=_action.pageY
+          if(this._lastStep._element.tagName=="CANVAS"){
+            let _ignoreTxt=_descAnalysis._retrieveTextForElementPathItem(this._lastStep._orgPath._elementPath)
+            let ee=_domRecorder._retrievePath(_step._paths,_action.pageX,_action.pageY,_ignoreTxt)
+            if(ee){
+              this._lastStep._targetElement=ee._elementPath
+            }
+          }
+        }else{
+          this._lastStep._action="click"
+        }
+        _domRecorder._createRecordAction(_domRecorder._lastStep);
+        this._lastStep=0;
+        return;
+      }
+    }
+    if(!(this._lastStep && this._lastStep._action=="mousedown" && _step._element!=this._lastStep._element)){
+      this._lastStep=_step;
+    }
+    _domRecorder._createRecordAction(_step);
+  },
+  _setPopInfo:function(_popMsg,a){
+    if(!_popMsg){
+      return;
+    }
+    a=a||_IDE._data._curAction;
+    if(a){
+      if(!a.event.popType){
+        a.event.popType=_popMsg._type;
+        a.expectation=_popMsg._msg;
+        a.event.returnValue=_popMsg._returnValue;
+        a.event.popFollow=""
+      }else{
+        if(!a.event.alerts){
+          a.event.alerts=[]
+          a.event.alerts.push({
+            popType:a.event.popType,
+            expectation:a.expectation,
+            returnValue:a.event.returnValue,
+            popFollow:""
           })
-        },1000)
+        }
+        a.event.alerts.push({
+          popType:_popMsg._type,
+          expectation:_popMsg._msg,
+          returnValue:_popMsg._returnValue,
+          popFollow:""
+        })
+      }
+    }
+  },
+  _insertHoverAction:function(e){
+    if(_inHidden(e)){
+      let p=e.parentNode,ee
+      while(_inHidden(p)){
+        e=p
+        p=e.parentNode
+      }
+      if(!p||p.tagName=="BODY"){
+        return
+      }
+
+      for(let o of p.children){
+        if(o!=e&&!_Util._isIgnoreElement(o)){
+          if(!ee||_Util._getElementContentText(o)){
+            ee=o
+          }
+        }else{
+          break
+        }
+      }
+      ee=ee||p
+      if(_domRecorder._lastElement==(ee)){
+        return
+      }
+      if(_cssHandler._findHoverCssByElement(ee).length){
+        let a={
+          type:1,
+          element:_cssHandler._findPath(ee),
+          event:{
+            type:"mouse",
+            action:"hover",
+          }
+        }
+
+  
+        _domRecorder._sendData(a)
+      }
+    }
+
+    function _inHidden(o){
+      return _domRecorder._hiddenItems.includes(o)||$(_domRecorder._hiddenItems).find(o).length
+    }
+  },
+  _addData:function(d){
+    if(_isIgnoreElement(d._element,d._action)){
+      return
+    }
+    let ld=_domRecorder._lastData
+    if(!BZ._autoRecording && ld && ld._element==d._element && ld._action==d._action && d._action=="click"&&Date.now()-ld._time<200){
+      return
+    }else{
+      _domRecorder._lastData={_element:d._element,_action:d._action,_time:Date.now()}
+    }
+    if(d._action=="change"){
+      _domRecorder._typed=0;
+    }
+    if(!d._orgPath){
+      d._orgPath=_domRecorder._retrievePath(d._paths,d._pageX,d._pageY);
+      if(!d._orgPath){
+        return
+      }
+    }
+
+    var a={
+      "type":d._type,
+      "element":d._orgPath._elementPath||d._orgPath.element||d._orgPath,
+      // qpath:_Util._getQuickPath(d._element),
+      // css:d._orgPath.W||d._orgPath.css,
+      event:{
+        type:["change","focus","blur"].indexOf(d._action)>=0?d._action:d._action.indexOf("key")==0?"key":"mouse",
+        ctrl:d._ctrl,
+        alt:d._alt,
+        shift:d._shift,
+        button:d._button,
+        x:d._pageX,
+        y:d._pageY,
+        keyCode:d._code,
+        charCode:d._char,
+        _customize:d._element._customize,
+        value:BZ._autoRecording?d._value:_domActionTask._curValueDataBind||d._value
+      },
+      _tmpUrl:d._tmpUrl,
+      _inUpload:d._inUpload,
+      _uploadFile:d._uploadFile,
+      _uploadUrl:d._uploadUrl
+    };
+    if(_isComElement(a.element)){
+      let tt=_getComTarget(d._element)
+      let tw=_descAnalysis._retrieveTextForElementPathItem(a.element)
+      a.event.type="change"
+      if(!tt){
+        a.event.value="{{$parameter."+_glossaryHandler._getVariableName(tw)+"}}"
+      }else if(tt.type=="radio"){
+        a.event.value=tw
+      }else{
+        a.event.value="true"
+      }
+    }else if(d._action=="click"){
+      _ideDataBind._bindDataOnElement(a,"element")
+    }
+    //It is in blank IFRAME
+    if(d._element.ownerDocument!==document&&!a.element[1].includes("IFRAME")){
+      a.element.splice(1,0,"IFRAME:blank("+_identifyIFrameHandler._getBlankIFrameID(d._element.ownerDocument.defaultView)+")")
+    }
+    
+    if(d._element.bzTxtElement){
+      a.offset=d._element.bzTxtElement.offset
+      delete d._element.bzTxtElement
+    }
+    
+    if(d._targetElement){
+      a.event.element=d._targetElement
+      if(a.offset){
+        a.event.offset=a.offset
+        delete a.offset//={x:0,y:0,origin:"mc"}
+      }
+    }
+    if(d._action=="dragdrop"&&d._startPos&&d._domXY){
+      a.event.way=Math.abs(d._startPos.x-d._domXY.x)>Math.abs(d._startPos.y-d._domXY.y)?"H":"V"
+    }
+    if(!BZ._autoRecording){
+      _domActionTask._curValueDataBind=0;
+    }
+    _domRecorder._setPopInfo(this._curPopMsg,a);
+    this._curPopMsg=0;
+    
+    if(d._action=="change" && d._element.type!="file"){
+      a.event.autoBlur="on";
+    }else if(d._action=="keyup"){
+      a.event.action="group";
+      a.event.keyName=d._keyName
+      delete a.event.value;
+    }
+    if(d._button==2){
+      a.event.action="click";
+    }else if (!["keyup","change","focus","blur"].includes(d._action)) {
+      a.event.action=d._action;
+    }
+    
+    if(d._element.tagName=="CANVAS"&&a.event.action=="click"&&!_descAnalysis._retrieveTextForElementPathItem(a.element)){
+      
+    }
+    
+    _ideDataBind._bindDataOnElement(a,"element")
+    _domRecorder._lastAction=a;
+    _domRecorder._insertHoverAction(d._element)
+    _domRecorder._lastElement=d._element;
+    _domRecorder._clickInputStep=0
+    setTimeout(()=>{
+      _domRecorder._hiddenItems=0
+    },100)
+    // if(!BZ._autoRecording && a.event.type!="change"){
+      // _ideDataBind._hideMe()
+    // }
+    if(this._lastStep&&d._action=="change"){
+      if(this._lastStep._action!="mousedown"){
+        this._lastStep=0
+      }
+    }else{
+      this._lastStep=0
+    }
+    if(_IDE._data._setting.autoMergeToSetValue){
+      a._mergeId=Date.now()
+      _domRecorder._monitorSetInputActions._mergeForSetAction(d._element,{
+        _action:a,
+        _element:d._element,
+        _type:d._action,
+        _txt:d._element.innerText||_descAnalysis._retrieveTextForElementPathItem(d._element),
+        _elementScope:_cssHandler._getElementScope(d._element)
+      })
+    }
+    if(BZ._autoRecording){
+      BZ._storeData(a)
+    }else if(!window.extensionContent){
+      _ideActionManagement._addItem(a);
+    }else{
+      //Call background to set back recording action
+      console.log("send click event")
+      _domRecorder._sendData(a)
+    }
+    _timingInfo._setTmpInfo([_ideActionManagement._getAutoDescription(a,1)])
+    setTimeout(function(){
+      _descAnalysis._clearTmpPath(1);
+    },200)
+
+    function _getComTarget(o){
+      while(o){
+        let os=$(o).find("INPUT")
+        if(os.length){
+          if(os.length>1){
+            return
+          }else{
+            return os[0]
+          }
+        }else if(o.tagName=="BODY"){
+          return
+        }
+        o=o.parentNode
+      }
+    }
+
+    function _isComElement(p){
+      return p[1][0]==":"&&!p[1].match(/^\:(input|text|Contains|RowCol|equal)/i)
+    }
+
+    function _isIgnoreElement(e,_action){
+      if(_action=="click"&&e){
+        if(e.tagName!="LABEL"&&e.tagName!="INPUT"){
+          e=_Util._getParentNode(e,"LABEL")
+        }
+        
+        if(e&&e.tagName=="LABEL"){
+          e=$(e).find("input")[0]
+        }
+
+        if(e&&e.tagName=="INPUT"&&e.getBoundingClientRect().width&&(["checkbox","radio"].includes(e.type))){
+          return 1
+        }
+      }
+    }
+  },
+  _sendDataList:[],
+  _sendData:function(a){
+    this._lastData=a;
+    BZ._formatInIFramePath(a.element)
+    _domRecorder._sendDataList.push({action: a})
+    _doIt()
+    function _doIt(){
+      if(!_domRecorder._waitSendData){
+        let o=_domRecorder._sendDataList.shift()
+        if(o){
+          _domRecorder._waitSendData=1
+          bzComm.postToIDE({
+            ps:[o.action],
+            scope:"_ideRecorder",
+            fun:"_addNewItem"
+          });
+          
+          setTimeout(()=>{
+            _domRecorder._waitSendData=0
+            _doIt()
+          },100)
+        }
+      }else{
+        setTimeout(()=>{
+          _doIt()
+        },100)
+      
+      }
+    }
+  },
+  _isIgnoreEvent:function(d){
+    var _tagName=d.tagName;
+    if(!d.readOnly){
+      if((_tagName=="INPUT" && !["button","submit","radio","image"].includes(d.type)) || ["TEXTAREA","SELECT"].includes(_tagName)){
+        //ignore click on input event
+        return _tagName=="SELECT" || !_cssHandler._getParentSelect(d);
+      }
+    }
+    return _Util._inSelectOption(d)
+  },
+  _insertPrepareChange:function(){
+    if(this._prepareChange){
+      var a=this._prepareChange;
+      a._time=Date.now()
+      this._prepareChange=0;
+      this._createRecordAction(a)
+      this._lastPrepareChangeElement={_element:a._element,_time:Date.now()}
+    }
+  },
+  _createRecordAction:function(d,_force){
+    if(this._lastPrepareChangeElement&&this._lastPrepareChangeElement._element==d._element&&Date.now()-this._lastPrepareChangeElement._time<500){
+      if(d._code!=13||(this._lastAction&&this._lastAction.event.type!="change")){
+        return
+      }
+    }
+    if(!d || d._action=="focusin"){
+      return;
+    }
+    if(d._action=="blur" && !_domRecorder._typed){
+      return;
+    }
+    if(d._action=="keyup"){
+      if(!d._code){
+        return;
+      }
+      if(d._char==0 && ([13,40,38,33,34,9].includes(d._code) || d.code>111)){
+        this._insertPrepareChange();
+      }else if(_Util._isStdInputElement(d._element)){
+        d._action="change"
+        d._value=d._element.value;
+        if(d._code==13 && !d._value){
+          this._insertPrepareChange();
+        }else{
+          return this._prepareChange=d;
+        }
+      }else if($(d._element).attr("contenteditable")){
+        return;
+      }
+    }else if(this._prepareChange && d._action._element!=this._prepareChange._element){
+      this._insertPrepareChange();
+    }else{
+      this._prepareChange=0;
+    }
+    if(d._action=="click" && this._lastStep && this._lastStep._action=="keyup"){
+      return;
+    }
+    if(["change","blur","focusout"].includes(d._action)){
+      if(this._lastChangeStep && this._lastChangeStep._element==d._element && d._time-this._lastChangeStep._time<500){
+        return;
+      }else{
+        this._lastChangeStep=d;
+      }
+    }else{
+      this._lastChangeStep=0;
+    }
+    
+    if(!_force&&"click,mousedown,mouseup".includes(d._action)){
+      if(this._isIgnoreEvent(d._element)){
+        return;
+      }
+    }else if(d._action=="change" && d._element.tagName=="SELECT"){
+      var vs=""
+      for(var i=0;i<d._element.selectedOptions.length;i++){
+        var o=d._element.selectedOptions[i];
+        v=o.textContent || o.text;
+        vs+="\n"+v;
+      }
+      d._value=vs.substring(1);
+    }
+    var _changeOnFile=d._action=="change" && d._element.tagName=="INPUT" && d._element.type=="file";
+    if(_changeOnFile){
+      _uploadHandler._inputFileToBase64Obj(d._element.files,function(_result){
+        var uf=_uiSwitch._uploadUrl
+        d._uploadFile=_result
+        _result=JSON.stringify(_result,0,2)
+        if(uf||_ideActionManagement._checkFileSize(_result)){
+          d._value=uf||("{{"+_result+"}}");
+          d._inUpload=1
+          d._uploadUrl=uf
+          if(uf){
+            delete d._uploadFile
+          }
+          _domRecorder._addData(d);
+        }
+      })
+    }else if(d._action=="change" && d._element.tagName=="INPUT" && d._element.type=="checkbox"){
+      if(!d._element.checked){
+        d._value=null;
+      }
+    }else if(["focusout","blur"].includes(d._action) && !_Util._isStdInputElement(d._element) && d._element.contentEditable){
+      d._action="change"
+    }
+    if(!_changeOnFile){
+      _domRecorder._addData(d);
+    }
+  },
+  _bindKeydown:function(a){
+    if(!a.keyCode){
+      return;
+    }
+    if($(BZ.TW.document).find(".BZIgnore").find(a.target).length){
+      return;
+    }
+    // _elementMonitor._handleMonitor();
+    if(_Util._isInContentEditable(a.currentTarget || a.target)){
+      _domRecorder._typed=1;
+    }
+    clearTimeout(_domRecorder._keyDownTime);
+    _domRecorder._keyDownTime=setTimeout(function(){
+      _ideDataBind._filter(a.target)
+    },100)
+  },
+  _bindFun:function(a){
+    if(!BZ._isRecording()){
+      return;
+    }
+    if(a.type=="mousemove"&&a.target.tagName=="CANVAS"&&!a.target._bindFun){
+      a.target._bindFun=1
+      $(a.target).bind("mousedown",_domRecorder._bindFun);
+    }
+    if($(BZ.TW.document).find(".BZIgnore").find(this).length){
+      return;
+    }else if(!_IDE._data._setting.disableShadowRootRecording&&a.target.shadowRoot&&_Util._hasDeepContent(a.target.shadowRoot)){
+      if(!a.target.shadowRoot._inListening){
+        a.target.shadowRoot._path=_cssHandler._findPath(a.target)
+        _domRecorder._setDomEventListener(a.target.shadowRoot)
+      }
+      return
+    }else if(a.target==this){
+      _domRecorder._recordEvent(a,this.value);
+    }else if(a.type=="change"){
+      _domRecorder._recordEvent(a,a.target.value);
+    }
+  },
+  _bindContentEditable:function(a){
+    if(!BZ._isRecording() || (!BZ._autoRecording && _bzDomPicker._isPicking() && !_bzDomPicker._isRecording())){
+      return;
+    }
+    if(a.target==this){
+      _domRecorder._recordEvent(a,this.innerHTML);
+    }
+  },
+  _bindFocus:function(a){
+    if(!BZ._isRecording()){
+      return;
+    }
+    if(a.target==this && !$(BZ.TW.document).find(".BZIgnore").find(this).length){
+      _domRecorder._recordEvent(a,this.value);
+    }
+  },
+  _removeEventListener:function(){
+    _domRecorder._removeDomEventListener(document)
+    if(!_bzDomPicker._isPicking()){
+      _bzDomPicker._removeTmpCover();
+    }
+  },
+  _removeDomEventListener:function(_document){
+    try{
+      let b=_document
+
+      b._inListening=false;
+      $(b).off("mousedown","*",_domRecorder._bindFun);
+    
+      $(b).off("mouseup","*",_domRecorder._bindFun);
+      $(b).off("mousemove","*",_domRecorder._bindFun);
+      $(b).off("dblclick","*",_domRecorder._bindFun);
+      $(b).off("click","*",_domRecorder._bindFun);
+      $(b).off("keyup","*",_domRecorder._bindFun);
+      $(b).off("keydown","*",_domRecorder._bindKeydown);
+      $(b).off("change","input,textarea,select",_domRecorder._bindFun);
+      $(b).off("focus","input,textarea,select",_domRecorder._bindFocus);
+      $(b).off("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+      
+      $(b).find("CANVAS").unbind("mousedown",_domRecorder._bindFun);
+
+//       $(_document).off("focus","select,input,textarea",_domRecorder._bindFocus);
+// //      $(_document).find("select,input,textarea").unbind("focus",_domRecorder._bindFocus);
+//       $(_document).find("[contenteditable=true]").unbind("blur",_domRecorder._bindContentEditable);
+      
+//       for(var k in _domRecorder._listenEvents){
+//         if (k=="click") {
+//           $(_document).find("*").not("style,script").unbind("mousedown",_domRecorder._bindFun);
+//         }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
+//           continue;
+//         }else if (k=="focus") {
+//           continue;
+//         }else if(k=="dragDrop"){
+//           $(_document).find("*").not("style,script").unbind("mouseup",_domRecorder._bindFun);
+//           $(_document).find("*").not("style,script").unbind("mousemove",_domRecorder._bindFun);
+
+//           if(!_domRecorder._listenEvents.click){
+//             $(_document).find("*").unbind("mousedown",_domRecorder._bindFun);
+//           }
+//           continue;
+//         }
+//         if(k=="change"){
+//           $(_document).find("input,textarea,select").unbind(k,_domRecorder._bindFun);
+//         }else{
+//           $(_document).find("*").not("style,script").unbind(k,_domRecorder._bindFun);
+//         }
+//       }
+//       $(_document).find("*").not("style,script").unbind("keyup",_domRecorder._bindFun);
+//       $(_document).find("*").not("style,script").unbind("keydown",_domRecorder._bindKeydown);
+    }catch(e){
+      
+    }
+  },
+  _monitor:function(_doc){
+    var ds=_domRecorder._monitorList;
+    if(!ds.includes(_doc)){
+      ds.push(_doc);
+      _domRecorder._observer.disconnect();
+      for(var i=ds.length-1;i>=0;i--){
+        var d=ds[i];
+        if(!d.defaultView || d.defaultView.closed || !d.body){
+          ds.splice(i,1);
+        }else{
+          _domRecorder._observer.observe(d.body,{
+            childList:true,
+            subtree:true,
+            characterData: true,
+            attributes:true,
+            attributeFilter: ['style','class'],
+            attributeOldValue:true
+          });    
+        }
       }
     }
   }
-};var TWHandler={
+};
+var TWHandler={
   _resetTime:60000,
   _lastPageInfo:{},
   _curRequestList:[],
@@ -8220,12 +10116,11 @@ tbody td:first-child,tbody td:last-child{
   },
   _takeoverWin:function(){
     if(window.extensionContent){
-      return _bzStdComm.postToApp({fun:"_takeoverWin",scope:"TWHandler",ps:[]});
+      return bzComm.postToApp({fun:"_takeoverWin",scope:"TWHandler",ps:[]});
     }
     
     try{
       TWHandler._takeoverPopMsg(window);
-      TWHandler._setUnload(window);
       document.documentElement.setAttribute("bzOverrideMark",1)
     }catch(e){
     }
@@ -8571,7 +10466,7 @@ tbody td:first-child,tbody td:last-child{
   },
   _getCanvasData:function(_map){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_getCanvasData",
         ps:[TWHandler._canvasDataMap],
         scope:"TWHandler"
@@ -8747,7 +10642,7 @@ tbody td:first-child,tbody td:last-child{
 
         this.BZ_ReceiveAjax=function(url){
           if((o.readyState==4 || o._time && Date.now()-o._time>1000) && url==o.url){
-            _bzStdComm.postToAppExtension({
+            bzComm.postToAppExtension({
               fun:"_setRequestCount",
               ps:{_url:o.url,i:-1,_type:"api"},
               scope:"TWHandler"
@@ -8787,7 +10682,7 @@ tbody td:first-child,tbody td:last-child{
       if(!p.BZ_AjaxSend||p.BZ_AjaxSend==p.send){
         p.BZ_AjaxSend=p.send;
         p.send=function(a,b,c){
-          _bzStdComm.postToAppExtension({
+          bzComm.postToAppExtension({
             fun:"_setRequestCount",
             ps:[{_url:this.url,i:1,_type:"api"}],
             scope:"TWHandler"
@@ -8806,7 +10701,7 @@ tbody td:first-child,tbody td:last-child{
         let _body=(a&&a.body)||(b&&b.body)||b
         let _headers=(a&&a.headers)||(b&&b.headers)||b||{}
         TWHandler._curAPI={url:_url,method:m,host:_host}
-        _bzStdComm.postToAppExtension({
+        bzComm.postToAppExtension({
           fun:"_setRequestCount",
           ps:[{_url:_url,i:1,_type:"fetch"}],
           scope:"TWHandler"
@@ -8817,7 +10712,7 @@ tbody td:first-child,tbody td:last-child{
           x=x.clone()
           TWHandler._setAjaxRequest(_body,_headers)
           setTimeout(()=>{
-            _bzStdComm.postToAppExtension({
+            bzComm.postToAppExtension({
               fun:"_setRequestCount",
               ps:[{_url:_url,i:-1,_type:"fetch"}],
               scope:"TWHandler"
@@ -8832,7 +10727,7 @@ tbody td:first-child,tbody td:last-child{
             }catch(e){}
           },100)
         },_err=>{
-          _bzStdComm.postToAppExtension({
+          bzComm.postToAppExtension({
             fun:"_setRequestCount",
             ps:[{_url:_url,i:-1,_type:"fetch"}],
             scope:"TWHandler"
@@ -8858,7 +10753,7 @@ tbody td:first-child,tbody td:last-child{
       TWHandler._curRequestList.push(v)
     }
     if(window.extensionContent&&v._type=="socket"){
-      _bzStdComm.postToIDE({
+      bzComm.postToIDE({
         fun:"_setRequestCount",
         scope:"TWHandler",
         ps:[v]
@@ -8871,7 +10766,7 @@ tbody td:first-child,tbody td:last-child{
       p._bzSocketSend=p.send
       p.send=function(_msg,bz){
         if(!bz){
-          _bzStdComm.postToAppExtension({
+          bzComm.postToAppExtension({
             fun:"_setRequestCount",
             ps:{_url:this.url,i:1,_type:"socket"},
             scope:"TWHandler"
@@ -8881,7 +10776,7 @@ tbody td:first-child,tbody td:last-child{
             _win._bzSocket=this
             _win._bzSocket.addEventListener("message",function(e){
               var o=_win._bzSocket
-              _bzStdComm.postToAppExtension({
+              bzComm.postToAppExtension({
                 fun:"_setRequestCount",
                 ps:{_url:this.url,i:1,_type:"socket"},
                 scope:"TWHandler"
@@ -8909,7 +10804,7 @@ tbody td:first-child,tbody td:last-child{
         v.headers=JSON.stringify(_headers)
       }
       TWHandler._curAPI=0
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_postAPIData",
         ps:[v],
         scope:"TWHandler"
@@ -8919,7 +10814,7 @@ tbody td:first-child,tbody td:last-child{
   _postAPIData:function(v){
     v.url=_Util._mergeURL(location.protocol+"/"+"/"+location.host,v.url)
     TWHandler._setToken(v)
-    _bzStdComm.postToIDE({
+    bzComm.postToIDE({
       fun:"_attachReqData",
       scope:"_appReqRepHandler",
       ps:[v]
@@ -8953,17 +10848,12 @@ tbody td:first-child,tbody td:last-child{
         }
         TWHandler._token=r
 
-        _bzStdComm.postToIDE({fun:"_setToken",scope:"_aiAuthHandler",ps:[r]})
+        bzComm.postToIDE({fun:"_setToken",scope:"_aiAuthHandler",ps:[r]})
       }catch(e){}
     }
   },
   _bzOnBeforeUnload:function(){
     _bzDomPicker._cancel();
-    TWHandler._pageReloading=1;
-    BZ._documents=0;
-    BZ._data._hasTW=0;
-    BZ.TW.bzReloading=1;
-    _bzStdComm.postToIDE({fun:"_infoLoadingNewPage",scope:"_ideTask"});
   },
   _setUnload:function(){
     window.onbeforeunload=TWHandler._bzOnBeforeUnload;
@@ -8975,7 +10865,7 @@ tbody td:first-child,tbody td:last-child{
       v= !TWHandler.BZ_sent || TWHandler.BZ_sent<0;
       t=6000;
     }else{
-      v=((!TWHandler.BZ_sent || TWHandler.BZ_sent<0) && !TWHandler._pageReloading) || (BZ.TW && !BZ.TW.XMLHttpRequest.prototype.BZ_Ajax)
+      v=(!TWHandler.BZ_sent || TWHandler.BZ_sent<0) || (BZ.TW && !BZ.TW.XMLHttpRequest.prototype.BZ_Ajax)
     }
     if(!v){
       this._lastAfterRequest=this._lastAfterRequest||Date.now();
@@ -9026,7 +10916,7 @@ tbody td:first-child,tbody td:last-child{
   },
   _setAlert:function(_msg){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_setAlert",
         ps:[_msg],
         scope:"TWHandler"
@@ -9038,7 +10928,7 @@ tbody td:first-child,tbody td:last-child{
   _setOnbeforeunload:function(_msg){
     if(_msg){
       if(!window.extensionContent){
-        _bzStdComm.postToAppExtension({
+        bzComm.postToAppExtension({
           fun:"_setOnbeforeunload",
           ps:[_msg],
           scope:"TWHandler"
@@ -9050,7 +10940,7 @@ tbody td:first-child,tbody td:last-child{
   },
   _triggerConfirm:function(_msg){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_triggerConfirm",
         ps:[_msg],
         scope:"TWHandler"
@@ -9069,7 +10959,7 @@ tbody td:first-child,tbody td:last-child{
   },
   _triggerPrompt:function(_msg){
     if(!window.extensionContent){
-      _bzStdComm.postToAppExtension({
+      bzComm.postToAppExtension({
         fun:"_triggerPrompt",
         ps:[_msg],
         scope:"TWHandler"
@@ -9149,24 +11039,25 @@ tbody td:first-child,tbody td:last-child{
     return ws;
   },
   _takeoverAddEventListener:function(){
-    let _fun=EventTarget.prototype.addEventListener;
-    EventTarget.prototype._addEventListener = _fun
-    
-    EventTarget.prototype.addEventListener=function(t,f,c){
-      if(EventTarget.prototype._addEventListener != _fun){
-        EventTarget.prototype._addEventListener = _fun
+    if(!EventTarget.prototype._addEventListener){
+      let _fun=EventTarget.prototype.addEventListener;
+      EventTarget.prototype._addEventListener = _fun
+      
+      EventTarget.prototype.addEventListener=function(t,f,c){
+        if(this==window&&t=="beforeunload"){
+          this._addEventListener(t,function(event){
+            let play=localStorage.getItem("playModel")
+            if(t=="beforeunload"&&play=="play"){
+            }else{
+              return f(event)
+            }
+          },c)
+        }else{
+          console.log("addEventListener:"+t)
+          this._addEventListener(t,f,c)
+        }
       }
-      if(this==window&&t=="beforeunload"){
-        this._addEventListener(t,function(event){
-          let play=localStorage.getItem("playModel")
-          if(t=="beforeunload"&&play=="play"){
-          }else{
-            return f(event)
-          }
-        },c)
-      }else{
-        this._addEventListener(t,f,c)
-      }
+  
     }
   },
   //h:window size,
@@ -9223,7 +11114,7 @@ tbody td:first-child,tbody td:last-child{
           BZ._twInError=0
           BZ.TW.location.href=_enterPointValue
         }else{
-          _bzStdComm._setCmd("document.body.innerHTML='';location.href=='"+_enterPointValue+"'?location.reload():location.href='"+_enterPointValue+"'")
+          bzComm._setCmd("document.body.innerHTML='';location.href=='"+_enterPointValue+"'?location.reload():location.href='"+_enterPointValue+"'")
           BZ.TW.focus()
         }
       }else{
