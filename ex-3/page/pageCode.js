@@ -7707,8 +7707,9 @@ window.BZ={
     _innerWin._data._dataBind._showDataBind=v;
     bzComm.postToIDE("setDataBindSwitch","BZ",v);
   },
-  initData:function(){
-    if(window.extensionContent&&bzComm.getIdeTabId()&&bzComm._isAppExtension()){
+  initAppData:function(){
+    if(window.extensionContent){
+      console.log("initAppData",bzComm.getIframeId())
       bzComm.postToIDE({
         fun:"getSharedData",
         scope:"BZ",
@@ -7740,6 +7741,16 @@ window.BZ={
                 BZ._pageReady=1
               }
             })
+            bzComm._exeInIframes({
+              fun:"initAppData",
+              scope:"BZ"
+            })
+            if(!bzComm.getIframeId()){
+              bzComm.postToIDE({
+                fun:"infoAppReady",
+                scope:"BZ"
+              })
+            }
           }
         }
       })
@@ -7824,9 +7835,9 @@ window.BZ={
     d={...BZ._curShareData,...d}
     return _Util._changeObjectKeys(d,BZ._codeToKeyDataMap)
   },
-  assignShareData:function(d){
+  assignShareData:function(dd,_ignoreSub){
     BZ._keyToCodeDataMap=BZ._keyToCodeDataMap||_Util._invertObject(BZ._codeToKeyDataMap)
-    d=_Util._changeObjectKeys(d,BZ._keyToCodeDataMap)
+    let d=_Util._changeObjectKeys(dd,BZ._keyToCodeDataMap)
 
     for(var k in d){
       var v=d[k]
@@ -7837,6 +7848,13 @@ window.BZ={
     if(bzComm._isAppExtension()){
       _innerWin._insertCtrls()
       _innerWin._setToolbarStatus()
+      if(!_ignoreSub){
+        bzComm._exeInIframes({
+          fun:"assignShareData",
+          scope:"BZ",
+          ps:[dd]
+        })
+      }
     }
 
     function _parseData(ks,d,r){
@@ -7935,18 +7953,28 @@ if(!window.bzComm){
         });
       }
       if(parent!=window){
-        window.addEventListener('message', (e) => {
-          if (e.data.type==='bz-set-iframe-idx') {
-            bzComm.postToBackground({
-              fun:"updateIframeIdx",
-              scope:"bgComm",
-              ps:[bzComm.getIframeId(),e.data.idx]
-            })
-            bzComm.buildIFrameMap()
-          }else if(e.data.type==='bz-exe'){
-            window[e.data.scope][e.data.fun](...e.data.ps)
-          }
-        });
+        if(bzComm._isAppExtension()){
+          window.addEventListener('message', (e) => {
+            if (e.data.type==='bz-set-iframe-idx') {
+              bzComm.postToBackground({
+                fun:"updateIframeIdx",
+                scope:"bgComm",
+                ps:[bzComm.getIframeId(),e.data.idx]
+              })
+              bzComm.buildIFrameMap()
+            }else if(e.data.type==='bz-exe'){
+              window[e.data.scope][e.data.fun](...(e.data.ps||[]))
+            }
+          });
+        }
+      }else{
+        setTimeout(()=>{
+          bzComm.postToBackground({
+            fun:"updateIframeIdx",
+            scope:"bgComm",
+            ps:[0,0]
+          })
+        },100)
       }
       _end()
       function _end(){
@@ -7956,6 +7984,18 @@ if(!window.bzComm){
             scope:"bgComm"
           })
         }
+      }
+    },
+    _chkInit:function(_time){
+      _time=_time||Date.now()
+      if(bzComm.getIframeId()){
+        bzComm.init()
+      }else{
+        setTimeout(()=>{
+          if(Date.now()-_time<1000){
+            bzComm._chkInit()
+          }
+        },1)
       }
     },
     getBZId:function(){
@@ -7989,6 +8029,16 @@ if(!window.bzComm){
         }
       }
     },
+    _findIframePath: function () {
+      let ks=[],f=bzComm.getIframeId();
+      _Util._findDeepObj(bzComm.getAppIFrames(),(v,k,pk,ps)=>{
+        if(k==f){
+          ks=ps.map(x=>x.idx)
+        }
+      })
+      ks.shift()
+      return ks.join(",")
+    },  
     _forEachIFrame:function(fun,fs){
       _doIt(fs||bzComm.getAppIFrames())
       function _doIt(d){
@@ -8046,7 +8096,11 @@ if(!window.bzComm){
     },
     _exeInIframes:function(d){
       d.type="bz-exe"
-      $("IFRAME").toArray().forEach((x)=>{x.contentWindow.postMessage(d, "*")})
+      $("IFRAME").toArray().forEach((x)=>{
+        if(!x.contentDocument||x.contentWindow.bzComm){
+          x.contentWindow.postMessage(d, "*")
+        }
+      })
     },
     getIds:function(_fun){
       let v={
@@ -8266,11 +8320,7 @@ if(!window.bzComm){
       v.fromId=cp.getTabId();
       v.fromIFrameId=bzComm.getIframeId()||0
       if(v.toIFrameId===undefined||v.toIFrameId===null){
-        if(v.toId==v.fromId){
-          v.toIFrameId=v.fromIFrameId
-        }else{
-          v.toIFrameId=0
-        }
+        v.toIFrameId=v.fromIFrameId
       }
       v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
       v.scope=bzComm._keyToCodeMap[v.scope]||v.scope
@@ -8324,7 +8374,6 @@ if(!window.bzComm){
   }
   if(window.name=="bz-client"){
     bzComm.init()
-    // BZ.initData()
   }else if(window.name=="bz-master"){
     if(!opener){
       if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
@@ -8343,6 +8392,8 @@ if(!window.bzComm){
     }else{
       bzComm.init()
     }
+  }else{
+    bzComm._chkInit()
   }
 };
 var _domRecorder={
@@ -8358,9 +8409,15 @@ var _domRecorder={
   unTmpClass:new Set(),
   _monitorList:[],
   _start:function(){
-    bzComm.postToIDE({scope:"_ideTestManagement",fun:"_insertInitRefresh",ps:[location.href]});
+    if(!bzComm.getIframeId()){
+      bzComm.postToIDE({scope:"_ideTestManagement",fun:"_insertInitRefresh",ps:[location.href]});
+    }
     _domRecorder._lastStep=null;
     _domRecorder._refresh();
+    bzComm._exeInIframes({
+      fun:"_start",
+      scope:"_domRecorder"
+    })
   },
   _refresh:function(){
     _domRecorder._setEventListenerOnAllDoms();

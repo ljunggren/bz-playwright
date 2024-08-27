@@ -297,8 +297,8 @@ const _tabManagement={
       _tabManagement._assignId({
         appIFrames:t.appIFrames
       },t.myIde)
-      bgComm.postMessageToIDE(t.myIde,{
-        fun:"infoAppReady",
+      bgComm.postMessageToAppExtension(t.id,{
+        fun:"initAppData",
         scope:"BZ"
       })
     }else{
