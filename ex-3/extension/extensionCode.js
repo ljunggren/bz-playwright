@@ -7586,7 +7586,8 @@ window.BZ={
     resize:function(o){
       bzComm.postToAppExtension({
         fun:"resize",
-        scope:"_innerWin"
+        scope:"_innerWin",
+        ps:[1]
       })
     },
     addValidation:function(){
@@ -7725,7 +7726,17 @@ window.BZ={
       scope:"BZ",
       ps:[d]
     })
-  },  
+  },
+  _storeUserHabit:function(d){
+    if(bzComm._isIDE()){
+      if(d){
+        Object.keys(d).forEach(k=>BZ._userHabit[k]=d[k])
+      }
+      _localStorageManagement._update("bz-habit",BZ._userHabit);
+    }else{
+      bzComm.postToIDE({fun:"_storeUserHabit",scope:"BZ",ps:[BZ._userHabit]});
+    }
+  },
   getSharedData:function(){
     let m=BZ._getCurModule(),t=BZ._getCurTest(),v=_IDE._data._curVersion;
     if(!BZ._curShareData||!BZ._curShareData.curUser){
@@ -7753,6 +7764,7 @@ window.BZ={
     
     let d={
       "BZ._curEnv":BZ._curEnv,
+      "BZ._userHabit.toolbarPos":BZ._userHabit.toolbarPos,
       "_aiAuthHandler._data":_aiAuthHandler._data,
       "_IDE._data._curModule":m&&{
         data:_Util._cloneSelectData(m._data,0,"code|name|parentModule|bt")
@@ -7776,7 +7788,7 @@ window.BZ={
       _parseData(ks,v)
     }
 
-    if(bzComm._isAppExtension()){
+    if(bzComm._isAppExtension()&&!bzComm.getIframeId()){
       _innerWin._insertCtrls()
       _innerWin._setToolbarStatus()
       if(!_ignoreSub){
@@ -15488,9 +15500,12 @@ if(!window.bzComm){
       _time=_time||Date.now()
       if(bzComm.getIframeId()){
         bzComm.init()
+        if(bzComm._isApp()){
+          innerScript.initScript(`chrome-extension:/`+`/${bzComm.getBZId()}/`)
+        }
       }else{
         setTimeout(()=>{
-          if(Date.now()-_time<1000){
+          if(Date.now()-_time<10000){
             bzComm._chkInit()
           }
         },1)
@@ -15527,7 +15542,7 @@ if(!window.bzComm){
         }
       }
     },
-    _findIframePath: function () {
+    _getIframePathById: function () {
       let ks=[],f=bzComm.getIframeId();
       _Util._findDeepObj(bzComm.getAppIFrames(),(v,k,pk,ps)=>{
         if(k==f){
@@ -15536,7 +15551,52 @@ if(!window.bzComm){
       })
       ks.shift()
       return ks.join(",")
-    },  
+    },
+    _isInIFrame:function(e){
+      if(e.element){
+        e=e.element
+      }
+      if(e.constructor==Array){
+        e=e[0]
+      }
+      return e&&e.constructor==String&&e.includes("findIframe")&&e
+    },
+    _getIframeIdByPath:function(e){
+      e=bzComm._isInIFrame(e)
+      if(e){
+        e=e.match(/findIframe\(([^)]+)\)/)[1]
+        if(e.match(/^[0-9, ]+$/)){
+          e=e.split(",").map(x=>parseInt(x.trim()))
+          e.unshift(0)
+          let o=bzComm.getAppIFrames()
+          while(e.length&&o){
+            let fs=Object.keys(o).filter(x=>$.isNumeric(x))
+            let ok=fs.find(k=>o[k].idx==e[0])
+            if(e.length==1){
+              return ok
+            }
+            if(o){
+              o=o[ok]
+              e.shift()
+            }
+          }
+          return 0
+        }else if(e.match(/^#.+/)){
+          e=e.replace("#","")
+          e=bzComm._findIFrame((x,k)=>{return x.id==e})
+        }else{
+          if(e.match(/^env:[0-9 ]+$/)){
+            e=parseInt(e.match(/env:([0-9 ]+)/)[1].trim())
+            if(e){
+              e--
+            }
+            e=_ideVersionManagement._getHostById(e)
+          }
+          e=bzComm._findIFrame((x,k)=>{return (x.url||"").includes(e)})
+        }
+        return e?e.k:0
+      }
+    },
     _forEachIFrame:function(fun,fs){
       _doIt(fs||bzComm.getAppIFrames())
       function _doIt(d){
@@ -15818,7 +15878,11 @@ if(!window.bzComm){
       v.fromId=cp.getTabId();
       v.fromIFrameId=bzComm.getIframeId()||0
       if(v.toIFrameId===undefined||v.toIFrameId===null){
-        v.toIFrameId=v.fromIFrameId
+        if(to.getTabId()==cp.getTabId()){
+          v.toIFrameId=v.fromIFrameId
+        }else{
+          v.toIFrameId=0
+        }
       }
       v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
       v.scope=bzComm._keyToCodeMap[v.scope]||v.scope
@@ -40200,16 +40264,13 @@ window.BZ = {
     return 1
   },
   _formatInIFramePath: function (e) {
-    let v = bzComm._findIframePath()
+    let v = bzComm._getIframePathById()
     if (v) {
       e[0] = "$(BZ.TW.document).findIframe(" + v + ")" || ""
     }
   },
   focusIDE: function () {
     bzComm.postToIDE({ fun: "focusIDE", scope: "BZ" })
-  },
-  _storeUserHabit: function () {
-    localStorage.setItem("bz-extension-habit", JSON.stringify(this._userHabit));
   },
   _getCurModule: function () {
     return _IDE._data._curModule;
@@ -41327,18 +41388,15 @@ var _bzDomPicker={
     return o;
   },
   _removeTmpCover:function(){
-    try{
-      $(".BZCover,.ErrBZCover").remove();
-
-      $(BZ.TW.document).find("IFRAME").each(function(i,o){
-        try{
-          if(!o.src.startsWith("http")){
-            $(o.contentDocument).find(".BZCover,.ErrBZCover").remove()
-          }
-        }catch(e){}
-      });
-      $(BZ.TW.document).find(".BZCover,.ErrBZCover").remove();
-    }catch(e){}
+    let _fun={
+      fun:"_removeTmpCover",
+      scope:"_bzDomPicker"
+    }
+    if(bzComm._isIDE()){
+      return bzComm.postToAppExtension(_fun);
+    }
+    bzComm._exeInIframes(_fun)
+    $(".BZCover,.ErrBZCover").remove();
   },
   _resetPos:function(cs){
     for(var i=0;i<cs.length;i++){
@@ -41630,33 +41688,44 @@ var _bzDomPicker={
       y:parseInt(r.y)+parseInt(o.Y)
     }
   },
+  
   _flashTmpCover:function(d,_chkCode){
     if(!d){
       return
     }
 
     if(bzComm._isIDE()){
-      if(d.constructor==Object){
-        if(_ideActionManagement._isInBZComponent(d)){
-          return
+      _bzDomPicker._removeTmpCover();
+      setTimeout(function(){
+        if(d.constructor==Object){
+          if(_ideActionManagement._isInBZComponent(d)){
+            return
+          }
+          d={...d}
+          if(d.path){
+            d.path=_aiPageHandler._updateElementPathByDemoValue([...d.path],0,1)
+            d.panels=_aiPageHandler._updateElementPathByDemoValue([...d.panels],0,1)
+          }else{
+            d.element=[...d.element]
+          }
+        }else if(d.constructor==String){
+          d=["BZ.TW.document",d]
+        }else if(d.constructor==Array){
+          d=[...d]
         }
-        d={...d}
-        if(d.path){
-          d.path=_aiPageHandler._updateElementPathByDemoValue([...d.path],0,1)
-          d.panels=_aiPageHandler._updateElementPathByDemoValue([...d.panels],0,1)
-        }
-      }else if(d.constructor==String){
-        d=["BZ.TW.document",d]
-      }
-      bzComm.postToAppExtension({
-        fun:"_flashTmpCover",
-        scope:"_bzDomPicker",
-        ps:[d],
-      })
+        let e=(d.path||d.element||d)
+        let f=bzComm._getIframeIdByPath(e[0])
+        // e[0]="BZ.TW.document"
+        bzComm.postToAppExtension({
+          fun:"_flashTmpCover",
+          scope:"_bzDomPicker",
+          ps:[d],
+          toIFrameId:f
+        })
+      },100)
       return
     }
 
-    _bzDomPicker._removeTmpCover();
     var o;
     if(d.constructor==Object&&d.path){
       o=_Util._findDomWithPanels(d.path,d.panels)
@@ -43014,25 +43083,31 @@ var _innerWin={
       _scope:"body"
     }
   }),
-  _setPosition:function(_win){
+  _setPosition:function(_win,_pos){
     if(bzComm._isAppExtension()){
-      let pos={top:0,left:0};
-      if(BZ._userHabit){
-        pos=BZ._userHabit.toolbarPos||pos;
-        pos.top=pos.top||0;
-        pos.left=pos.left||0;
+      let u=BZ._userHabit.toolbarPos;
+
+      if(!_pos){
+        _pos=u;
+      }else{
+        u.top=_pos.top;
+        u.left=_pos.left;
+
+        BZ._storeUserHabit();
       }
+      _pos.top=_pos.top||0;
+      _pos.left=_pos.left||0;
 
       $(_win).css({
-        top:pos.top,
-        left:pos.left,
+        top:_pos.top,
+        left:_pos.left,
         position:"fixed",
         "z-index":Number.MAX_SAFE_INTEGER,
         width: 0,
         border: 0,
         height: 0
       });
-      bzComm.postToIDE({fun:"_setPosition",scope:"_innerWin",ps:[pos]});
+      _innerWin.resize();
     }else{
       BZ._userHabit.toolbarPos=_win
       BZ._storeUserHabit();
@@ -43083,11 +43158,11 @@ var _innerWin={
     if(!_win.length){
       _win=$(`<div id='BZ_Win' class='BZIgnore' style='position:fixed;z-index:${Number.MAX_SAFE_INTEGER}'></div>`)[0];
       document.body.parentElement.appendChild(_win);
-      _innerWin._setPosition(_win);
 
       _innerWin._shadowRoot = _win.attachShadow({ mode: 'open' });
       _innerWin._shadowRoot.innerHTML = _innerWin._getHTML();
 
+      _innerWin._setPosition(_win);
       _win.addEventListener('mousedown', (e) => {
         _win.isDragging = true;
         _win.offsetX = e.clientX - _win.offsetLeft;
@@ -43105,9 +43180,12 @@ var _innerWin={
       }
 
       function onMouseUp() {
-        _win.isDragging = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        if(_win.isDragging){
+          _win.isDragging = false;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          _innerWin._setPosition(_win,_win.getBoundingClientRect());
+        }
       }
       
     }
@@ -43155,13 +43233,20 @@ var _innerWin={
       bs[0].attr({disabled:false});
     }
   },
-  resize:function(d){
-    let o=$(_innerWin._shadowRoot).find(".bz-header-right")
-    if(o.hasClass("bz-minimize-white")){
-      o.addClass("bz-plus-white").removeClass("bz-minimize-white");
+  resize:function(o){
+    debugger
+    let u=BZ._userHabit.toolbarPos
+    let oo=$(_innerWin._shadowRoot).find(".bz-header-right")
+    if(o){
+      u.min=oo.hasClass("bz-minimize-white")
+      BZ._storeUserHabit();
+    }
+
+    if(u.min){
+      oo.addClass("bz-plus-white").removeClass("bz-minimize-white");
       $(_innerWin._shadowRoot).find(".bz-tb-body").hide()
     }else{
-      o.addClass("bz-minimize-white").removeClass("bz-plus-white");
+      oo.addClass("bz-minimize-white").removeClass("bz-plus-white");
       $(_innerWin._shadowRoot).find(".bz-tb-body").show()
     }
   }

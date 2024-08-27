@@ -7655,7 +7655,8 @@ window.BZ={
     resize:function(o){
       bzComm.postToAppExtension({
         fun:"resize",
-        scope:"_innerWin"
+        scope:"_innerWin",
+        ps:[1]
       })
     },
     addValidation:function(){
@@ -7794,7 +7795,17 @@ window.BZ={
       scope:"BZ",
       ps:[d]
     })
-  },  
+  },
+  _storeUserHabit:function(d){
+    if(bzComm._isIDE()){
+      if(d){
+        Object.keys(d).forEach(k=>BZ._userHabit[k]=d[k])
+      }
+      _localStorageManagement._update("bz-habit",BZ._userHabit);
+    }else{
+      bzComm.postToIDE({fun:"_storeUserHabit",scope:"BZ",ps:[BZ._userHabit]});
+    }
+  },
   getSharedData:function(){
     let m=BZ._getCurModule(),t=BZ._getCurTest(),v=_IDE._data._curVersion;
     if(!BZ._curShareData||!BZ._curShareData.curUser){
@@ -7822,6 +7833,7 @@ window.BZ={
     
     let d={
       "BZ._curEnv":BZ._curEnv,
+      "BZ._userHabit.toolbarPos":BZ._userHabit.toolbarPos,
       "_aiAuthHandler._data":_aiAuthHandler._data,
       "_IDE._data._curModule":m&&{
         data:_Util._cloneSelectData(m._data,0,"code|name|parentModule|bt")
@@ -7845,7 +7857,7 @@ window.BZ={
       _parseData(ks,v)
     }
 
-    if(bzComm._isAppExtension()){
+    if(bzComm._isAppExtension()&&!bzComm.getIframeId()){
       _innerWin._insertCtrls()
       _innerWin._setToolbarStatus()
       if(!_ignoreSub){
@@ -7990,9 +8002,12 @@ if(!window.bzComm){
       _time=_time||Date.now()
       if(bzComm.getIframeId()){
         bzComm.init()
+        if(bzComm._isApp()){
+          innerScript.initScript(`chrome-extension:/`+`/${bzComm.getBZId()}/`)
+        }
       }else{
         setTimeout(()=>{
-          if(Date.now()-_time<1000){
+          if(Date.now()-_time<10000){
             bzComm._chkInit()
           }
         },1)
@@ -8029,7 +8044,7 @@ if(!window.bzComm){
         }
       }
     },
-    _findIframePath: function () {
+    _getIframePathById: function () {
       let ks=[],f=bzComm.getIframeId();
       _Util._findDeepObj(bzComm.getAppIFrames(),(v,k,pk,ps)=>{
         if(k==f){
@@ -8038,7 +8053,52 @@ if(!window.bzComm){
       })
       ks.shift()
       return ks.join(",")
-    },  
+    },
+    _isInIFrame:function(e){
+      if(e.element){
+        e=e.element
+      }
+      if(e.constructor==Array){
+        e=e[0]
+      }
+      return e&&e.constructor==String&&e.includes("findIframe")&&e
+    },
+    _getIframeIdByPath:function(e){
+      e=bzComm._isInIFrame(e)
+      if(e){
+        e=e.match(/findIframe\(([^)]+)\)/)[1]
+        if(e.match(/^[0-9, ]+$/)){
+          e=e.split(",").map(x=>parseInt(x.trim()))
+          e.unshift(0)
+          let o=bzComm.getAppIFrames()
+          while(e.length&&o){
+            let fs=Object.keys(o).filter(x=>$.isNumeric(x))
+            let ok=fs.find(k=>o[k].idx==e[0])
+            if(e.length==1){
+              return ok
+            }
+            if(o){
+              o=o[ok]
+              e.shift()
+            }
+          }
+          return 0
+        }else if(e.match(/^#.+/)){
+          e=e.replace("#","")
+          e=bzComm._findIFrame((x,k)=>{return x.id==e})
+        }else{
+          if(e.match(/^env:[0-9 ]+$/)){
+            e=parseInt(e.match(/env:([0-9 ]+)/)[1].trim())
+            if(e){
+              e--
+            }
+            e=_ideVersionManagement._getHostById(e)
+          }
+          e=bzComm._findIFrame((x,k)=>{return (x.url||"").includes(e)})
+        }
+        return e?e.k:0
+      }
+    },
     _forEachIFrame:function(fun,fs){
       _doIt(fs||bzComm.getAppIFrames())
       function _doIt(d){
@@ -8320,7 +8380,11 @@ if(!window.bzComm){
       v.fromId=cp.getTabId();
       v.fromIFrameId=bzComm.getIframeId()||0
       if(v.toIFrameId===undefined||v.toIFrameId===null){
-        v.toIFrameId=v.fromIFrameId
+        if(to.getTabId()==cp.getTabId()){
+          v.toIFrameId=v.fromIFrameId
+        }else{
+          v.toIFrameId=0
+        }
       }
       v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
       v.scope=bzComm._keyToCodeMap[v.scope]||v.scope

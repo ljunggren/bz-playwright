@@ -30,7 +30,7 @@ var innerScript={
     }
 
     function _end(){
-      BZ.assignShareData(d)
+      d&&BZ.assignShareData(d);
       _fun&&_fun()
     }
   },
