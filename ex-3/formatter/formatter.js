@@ -661,7 +661,7 @@ var formatter={
   getLogList:function(masterUrl){
     let v;
     try{
-      v=BZ.eval.exe(`(${formatter.data.setting.identifyWorker})(masterUrl)`,{masterUrl:masterUrl})
+      v=eval(`(${formatter.data.setting.identifyWorker})(masterUrl)`,{masterUrl:masterUrl})
 
       if(!v||v.constructor!=Array||v.includes(masterUrl)){
         v=[]
@@ -1772,7 +1772,7 @@ var formatter={
   isMasterPage:function(v){
     if(v.identifyMaster){
       try{
-        return BZ.eval.exe(`(${v.identifyMaster})()`)
+        return eval(`(${v.identifyMaster})()`)
       }catch(ex){
         alert("Identify page script issue: "+ex.message)
       }
@@ -1782,7 +1782,7 @@ var formatter={
     let f=formatter.data.setting.lineClear
     if(f){
       if(f.constructor==String){
-        return BZ.eval.exe(`(${f})(v)`)
+        return eval(`(${f})(v)`)
       }
       return f(v)
     }
@@ -2252,7 +2252,7 @@ var formatter={
       try{
         if(v[0]!='"'&&v[0]!="'"){
           if(v.match(/^[\/].+[\/][i]?$/)){
-            v=BZ.eval.exe(v)
+            v=eval(v)
           }else{
             v=v.toLowerCase().split(",")
           }
@@ -2413,7 +2413,7 @@ var formatter={
               }
             }
             if(xx){
-              BZ.eval.exe("xx=/"+xx+"/i")
+              eval("xx=/"+xx+"/i")
               os=os.filter(x=>{
                 if(!foundTxt(x,xx)){
                   formatter.hideScenario(x)
@@ -2428,7 +2428,7 @@ var formatter={
                 xx=xx[1].split(" ").sort((a,b)=>a.length-b.length).pop()
                 xx="##Action[^#]*## .*"+xx
 
-                BZ.eval.exe("xx=/"+xx+"/i")
+                eval("xx=/"+xx+"/i")
                 os=os.filter(x=>{
                   if(!x.details.org.match(xx)){
                     formatter.hideScenario(x)
@@ -2446,7 +2446,7 @@ var formatter={
           }
         }).filter(x=>x).join("|")
         if(v){
-          v=BZ.eval.exe("/"+v+"/i")
+          v=eval("/"+v+"/i")
         }
       }else if(v.constructor==String){
         os=os.filter(x=>{
@@ -3441,7 +3441,7 @@ var analyzer={
     }else{
       r=`/[0-9]+: +(>+ Loading |<+ [^\[]+ Feature - )Scenario \\[m[0-9]+\\.t[0-9]+[^><]+(>|<)+/gms`
     }
-    r=BZ.eval.exe(r)
+    r=eval(r)
     return v.match(r)||[]
   },
   retrieveErrHash:function(k,v){
