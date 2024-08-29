@@ -40,7 +40,7 @@ class BZTab{
     function _forEachIframe(d){
       for(let k in d){
         if(d[k]&&d[k].constructor==Object){
-          fun(d[k],k)
+          fun(d[k],parseInt(k))
           _forEachIframe(d[k])
         }
       }
@@ -52,6 +52,7 @@ class BZTab{
     function _findIframe(d){
       for(let k in d){
         if(d[k]&&d[k].constructor==Object){
+          k=parseInt(k)
           if(fun(d[k],k)){
             return {v:d[k],k:k}
           }

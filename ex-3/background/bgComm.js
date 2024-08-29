@@ -46,14 +46,21 @@ globalThis.bgComm={
   },
   //Send message to extension (ide or app)
   postToTab:function(msg){
-    if(msg.toId){
+    let _toId=parseInt(msg.toId)
+    if(_toId){
       console.log("post message to",msg)
       if(msg.toIFrameId=="parent"){
         _tabManagement._getParentIFrameId(msg.fromId,msg.fromIFrameId,(pId)=>{
-          _doIt(parseInt(msg.toId),msg,{frameId:parseInt(pId)},0)
+          _doIt(_toId,msg,{frameId:parseInt(pId)},0)
+        })
+      }else if(msg.toIFrameId=="*"){
+        _tabManagement._getTabById(_toId,function(v){
+          v.forEachIframe((i,k)=>{
+            _doIt(_toId,msg,{frameId:k},0)
+          })
         })
       }else{
-        _doIt(parseInt(msg.toId),msg,{frameId:parseInt(msg.toIFrameId||0)},0)
+        _doIt(_toId,msg,{frameId:parseInt(msg.toIFrameId||0)},0)
       }
     }
 
@@ -127,8 +134,8 @@ globalThis.bgComm={
       function: (_script) => {
         _doIt(Date.now())
         function _doIt(t){
-          if(window._bzEval){
-            _bzEval._exe(_script)
+          if(window.bzComm){
+            eval(_script)
           }else if(location.href!="about:blank"){
             if(Date.now()-t<3000){
               setTimeout(()=>{

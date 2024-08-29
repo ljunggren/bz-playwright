@@ -1,4 +1,57 @@
-var _compressJSON={
+
+!Array.prototype._last&&Object.defineProperty(Array.prototype, "_last", {
+                    enumerable: false,
+                    value:function(){
+                      return this[this.length-1]
+                    }
+                  });!Array.prototype._after&&Object.defineProperty(Array.prototype, "_after", {
+                    enumerable: false,
+                    value:function(a){
+                      return this[this.indexOf(a)+1]
+                    }
+                  });!Array.prototype._before&&Object.defineProperty(Array.prototype, "_before", {
+                    enumerable: false,
+                    value:function(a){
+                      return this[this.indexOf(a)-1]
+                    }
+                  });!Array.prototype._insertToSet&&Object.defineProperty(Array.prototype, "_insertToSet", {
+                    enumerable: false,
+                    value:function(a){
+                      if(!this.includes(a)){
+                        this.push(a);
+                        return a
+                      }
+                   }
+                 });!Array.prototype._spliceByData&&Object.defineProperty(Array.prototype, "_spliceByData", {
+                    enumerable: false,
+                    value:function(v,k,_all){
+                      if(v&&v.constructor==Array){
+                        v.forEach(x=>{
+                          this._spliceByData(x,k,_all)
+                        })
+                      }else if(v&&v.constructor==Function){
+                        for(var i=0;i<this.length;i++){
+                          if(v(this[i],i)){
+                            this.splice(i--,1)
+                            if(!_all){
+                              break;
+                            }
+                          }
+                        }
+                      }else{
+                        _all=_all?"forEach":"find"
+                        let vs=[...this],
+                        n=0;
+                        vs[_all]((x,i)=>{
+                            if(x==v||(k&&x[k]==v[k])||(k&&x[k]==v)){
+                                this.splice(i+n--,1)
+                                return 1
+                            }
+                        })
+                      }
+                      return this;
+                    }
+                  });var _compressJSON={
   _version:"BZ-0.001",
   _CHAR:"",
   _string:"",
@@ -7522,6 +7575,7 @@ window.BZ={
     "curUser._curProject.setting":"curProjectSetting",
     "_appWordHandler._wordMap":"appWordHandlerWordMap",
     "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
+    "_ideDataManagement._tmpTaskDataMap":"ideDataManagementTmpTaskDataMap"
   },
   _data:{},
   _log:function(o){
@@ -7580,9 +7634,6 @@ window.BZ={
     }
   },
   toolbar:{
-    miniTool:function(){
-      debugger    
-    },
     resize:function(o){
       bzComm.postToAppExtension({
         fun:"resize",
@@ -15392,7 +15443,8 @@ tbody td:first-child,tbody td:last-child{
     }
   }
 };
-if(!window.bzComm){
+if(!window.bzComm||window.name=="bz-master"){
+  let bzComm2=!!window.bzComm||window.extensionContent
   window.bzComm={
     _shareData:{},
     _callBackMap:{},
@@ -15408,7 +15460,57 @@ if(!window.bzComm){
       _ideRecorder:"ideRecorder",
       _ideTask:"ideTask",
       _domActionTask:"domActionTask",
-      _exeAction:"exeAction"
+      _exeAction:"exeAction",
+      _newItem:"newItem",
+      _ideActionManagement:"ideActionManagement",
+      _storeUserHabit:"storeUserHabit",
+      _aiDataUpdateHandler:"aiDataUpdateHandler",
+      _updateActionCommentDesc:"updateActionCommentDesc",
+      _receiveAPPInfo:"receiveAPPInfo",
+      _ideTestManagement:"ideTestManagement",
+      _insertInitRefresh:"insertInitRefresh",
+      _setClickFileInput:"setClickFileInput",
+      _domRecorder:"domRecorder",
+      _setPopMsg:"setPopMsg",
+      _mergeToSetAction:"mergeToSetAction",
+      _addNewItem:"addNewItem",
+      _setRequestCount:"setRequestCount",
+      _attachReqData:"attachReqData",
+      _appReqRepHandler:"appReqRepHandler",
+      _setToken:"setToken",
+      _aiAuthHandler:"aiAuthHandler",
+      _Util:"Util",
+      _log:"log",
+      _doAfterComment:"doAfterComment",
+      _tipHandler:"tipHandler",
+      _takeoverWin:"takeoverWin",
+      _takeoverPopMsg:"takeoverPopMsg",
+      _setBackTestPage:"setBackTestPage",
+      _innerWin:"innerWin",
+      _pickElement:"pickElement",
+      _isElementReady:"isElementReady",
+      _cssHandler:"cssHandler",
+      _endRequire:"endRequire",
+      _domActionTask:"domActionTask",
+      _getCanvasData:"getCanvasData",
+      _postAPIData:"postAPIData",
+      _setAlert:"setAlert",
+      _setOnbeforeunload:"setOnbeforeunload",
+      _triggerConfirm:"triggerConfirm",
+      _triggerPrompt:"triggerPrompt",
+      _getUICompleteTime:"getUICompleteTime",
+      _transferMonitor:"transferMonitor",
+      _infoManagement:"infoManagement",
+      _showImportantInfo:"showImportantInfo",
+      _originAJax:"originAJax",
+      _getTWElementPathByCSS:"getTWElementPathByCSS",
+      _pickDetails:"pickDetails",
+      _editPath:"editPath",
+      _flashMutipleTmpCover:"flashMutipleTmpCover",
+      _showTmpCover:"showTmpCover",
+      _showOffset:"showOffset",
+      _removeTmpCover:"removeTmpCover",
+      _setIdx:"setIdx",
     },
     pageType:{
       bzIdeExtension:{
@@ -15800,6 +15902,7 @@ if(!window.bzComm){
       }catch(ex){
         v.result={error:ex.stack}
       }
+      
       _end(v)
       function _end(v){
         if(v.callBack){
@@ -15951,7 +16054,7 @@ if(!window.bzComm){
         location.href=location.origin
         window.close()
       }
-    }else{
+    }else if(bzComm2){
       bzComm.init()
     }
   }else{
@@ -16116,7 +16219,7 @@ var _DialogViewDef={
                   return d._item._class.constructor==Function?d._item._class(d):d._item._class
                 },
                 style:function(d){
-                  return d._item._style.constructor==Function?d._item._style(d):d._item._style
+                  return (d._item._style||"").constructor==Function?d._item._style(d):d._item._style
                 }
               },
               _text:function(d){
@@ -16214,7 +16317,6 @@ setTimeout(function(){
     }
   });
 },10);
-console.log("Insert $$$$$$$$$$$$$$")
 var $util={
   extractData:function(d,k){
     return _extractData._extract(d,k)
@@ -23530,7 +23632,7 @@ var _JSHandler={
             eval("v="+v);
           }catch(ex){
             v=undefined
-            console.log("BZ-LOG:"+ex.message+"\n"+vv)
+            // console.log("BZ-LOG:"+ex.message+"\n"+vv)
           }
           if(v===undefined){
             if(!_noSkip){
@@ -28435,8 +28537,6 @@ var _domRecorder={
       }else{
         a.event.value="true"
       }
-    }else if(d._action=="click"){
-      _ideDataBind._bindDataOnElement(a,"element")
     }
     //It is in blank IFRAME
     if(d._element.ownerDocument!==document&&!a.element[1].includes("IFRAME")){
@@ -28481,7 +28581,6 @@ var _domRecorder={
       
     }
     
-    _ideDataBind._bindDataOnElement(a,"element")
     _domRecorder._lastAction=a;
     _domRecorder._insertHoverAction(d._element)
     _domRecorder._lastElement=d._element;
@@ -29287,15 +29386,15 @@ var _domActionTask={
       })
     }
   },
-  _doLog:function(v){
-    if(window.extensionContent){
+  _doLog:function(v,p){
+    if(bzComm._isIDE()){
+      console.log("BZ-LOG: "+v+(p||""))
+    }else{
       bzComm.postToIDE({
         fun:"log",
         scope:"console",
-        ps:['["BZ-LOG: "+v]']
+        ps:[v," (APP)"]
       })
-    }else{
-      console.log("BZ-LOG: "+v+" (APP)")
     }
   },
   _exeOneActionList:function(_data,_setting,_backFun,_descDelay){
@@ -29578,6 +29677,7 @@ var _domActionTask={
     }
   },
   _exeAction:function(_data,_setting,_backFun,_descDelay){
+    debugger
     if(_data.event&&_data.event.action=="rightclick"){
       _data.event.action="click"
       _data.event.button=2
@@ -29605,7 +29705,7 @@ var _domActionTask={
         _result.$returnValue=window.$returnValue
         _result.exeTime=_data.exeTime
         delete window.$returnValue
-        _result._dataMap=_domActionTask._buildActionData()
+        // _result._dataMap=_domActionTask._buildTransferData()
 
         _backFun(_result)
       },_descDelay)
@@ -29642,7 +29742,7 @@ var _domActionTask={
         _fun=0
 
         if(_backFun){
-          r._dataMap=_domActionTask._buildActionData()
+          // r._dataMap=_domActionTask._buildTransferData()
           let _finalFun=_backFun
           
           _backFun=0
@@ -29730,13 +29830,11 @@ var _domActionTask={
       _domActionTask._reportAppInfo("After Prepare action: "+_data.e)
       _domActionTask._notReadyTime=0
       _result._data=_data;
-      _waitData(function(){
-        if (!_force) {
-          _waitOverWin()
-        }else{
-          _doIt(0)
-        }
-      })
+      if (!_force) {
+        _waitOverWin()
+      }else{
+        _doIt(0)
+      }
     }catch(ex){
       _domActionTask._doLog("Exception error: "+ex.stack)
       if(_fun){
@@ -29777,19 +29875,6 @@ var _domActionTask={
       }else{
         r._stillRetryable=0
         _call()
-      }
-    }
-
-    function _waitData(_fun){
-      let d=[$parameter,$test,$module,$project,window.$action,window.$group]
-      _chkData()
-      function _chkData(){
-        if(_hasWaitData(d)){
-          return setTimeout(()=>{
-            _chkData()
-          },100)
-        }
-        _fun()
       }
     }
 
@@ -29938,40 +30023,6 @@ var _domActionTask={
     let r=e.getBoundingClientRect()
 
     _domActionTask._doLog("Action position: ("+window.innerWidth+","+window.scrollY+"), top:"+r.top+", left:"+r.left+", width:"+r.width+", height:"+r.height)
-  },
-  _parseFunForData:function(d){
-    if(d){
-      Object.keys(d).forEach(k=>{
-        window[k]=d[k]
-      })
-      if(!bzComm._isIDE()&&d.funMap){
-        let funMap=d.funMap
-        Object.keys(funMap).forEach(k=>{
-          eval(k+"="+funMap[k])
-        })
-      }
-    }
-  },
-  _buildActionData:function(){
-    let ds=["$project","$module","$test","$action","$group","$loop","$parameter"],fm={},r={};
-    ds.forEach(k=>{
-      r[k]=window[k]
-      _buildFunMap(r[k],k+".")
-    })
-    r.funMap=fm
-    return r
-
-    function _buildFunMap(d,p){
-      if(d&&d.constructor==Object){
-        for(let k in d){
-          if(d[k]&&d[k].constructor==Function){
-            fm[p+k]=d[k].toString()
-          }else{
-            _buildFunMap(d[k],p+k+".")
-          }
-        }
-      }
-    }
   },
   _fetchMultipleFileDataFromURL:function(us,_fun,i,fs){
     i=i||0
@@ -31241,13 +31292,13 @@ var _domActionTask={
         if(!w){
           return
         }
-        let m=BZ._getCurModule()
-        if(m._data.bt=="data"){
-          let f=_aiGeneratorDataHandler._getFieldByName(w,m)
-          if(f){
-            w=f.data
-          }
-        }
+        // let m=BZ._getCurModule()
+        // if(m._data.bt=="data"){
+        //   let f=_aiGeneratorDataHandler._getFieldByName(w,m)
+        //   if(f){
+        //     w=f.data
+        //   }
+        // }
         let i=_findMapData(vs,w)
         if(i!==undefined){
           let v=vs[i],_found=0
@@ -40918,8 +40969,9 @@ var _bzDomPicker={
       _bzDomPicker._endRequire()
     }
   },
-  _start:function(_require){
+  _start:function(_require,_fun){
     if(bzComm._isAppExtension()){
+      _require._back=_require._back||_fun
       var w=_bzDomPicker._domPickerWindow;
       if(w&&!w.closed){
         _bzDomPicker._preRequire=_bzDomPicker._curRequire
@@ -41167,13 +41219,14 @@ var _bzDomPicker={
     _innerWin._data._curDomPath=vs
   },
   _endRequire:function(){
-    if(BZ._isRecording()){
-      setTimeout(function(){
-        _bzDomPicker._removeTmpCover();
-      },1000);
-    }else{
-      _bzDomPicker._removeTmpCover();
+    if(_bzDomPicker._curRequire){
+      bzComm.postToAppExtension({
+        fun:"_endRequire",
+        scope:"_bzDomPicker",
+        toIFrameId:0
+      })
     }
+    $(".BZCover,.ErrBZCover").remove();
     _bzDomPicker._curRequire=0
 
     // if(_bzDomPicker._curRequire){
@@ -43114,40 +43167,38 @@ var _innerWin={
     }
   },
   _getHTML:function(){
-    let _host=SERVER_HOST//.replace(/^http(s)?:/,location.protocol);
-    return `
-    <link rel="stylesheet" type="text/css" href="${_host}/ide/css/bzInsert.css">
-    <link rel="stylesheet" type="text/css" href="${_host}/ide/css/insert.icons.css">
-    
-    <div id="BZ_Win" class="bz-tb-container BZIgnore"
-      style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:80px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">
-      <div class="bz-main-body">
-        <div class="bz-tb-header">
-          <div class="bz-btn-tb-icon bz-boozang-logo-small"
-            style="width:19px;height:19px;cursor:pointer;float:left;margin:4px;padding:0;border:0;background-position:25px 25px;background-size: 34px !important;margin-bottom:0;"
-            onclick="BZ.focusMaster('','bz-master')"></div>
-          <div style="flex:1;text-align: center;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 11px;">
-            <span class="info" style="display: none;">Lost focus</span>
-          </div>
-          <div class="bz-btn-icon-tn bz-header-right bz-minimize-white" style="height:24px;" onclick="BZ.toolbar.resize(this)"></div>
-        </div>
-        <div>
-          <div class="bz-tb-body">
-            <div class="bz-tb-buttons">
-              <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)"></button>
-              <button class="bz-btn-tb-icon bz-2 bz-play" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case"></button>
-              <button class="bz-btn-tb-icon bz-3 bz-validate" onclick='BZ.toolbar.exeCmd(this)' title="Validation"></button>
-              <button class="bz-btn-tb-icon bz-4 bz-comment" onclick='BZ.toolbar.exeCmd(this)' title="Comment"></button>
-            </div>
-          </div>
-          <div class="bz-tb-body">
-            <div class="bz-tb-subheader"><a
-                style="position:absolute;right:10px;bottom:0;font-size:10pt;text-decoration: underline;color:#66F;"
-                href="javascript:" onclick="BZ.toolbar.autoFillForm();">Autofill Forms</a></div>
-          </div>
-        </div>
-      </div>
-    </div>`
+    let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
+    return `<link rel="stylesheet" type="text/css" href="${_host}/ide/css/bzInsert.css">`
+    +`<link rel="stylesheet" type="text/css" href="${_host}/ide/css/insert.icons.css">`
+    +`<div id="BZ_Win" class="bz-tb-container BZIgnore"`
+    +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:80px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
+    +`  <div class="bz-main-body">`
+    +`    <div class="bz-tb-header">`
+    +`      <div class="bz-btn-tb-icon bz-boozang-logo-small"`
+    +`        style="width:19px;height:19px;cursor:pointer;float:left;margin:4px;padding:0;border:0;background-position:25px 25px;background-size: 34px !important;margin-bottom:0;"`
+    +`        onclick="BZ.focusMaster('','bz-master')"></div>`
+    +`      <div style="flex:1;text-align: center;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 11px;">`
+    +`        <span class="info" style="display: none;">Lost focus</span>`
+    +`      </div>`
+    +`      <div class="bz-btn-icon-tn bz-header-right bz-minimize-white" style="height:24px;" onclick="BZ.toolbar.resize(this)"></div>`
+    +`    </div>`
+    +`    <div>`
+    +`      <div class="bz-tb-body">`
+    +`        <div class="bz-tb-buttons">`
+    +`          <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)"></button>`
+    +`          <button class="bz-btn-tb-icon bz-2 bz-play" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case"></button>`
+    +`          <button class="bz-btn-tb-icon bz-3 bz-validate" onclick='BZ.toolbar.exeCmd(this)' title="Validation"></button>`
+    +`          <button class="bz-btn-tb-icon bz-4 bz-comment" onclick='BZ.toolbar.exeCmd(this)' title="Comment"></button>`
+    +`        </div>`
+    +`      </div>`
+    +`      <div class="bz-tb-body">`
+    +`        <div class="bz-tb-subheader"><a`
+    +`            style="position:absolute;right:10px;bottom:0;font-size:10pt;text-decoration: underline;color:#66F;"`
+    +`            href="javascript:" onclick="BZ.toolbar.autoFillForm();">Autofill Forms</a></div>`
+    +`      </div>`
+    +`    </div>`
+    +`  </div>`
+    +`</div>`
   },
   _insertCtrls:function(bSwitch,bMax){ //insert controls into customer application window
     if(parent!=window||BZ._isAutoRunning() || !window.extensionContent||_IDE._data._curVersion.shield||_IDE._data._curVersion.freezed){
@@ -43234,7 +43285,6 @@ var _innerWin={
     }
   },
   resize:function(o){
-    debugger
     let u=BZ._userHabit.toolbarPos
     let oo=$(_innerWin._shadowRoot).find(".bz-header-right")
     if(o){
@@ -47094,6 +47144,7 @@ var _ideActionManagement={
     }
   },
   _pickElement:function(_pick,fun){
+    let a=_IDE._data._curAction
     if(!window.extensionContent){
       if(!_Util._isBZTWOpened()){
         return BZ._launchCurEnvUrl(undefined,()=>{
@@ -47103,16 +47154,22 @@ var _ideActionManagement={
       bzComm.postToAppExtension({
         fun:"_pickElement",
         scope:"_ideActionManagement",
-        ps:[_pick||{element:_IDE._data._curAction.element}],
+        ps:[_pick||{element:a.element}],
         insertCallFun:1,
+        toIFrameId:_Util._isEmpty(a.element)?"*":bzComm._getIframeIdByPath(a.element),
         return:function(e){
-          _IDE._data._curAction.element=e
+          a.element=e
+          _ideDataBind._bindDataOnElement(a,"element");
           _ideTestManagement._save()
         }
       })
-    }else if(_IDE._data._curAction){
+    }else if(a){
       _descAnalysis._clearTmpPath(1);
-      _bzDomPicker._start({_id:"_actionElementPick",_back:_back,_type:_IDE._data._curAction&&_pick!=1?_IDE._data._curAction.panel||_IDE._data._curAction.element:null});
+      _bzDomPicker._start({
+        _id:"_actionElementPick",
+        _back:_back,
+        _type:a&&_pick!=1?a.panel||a.element:null
+      });
     }else{
       return
     }
@@ -47123,7 +47180,6 @@ var _ideActionManagement={
         _curAction.panel=_path;
       }else{
         _curAction.element=_path;
-        _ideDataBind._bindDataOnElement(_curAction,"element");
       }
       
       if(_curAction.type==_ideActionData._type._triggerEvent&&_pos){
@@ -49794,20 +49850,13 @@ var _ideDataBind={
       }
     }
     _ideDataBind._data._tmpName=_glossaryHandler._getVariableName(_name);
-    
-    var o=$parameter||{},p,vs;
+    window.$parameter=window.$parameter||{};
+    var o=window.$parameter||{},p,vs;
 
     if(!_getPath&&(!_innerWin._data._dataBind._showDataBind||!_IDE._data._curTest||!BZ._isRecording())){
       return _ideDataBind._generateData(e,_name)
     }else{
-      if(s=="$parameter"&&BZ._isPlaying()){
-        return `$parameter.${_name}`
-      }else{
-        p=_ideDataBind._getBindDataName(o, _name,s,e,ds,_chkExistDataOnly)
-      }
-      if(p && p._path){
-        return p._path;
-      }
+      return `$parameter.${_name}`
     }
   },
   _getBindDataName:function(o,n,_path,e,_elementPath,_chkExistDataOnly){

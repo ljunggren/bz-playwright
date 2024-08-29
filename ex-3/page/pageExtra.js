@@ -1,4 +1,3 @@
-console.log("Insert $$$$$$$$$$$$$$")
 var $util={
   extractData:function(d,k){
     return _extractData._extract(d,k)

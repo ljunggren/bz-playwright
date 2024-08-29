@@ -7591,6 +7591,7 @@ window.BZ={
     "curUser._curProject.setting":"curProjectSetting",
     "_appWordHandler._wordMap":"appWordHandlerWordMap",
     "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
+    "_ideDataManagement._tmpTaskDataMap":"ideDataManagementTmpTaskDataMap"
   },
   _data:{},
   _log:function(o){
@@ -7649,9 +7650,6 @@ window.BZ={
     }
   },
   toolbar:{
-    miniTool:function(){
-      debugger    
-    },
     resize:function(o){
       bzComm.postToAppExtension({
         fun:"resize",
@@ -7894,7 +7892,8 @@ window.BZ={
     return v
   },
 };
-if(!window.bzComm){
+if(!window.bzComm||window.name=="bz-master"){
+  let bzComm2=!!window.bzComm||window.extensionContent
   window.bzComm={
     _shareData:{},
     _callBackMap:{},
@@ -7910,7 +7909,57 @@ if(!window.bzComm){
       _ideRecorder:"ideRecorder",
       _ideTask:"ideTask",
       _domActionTask:"domActionTask",
-      _exeAction:"exeAction"
+      _exeAction:"exeAction",
+      _newItem:"newItem",
+      _ideActionManagement:"ideActionManagement",
+      _storeUserHabit:"storeUserHabit",
+      _aiDataUpdateHandler:"aiDataUpdateHandler",
+      _updateActionCommentDesc:"updateActionCommentDesc",
+      _receiveAPPInfo:"receiveAPPInfo",
+      _ideTestManagement:"ideTestManagement",
+      _insertInitRefresh:"insertInitRefresh",
+      _setClickFileInput:"setClickFileInput",
+      _domRecorder:"domRecorder",
+      _setPopMsg:"setPopMsg",
+      _mergeToSetAction:"mergeToSetAction",
+      _addNewItem:"addNewItem",
+      _setRequestCount:"setRequestCount",
+      _attachReqData:"attachReqData",
+      _appReqRepHandler:"appReqRepHandler",
+      _setToken:"setToken",
+      _aiAuthHandler:"aiAuthHandler",
+      _Util:"Util",
+      _log:"log",
+      _doAfterComment:"doAfterComment",
+      _tipHandler:"tipHandler",
+      _takeoverWin:"takeoverWin",
+      _takeoverPopMsg:"takeoverPopMsg",
+      _setBackTestPage:"setBackTestPage",
+      _innerWin:"innerWin",
+      _pickElement:"pickElement",
+      _isElementReady:"isElementReady",
+      _cssHandler:"cssHandler",
+      _endRequire:"endRequire",
+      _domActionTask:"domActionTask",
+      _getCanvasData:"getCanvasData",
+      _postAPIData:"postAPIData",
+      _setAlert:"setAlert",
+      _setOnbeforeunload:"setOnbeforeunload",
+      _triggerConfirm:"triggerConfirm",
+      _triggerPrompt:"triggerPrompt",
+      _getUICompleteTime:"getUICompleteTime",
+      _transferMonitor:"transferMonitor",
+      _infoManagement:"infoManagement",
+      _showImportantInfo:"showImportantInfo",
+      _originAJax:"originAJax",
+      _getTWElementPathByCSS:"getTWElementPathByCSS",
+      _pickDetails:"pickDetails",
+      _editPath:"editPath",
+      _flashMutipleTmpCover:"flashMutipleTmpCover",
+      _showTmpCover:"showTmpCover",
+      _showOffset:"showOffset",
+      _removeTmpCover:"removeTmpCover",
+      _setIdx:"setIdx",
     },
     pageType:{
       bzIdeExtension:{
@@ -8302,6 +8351,7 @@ if(!window.bzComm){
       }catch(ex){
         v.result={error:ex.stack}
       }
+      
       _end(v)
       function _end(v){
         if(v.callBack){
@@ -8453,7 +8503,7 @@ if(!window.bzComm){
         location.href=location.origin
         window.close()
       }
-    }else{
+    }else if(bzComm2){
       bzComm.init()
     }
   }else{
@@ -9760,8 +9810,6 @@ var _domRecorder={
       }else{
         a.event.value="true"
       }
-    }else if(d._action=="click"){
-      _ideDataBind._bindDataOnElement(a,"element")
     }
     //It is in blank IFRAME
     if(d._element.ownerDocument!==document&&!a.element[1].includes("IFRAME")){
@@ -9806,7 +9854,6 @@ var _domRecorder={
       
     }
     
-    _ideDataBind._bindDataOnElement(a,"element")
     _domRecorder._lastAction=a;
     _domRecorder._insertHoverAction(d._element)
     _domRecorder._lastElement=d._element;
