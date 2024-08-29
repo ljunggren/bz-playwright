@@ -1,7 +1,7 @@
 node_modules/
 *.html
 !bz-extension/*.html
-!ex-3/*.html
+!ex-3/popup/*.html
 results.json
 userdata/
 report*.json
