@@ -71,12 +71,12 @@ $(".bz-refresh-code").click(function(e){
 // }
 
 function init(){
+  debugger
   // var image = document.createElement("img");
   // image.src = chrome.runtime.getURL("img/boozang128.png");
   // document.getElementsByTagName("body")[0].appendChild(image);
-  var version = chrome.app.getDetails().version;
+  var version = "4.0.0";
   $("#version").text("Version: "+ version);
-
   chrome.storage.sync.get("bz-log-format",function(d){
     console.log("data:")
     console.log(JSON.stringify(d))
