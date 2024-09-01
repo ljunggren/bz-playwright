@@ -22,15 +22,17 @@ var innerScript={
   initScript:function(_root,d,_fun){
     console.log("initScript",bzComm.getIframeId())
     if(!window.jQuery || !jQuery.fn||!jQuery.fn.jquery){
-      innerScript._insertJQuery(_root,()=>{
-        innerScript._insertExtraScript(_root,_end)
-      })
+      innerScript._insertJQuery(_root,_end)
+      // innerScript._insertJQuery(_root,()=>{
+      //   innerScript._insertExtraScript(_root,_end)
+      // })
     }else{
-      innerScript._insertExtraScript(_root,_end)
+      _fun&&_fun()
     }
 
     function _end(){
       d&&BZ.assignShareData(d);
+      extendJQuery()
       _fun&&_fun()
     }
   },

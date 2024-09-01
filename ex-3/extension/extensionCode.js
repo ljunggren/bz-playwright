@@ -753,7 +753,7 @@ var _bzMessage={
     _fields:"Fields",
     _details:"Details",
     _general:"general",
-    _loopData:"For Loop Data",
+    LD:"For Loop Data",
     _select:"[select ...]",
     _solution:"Solution",
     _operations:"Operations",
@@ -1521,7 +1521,7 @@ var _bzMessage={
   },
   _data:{
     _mapAuth:"Mapping to Authorization setting",
-    _loopData:"Loop data ($loop)",
+    LD:"Loop data ($loop)",
     _testData:"Test case ($test)",
     _moduleData:"Module ($module)",
     _projectData:"Project ($project)",
@@ -3149,7 +3149,7 @@ var _bzMessage={
       followSameURL:"Reload page on URL mismatch",
       _enterPointType:"Reload policy",
       _enterPointTypeDesc:"Load test page method",
-      _loopData:"Loop Data",
+      LD:"Loop Data",
       _startIdx:"Start",
       _endIdx:"End",
       _startDesc:"Start from 0",
@@ -3597,7 +3597,7 @@ var _bzMessage={
     _taskQueueSize:"Task queue ({0})",
     _allActions:"Result list",
     _failedActions:"Failed Actions ({0})",
-    _loopData:"Loop data",
+    LD:"Loop data",
     _executing:"Executing ...",
     _startTime:"Start time: ",
     _endTime:"End time: ",
@@ -7818,6 +7818,7 @@ window.BZ={
     let d={
       "BZ._curEnv":BZ._curEnv,
       "BZ._userHabit.toolbarPos":BZ._userHabit.toolbarPos,
+      "BZ._data._status":BZ._data._status,
       "_aiAuthHandler._data":_aiAuthHandler._data,
       "_IDE._data._curModule":m&&{
         data:_Util._cloneSelectData(m._data,0,"code|name|parentModule|bt")
@@ -10367,6 +10368,8 @@ window._Util={
   _getElementByQuickPath:function(p){
     if(p.constructor==Array){
       return $util.findDom(p)
+    }else if(p.constructor!=String){
+      return p
     }
     p=p.split(">")
     if(p[0]=="BODY"){
@@ -14436,7 +14439,7 @@ tbody td:first-child,tbody td:last-child{
     document._Contains=document._input=document._link=document._near=document._after=document._before=document._endContains=document._rowcol=0
   },
   _findDoms:function(_paths,_errOnHidden,_bRetry,_toShow){
-    _extendJQuery()
+    extendJQuery()
     _Util._newFindDom()
     if(_paths.constructor==String){
       _paths=_paths.split("\n")
@@ -15505,7 +15508,6 @@ if(!window.bzComm||window.name=="bz-master"){
       _infoManagement:"infoManagement",
       _showImportantInfo:"showImportantInfo",
       _originAJax:"originAJax",
-      _getTWElementPathByCSS:"getTWElementPathByCSS",
       _pickDetails:"pickDetails",
       _editPath:"editPath",
       _flashMutipleTmpCover:"flashMutipleTmpCover",
@@ -15556,12 +15558,12 @@ if(!window.bzComm||window.name=="bz-master"){
       let cp=bzComm.getCurPageType();
   
       window.addEventListener(cp.key, (event) => {
-        console.log("Received message on "+cp.key+" and from the same page",event.detail)
+        // console.log("Received message on "+cp.key+" and from the same page",event.detail)
         bzComm.handleMessage(event.detail)
       });
       if(window.extensionContent){
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-          console.log("Received message on "+cp.key+" and from remote",message)
+          // console.log("Received message on "+cp.key+" and from remote",message)
           bzComm.handleMessage(message)
           sendResponse(0)
         });
@@ -15948,12 +15950,12 @@ if(!window.bzComm||window.name=="bz-master"){
     },
     _postMessage:function(v){
       let cp=bzComm.getCurPageType()
-      console.log("Send message from "+cp.key)
+      // console.log("Send message from "+cp.key,v)
       if(cp.getTabId()==v.toId&&v.toIFrameId==bzComm.getIframeId()){
         window.dispatchEvent(new CustomEvent(v.toPage, {detail:v}));
       }else{
         let _bkFun=function(r){
-          console.log("Get response message on "+cp.key+" and from remote page")
+          // console.log("Get response message on "+cp.key+" and from remote page")
   
           bzComm.handleMessage(r)
         }
@@ -16044,7 +16046,9 @@ if(!window.bzComm||window.name=="bz-master"){
     bzComm.init()
   }else if(window.name=="bz-master"){
     if(!opener){
-      if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
+      if(!window._Util){
+        location.reload()
+      }else if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
         window.name=""
         let p=localStorage.getItem("bz-ide")
         if(p){
@@ -16056,6 +16060,8 @@ if(!window.bzComm||window.name=="bz-master"){
         window.open(v,"bz-master","width="+p.w+",height="+p.h)
         location.href=location.origin
         window.close()
+      }else{
+        bzComm.init()
       }
     }else if(bzComm2){
       bzComm.init()
@@ -16733,7 +16739,7 @@ var $util={
       fun:"getScreenshot",
       return:(v)=>{
         console.log(v)
-        $util._canvas=v
+        $util.CV=v
         _fun&&_fun(v)
         _callBack&&_callBack(v)
       },
@@ -17070,7 +17076,7 @@ var $util={
       if(r[0]=="/"&&r[r.length-1]=="/"){
         return _return("/"+r+"/")
       }
-      debugger
+
       r=_Util._getRegexByBZName(r)
       let _std=r.match(/\{(label|random:?|search[\: ]|search-list[\: ]|new[\: ]|exist-new[\: ]|exist[\: ]|exist-list[\: ]|date[\: ]|time[\: ]|num|time|date|module|this|next|last|today|tomorrow|yesterday|timestamp|textstamp|longtextstamp)[^\}]*\}/g)
       if(_std){
@@ -18013,8 +18019,8 @@ var $util={
 
     // 
     function _doFinal(){
-            if(_blur){
-                $util.triggerBlurEvent(o);
+      if(_blur){
+        $util.triggerBlurEvent(o);
       }
       _domActionTask._doLog("util: "+1709+(_fun?1:0))
       if(_fun){
@@ -18085,27 +18091,25 @@ var $util={
   },
   //triggerBlurEvent
   triggerBlurEvent:function(o,_fun){
-    setTimeout(function(){
-
-      if(window.extensionContent){
-        _Util._getWindowFromDom(o).focus();
-        var _path=_Util._getQuickPath(o)
-        window.postMessage({bz:1,_script:"var bzBlur=_Util._getElementByQuickPath('"+_path+"');try{$(bzBlur).blur()}catch(e){bzBlur&&bzBlur.blur()}"}, "*");
-      }else{
-        var _curWin=_Util._getWindowFromDom(o);
-        $(o).blur();
-        if(_curWin.angular){
-          var e=_curWin.angular.element(o);
-          if(e.blur){
-            e.blur();
-          }
-          if(e.triggerHandler){
-            e.triggerHandler("blur");
-          }
-        }
-      }
-      _fun&&_fun()
-    },30)
+    window.focus();
+    if(window.extensionContent){
+      var _path=_Util._getQuickPath(o)
+      bzComm.postToApp({
+        fun:"triggerEventOnApp",
+        scope:"$util",
+        ps:[_path,"Event",["blur"]],
+        insertCallFun:1,
+        return:_fun
+      })
+    }else{
+      $util.triggerEventOnApp(o,"Event",["blur"],_fun)
+    }
+  },
+  triggerEventOnApp:function(o,e,eps,_fun){
+    o=_Util._getElementByQuickPath(o)
+    e=new window[e](...eps)
+    o.dispatchEvent(e)
+    _fun&&_fun()
   },
   findDoms:function(p){
     let o=_Util._findDoms(p)
@@ -18441,10 +18445,11 @@ var __=function(v,c,_tab){
   return JSON.stringify(v,c,_tab);
 }
 
-function _extendJQuery(){
+function extendJQuery(){
   if(jQuery.expr[":"].include){
     return
   }
+
   var _bzExJQueryFun=/\:(attr|Contains|contains|hidden|show|input|data|link|near|panel|afterEqual|after|before|containCss|css|endContains|endEqual|equal|RowCol|rowcol|bz|textElement|blank|Attr|text) *(=|$)/g;
 
   /**
@@ -19725,8 +19730,9 @@ function _extendJQuery(){
     return v.match(/:(include|text|attr|Attr|Contains|hidden|show|panel|match|input|data|link|near|next|previous|parent|afterEqual|after|before|containCss|css|noCss|endContains|contains|endEqual|equal|RowCol|rowcol|textElement|blank|bz|value|val)\([^\)]*\)/)
   }
 }
-
-_extendJQuery();
+if(window.jQuery){
+  extendJQuery()
+};
 var _BZDocumentsHandler={
   find:function(_jPath){
     var _result=null;
@@ -24767,7 +24773,7 @@ var _screenshotHandler={
   },
 /*Don't delete. It is for generate img 
   _postImg:function(_result){
-    var _file=_screenshotHandler._canvasToImg(_result._canvas);
+    var _file=_screenshotHandler._canvasToImg(_result.CV);
     var formData = new FormData();
 
     formData.append("uploads[]", _file, _result._data._path+".png");
@@ -24791,14 +24797,14 @@ var _screenshotHandler={
     if(_result._type<3){
       console.log("BZ-LOG: postImgInString ...")
     }else{
-      delete _result._canvas
+      delete _result.CV
     }
-    if(_result._canvas||_result._imgData||_result._attachIdx!==undefined){
+    if(_result.CV||_result._imgData||_result._attachIdx!==undefined){
       console.log("BZ-LOG: postImgInString-1 ...")
       let _data=_result._imgData
       if(!_data||!_data.file){
         _data={
-          file:_result._canvas||_getAttachImg(),
+          file:_result.CV||_getAttachImg(),
         }
         _result._imgData=_data;
       }
@@ -24875,7 +24881,7 @@ var _screenshotHandler={
       _img.src = _dataURL;
 
       _img.onload = function() {
-        const _canvas = document.createElement('canvas');
+        const CV = document.createElement('canvas');
         if(minWidth&&width<minWidth){
           x-=(minWidth-width)/2;
           width=minWidth;
@@ -24894,13 +24900,13 @@ var _screenshotHandler={
             y=_img.height-height;
           }
         }
-        _canvas.width = width;
-        _canvas.height = height;
-        const _ctx = _canvas.getContext('2d');
+        CV.width = width;
+        CV.height = height;
+        const _ctx = CV.getContext('2d');
 
         _ctx.drawImage(_img, x, y, width, height, 0, 0, width, height);
 
-        const croppedDataURL = _canvas.toDataURL('image/png');
+        const croppedDataURL = CV.toDataURL('image/png');
         _resolve(croppedDataURL);
       };
 
@@ -29221,7 +29227,6 @@ var _domActionTask={
         }
       }
       
-      _domActionTask._setErrorPos(_result,"_element","_actionDetailsGeneral");
       _domActionTask._reportAppInfo("Prepare element")
 
       var e=_domActionTask._findElement(a,a.errOnHidden);
@@ -29379,10 +29384,8 @@ var _domActionTask={
 
   },
   _logOneAction:function(a){
-    let v=(a._path||"").match(_IDE._actionPathRegex)
-    if(v){
-      v="##"+_bzMessage._log._exeSingleActionGroup+"## ("+v._last()+"), "+a.description
-      _domActionTask._doLog(v)
+    if(a.log){
+      _domActionTask._doLog(a.log)
     }
   },
   _reportAppInfo:function(v){
@@ -29408,23 +29411,20 @@ var _domActionTask={
   _exeOneActionList:function(_data,_setting,_backFun,_descDelay){
     _data.asOneAction=0
     let as=[_data],_result,_lastLog,_waitSameRequest=0,_startTime=Date.now(),_tryNotWait;
-    _domActionTask._curOneActionList=as.concat(_data._oneActionList)
+    _domActionTask._curOneActionList=as.concat(_data.oneActionList)
     let ss=[],_curGroup,_retry=0,_speed=50,_lastAction;
-    let _localActions=localStorage.getItem(_data._path)
-    localStorage.removeItem(_data._path)
     _domActionTask._curOneActionList.forEach(x=>x._inOneAction=1)
-    if(_localActions){
-      let _leaveActions=_Util._strToJson(_localActions)
-      if(!_Util._isEmpty(_leaveActions)){
-        _domActionTask._curOneActionList=_leaveActions
-      }
-    }
+    
 
     _doIt()
     
     function _doIt(a){
       let _ssss=(a&&(a.max||a.min))||_speed
       setTimeout(()=>{
+        if(!BZ._isPlaying()){
+          return
+        }
+    
         if(TWHandler._curRequestList.length&&!_tryNotWait){
           _waitSameRequest++
           let _log=_Util._formatMessage(
@@ -29453,7 +29453,6 @@ var _domActionTask={
           _lastLog=""
         }
         a=a||_domActionTask._curOneActionList.shift()
-        _storeTmpData(_data._path,_domActionTask._curOneActionList)
         
         if(!a||a.type==7){
           if(_curGroup){
@@ -29499,13 +29498,13 @@ var _domActionTask={
                   }
                   _tryNotWait=0
                   return _doIt(a)
-                }else if(r._stillRetryable){
+                }else if(r.stillRetryable){
                   _tryNotWait=0
                   a._doRetryPreviousAction=1
                   delete a.e
                   a.min=1
                   return _doIt(a)
-                }else if(r._redidPreviousAction){
+                }else if(r.redidPreviousAction){
                   a._doRetryPreviousAction=0
                   _retry=0
                   a.min=_speed
@@ -29535,13 +29534,6 @@ var _domActionTask={
       },_ssss)
     }
     
-    function _storeTmpData(p,_list){
-      try{
-        localStorage.setItem(p,JSON.stringify(_list))
-      }catch(e){
-        
-      }
-    }
     function _handleResult(r,a){
       r._data=a
       if(a.type==0){
@@ -29565,12 +29557,15 @@ var _domActionTask={
 
       if(!_result){
         _result=_Util._clone(r)
-        _result._resultList=[]
+        _result.resultList=[]
       }else if(_result._type>r._type){
         _result._type=r._type
       }
       if(r!=_result){
-        _result._resultList.push(r)
+        r.D=r._data
+        delete r._data
+        r.t=r._type
+        _result.resultList.push(r)
         if(!_result._failedAction&&r._type<=2){
           _result._failedAction=a
         }
@@ -29631,7 +29626,7 @@ var _domActionTask={
         _screenshotHandler._getScreenshot(0,0,function(c){
           _result._imgData={
             file:c,
-            name:r._data._path.replace(/[\/]/g,".").replace(/[\.]$/,"")
+            name:r._data.P.replace(/[\/]/g,".").replace(/[\.]$/,"")
           };
   
           _result._stack=r._data._idx
@@ -29685,7 +29680,7 @@ var _domActionTask={
     }
   },
   _exeAction:function(_data,_setting,_backFun,_descDelay){
-    debugger
+    $('.bz-tip-iframe').remove();
     if(_data.event&&_data.event.action=="rightclick"){
       _data.event.action="click"
       _data.event.button=2
@@ -29700,16 +29695,9 @@ var _domActionTask={
         _domActionTask._exeAction(_data,_setting,_backFun,_descDelay)
       },100)
     }
-    if(_domActionTask._lastAction&&_domActionTask._lastAction!=_data&&_data._repeatOnExtensionComm){
-      if(_domActionTask._lastAction._path==_data._path){
-        return
-      }
-    }
-    _data._repeatOnExtensionComm=0
     _domActionTask._lastAction=_data
-    if(_data.asOneAction&&_data._oneActionList){
+    if(_data.asOneAction&&_data.oneActionList){
       return _domActionTask._exeOneActionList(_data,_setting,function(_result){
-        localStorage.removeItem(_data._path)
         _result.$returnValue=window.$returnValue
         _result.exeTime=_data.exeTime
         delete window.$returnValue
@@ -29729,13 +29717,17 @@ var _domActionTask={
           delete _data.e.bzTxtElement
         }
         r._img=_data._img
+        r.img=r._img
+        r.t=r._type
+        r.msg=r._msg
         if(window.extensionContent||!BZ._hasExtension()){
           r._url=BZ.TW.location.href
+          r.url=r._url
         }
-        if(r._type>2&&_data._loopData){
-          _setting.$action=_data._loopData.shift()
-          if(!_data._loopData.length){
-            _data._loopData=0
+        if(r._type>2&&_data.LD){
+          _setting.$action=_data.LD.shift()
+          if(!_data.LD.length){
+            _data.LD=0
           }
           return setTimeout(()=>{
             _domActionTask._exeAction(_orgData,_setting,_backFun,_descDelay)
@@ -29744,8 +29736,6 @@ var _domActionTask={
 
         BZ._lastResult=r;
         
-        r._errorPos=_domActionTask._errorPos;
-
         r.$returnValue=window.$returnValue
         _fun=0
 
@@ -29754,14 +29744,13 @@ var _domActionTask={
           let _finalFun=_backFun
           
           _backFun=0
-          r._data={..._data}
+
           if(r._type<3&&window.name!="bz-master"){
             delete _data.e
-            r._data.element=["BZ.TW.document"]
+
             _domActionTask._doLog("Go to take screenshot")
             return _screenshotHandler._getScreenshot(0,0,function(v){
-              r._canvas=v
-              delete r._data.e
+              r.CV=v
               _domActionTask._doLog("Send result 3")
               _finalFun&&_finalFun(r);
               _finalFun=0
@@ -29769,7 +29758,7 @@ var _domActionTask={
           }else if(r._type>2){
             _domActionTask._registerSuccessAction(_data)
           }
-          delete r._data.e
+
           _domActionTask._doLog("Send result 2")
           _finalFun&&_finalFun(r);
           _finalFun=0
@@ -29856,7 +29845,7 @@ var _domActionTask={
       let d=BZ._lastMouseAction
       if(d){
         if(a._doRetryPreviousAction){
-          r._redidPreviousAction=1
+          r.redidPreviousAction=1
           
           delete BZ._lastMouseAction
           if(d.type==1&&d.event&&d.event.type=="change"&&_Util._isStdInputElement(d.e)&&["INPUT","TEXTAREA"].includes(d.e.tagName)){
@@ -29877,11 +29866,11 @@ var _domActionTask={
             })
           }
         }else{
-          r._stillRetryable=1
+          r.stillRetryable=1
           _call()
         }
       }else{
-        r._stillRetryable=0
+        r.stillRetryable=0
         _call()
       }
     }
@@ -29959,7 +29948,6 @@ var _domActionTask={
       try{
         //Validation
         if(_data.type==T._script){
-          _domActionTask._setErrorPos(_result,"_script","_actionDetailsGeneral");
           return _domActionTask._doScript(_data,function(r){
             var _assertList=TWHandler._takeAssertInfo();
             if(_assertList.length){
@@ -30020,7 +30008,7 @@ var _domActionTask={
           _result._errSou=_taskInfo._errSou._script;
         }
       }
-      _result._errorPos=_domActionTask._errorPos;
+
       if(_fun){
         _fun(_result);
       }
@@ -30051,11 +30039,9 @@ var _domActionTask={
   _doScript:function(d,_fun){
     var $element;
     if(d.element){
-      _domActionTask._setErrorPos({},"_element","_actionDetailsGeneral");
       $element = _domActionTask._findElement(d);
     }
 
-    _domActionTask._setErrorPos({},"_script","_actionDetailsGeneral");
 
     var _back=_domActionTask._exeScript(d.script,null,$element,_doIt);
     if(_back&&_back.constructor==Function){
@@ -30077,8 +30063,8 @@ var _domActionTask={
     
     function _final(w){
       if(_fun){
-        let c=$util._canvas
-        delete $util._canvas
+        let c=$util.CV
+        delete $util.CV
         if(c){
           c={
             file:c
@@ -30273,7 +30259,7 @@ var _domActionTask={
   },
   _extractDataByHtml:function(_data){
     var _element=_data.element;
-    _domActionTask._setErrorPos({},"_element","_actionDetailsGeneral");
+
     var _dom=_domActionTask._findElement(_data);
     if(_dom){
       if(_data.type!=_ideActionData._type._extractData){
@@ -30369,7 +30355,7 @@ var _domActionTask={
           _exeMouseGroup()
         },100);
       }else{
-        _fun({_type:_taskInfo._type._success,_errorPos:_domActionTask._errorPos})
+        _fun({_type:_taskInfo._type._success})
       }
     }
   },
@@ -30380,7 +30366,6 @@ var _domActionTask={
     var _result={_type:_taskInfo._type._failed}
     if(x>=0 && y>=0){
       var _element=d.element;
-      _domActionTask._setErrorPos({},"_element","_actionDetailsGeneral");
       var _dom=_domActionTask._findElement(d),_dom2;
       if(d.event.element && d.event.element.length){
         let _lastTxtElement=_dom.bzTxtElement
@@ -30465,12 +30450,10 @@ var _domActionTask={
             _exeMouseGroup()
           },100);
         }else{
-          _fun({_type:_taskInfo._type._success,_errorPos:_domActionTask._errorPos})
+          _fun({_type:_taskInfo._type._success})
         }
       }
     }else{
-      _domActionTask._setErrorPos({},"xy","_actionDetailsGeneral");
-      _result._errorPos=_domActionTask._errorPos;
       _fun(_result)
     }
   },
@@ -30521,7 +30504,6 @@ var _domActionTask={
         })
       }
       
-      _domActionTask._setErrorPos(_result,"_element","_actionDetailsGeneral");
       var dom=_domActionTask._findElement(d);
       if(!dom){
         //on retryable action
@@ -31248,7 +31230,6 @@ var _domActionTask={
     }
   },
   _doComment:function(_data){
-    _domActionTask._setErrorPos({},"_element","_actionDetailsGeneral");
     var _dom=_domActionTask._findElement(_data);
     
     
@@ -31289,7 +31270,6 @@ var _domActionTask={
   },
   _compareWithDataExpectation:function(d,o,_force){
     var _result={_type:_taskInfo._type._success,_msg:""},_valids=[];
-    _domActionTask._setErrorPos(_result,"_expectation","_actionDetailsGeneral");
     var vs=(d.expectation||"").split("\n");
     var _text=$util.getElementText(o)
     var _inputs=_cssHandler._findAllInputs(d.e)
@@ -31400,7 +31380,6 @@ var _domActionTask={
     if(_data.script){
       var element;
       if(_data.element){
-        _domActionTask._setErrorPos({},"_element","_actionDetailsGeneral");
         element = _domActionTask._findElement(_data);
       }
       var s=_data.script.trim();
@@ -31517,12 +31496,6 @@ var _domActionTask={
         }
       }catch(e){}
     })
-  },
-  _setErrorPos:function(_result,_value,_key){
-    if(!window.extensionContent){
-    }else{
-      this._errorPos={_value:_value,_key:_key}
-    }
   }
 };
 const _calendarInputHandler={
@@ -33529,88 +33502,6 @@ var _cssHandler={
       }
     }
   },
-  /**/
-  //t: element type, _noText: not include contain css
-  _selectForUI:function(t,w,_includesText,_fun){
-    BZ._data._uiSwitch._tmpCssOptions=[]
-    _Util._confirmMessage({
-      _tag:"div",
-      _items:[
-        {
-          _tag:"div",
-          _attr:{"class":"input-group"},
-          _items:[
-            {
-              _tag:"input",
-              _attr:{
-                "class":"form-control bz-definition-css",
-                value:function(){
-                  return BZ._data._uiSwitch._tmpCssOptions.map((v)=>{return v._key}).join("")||w
-                }
-              }
-            },
-            {
-              _tag:"div",
-              _attr:{"class":"input-group-btn"},
-              _items:[
-                {
-                  _tag:"button",_attr:{"class":"btn btn-icon bz-small-btn bz-dompicker pull-right"},
-                  _jqext:{
-                    click:function(){
-                      _bzDomPicker._pickDetails(0,function(p){
-                        if(!_includesText){
-                          var v=p.pop()
-                          if(!v._css.includes(":Contains")&&!v._css.includes(":endContains")&&!v._css.includes(":near")){
-                            p.push(v)
-                          }
-                        }
-                        BZ._data._uiSwitch._tmpCssOptions=p;
-                        
-                        setTimeout("_Util._resizeModelWindow()",1)
-                      })
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          _tag:"label",_attr:{style:"display:table;margin:5px;"},
-          _items:[
-            {
-              _tag:"input",
-              _dataModel:"_data._item._key",
-              _attr:{type:"checkbox",value:"_data._item._css","class":"bz-select-css"}
-            },
-            {_text:"_data._item._css"},
-          ],
-          _dataRepeat:"BZ._data._uiSwitch._tmpCssOptions"
-        },
-      ]
-    },[{
-      _title:_bzMessage._common._ok,
-      _click:function(c){
-        var v=$(".bz-definition-css").val();
-        if(!v){
-          return alert(_bzMessage._system._error._requiredField,"CSS "+_bzMessage._common._value)
-        }
-        _fun(v)
-        c._ctrl._close()
-      }
-    }],_Util._formatMessage(_bzMessage._setting._objectLib._identifyCss,[t]));
-    
-    
-    function _getSelectCss(vs){
-      var w=""
-      for(var i=0;i<vs.length;i++){
-        if(vs[i]._key){
-          w+=vs[i]._key||""
-        }
-      }
-      return w
-    }
-  },
 /*  */
   _setCurPanel:function(v){
     if(BZ._hasExtension()){
@@ -34658,7 +34549,7 @@ var _cssHandler={
   //_simple: 1: only level 1, 2: ignore label, 3: only label
   _findPath:function(e,_withAIAnalysis,_simple){
     try{
-      _extendJQuery()
+      extendJQuery()
       if ($(e).hasClass("BZIgnore") || $(e.ownerDocument).find(".BZIgnore").find(e).length) {
         return;
       }
@@ -36409,7 +36300,13 @@ var _cssHandler={
   },
   _isElementReady:function(ts,_fun){
     if(!window.extensionContent){
-      bzComm.postToAppExtension({fun:"_isElementReady",scope:"_cssHandler",ps:[ts],insertCallFun:1,return:_fun});
+      bzComm.postToAppExtension({
+        fun:"_isElementReady",
+        scope:"_cssHandler",
+        ps:[ts],
+        insertCallFun:1,
+        return:_fun
+      });
       return
     }
     var rs=[],_withElement=ts._withElement
@@ -40629,29 +40526,6 @@ var _bzDomPicker={
   _selectedItem:null,
   _selectedCover:null,
   _curDom:null,
-  _getTWElementPathByCSS:function(c,_fun,_reTry){
-    if(!window.extensionContent){
-      bzComm.postToAppExtension({
-        fun:"_getTWElementPathByCSS",
-        scope:"_bzDomPicker",
-        ps:[c],
-        insertCallFun:1
-      },_fun);
-      return
-    }
-    
-    if(window.innerWidth>100&&window.innerHeight>100){
-      let cc=c?$util.findDom(["BZ.TW.document",c,0]):0
-      if(cc){
-        c=_cssHandler._findPath(cc)
-      }else{
-        c=0
-      }
-    }else{
-      return
-    }
-    _fun(c);
-  },
   _hasChild:function(d){
     let os=d._dom.children;
     if(os&&d==_bzDomPicker._data._focusItem){
@@ -40835,33 +40709,27 @@ var _bzDomPicker={
   },
   _setMousedown:function(o){
     o.onmousedown=function(e){
-      if(e&&e.button==2){
-        if(this.children.length){
-          return
-        }
-        _bzDomPicker._cancel()
-        e.preventDefault();
-        e.stopPropagation()
-        let _fun=document.body.oncontextmenu
-        document.body.oncontextmenu=function(e){
-          e.preventDefault();
-          e.stopPropagation()
-          document.body.oncontextmenu=_fun
-          return false
-        }
-        return false
-      }
-      if(!BZ._autoRecording){
-        _innerWin._data._curDomPath=0
-      }
       try{
-        var _pos=e?_Util._getMouseXY(e):{x:0,y:0};
-        if(e&&e.target.o&&e.target.o.tagName=="CANVAS"){
-          e.target.o.bzTxtElement=TWHandler._getCanvasTextElementByMousePos(e.target.o,_pos.x,_pos.y)
-          delete e.target.o.bzTmp
+        if(!e||e.buttons==1){
+          var _pos=e?_Util._getMouseXY(e):{x:0,y:0};
+          if(e&&e.target.o&&e.target.o.tagName=="CANVAS"){
+            e.target.o.bzTxtElement=TWHandler._getCanvasTextElementByMousePos(e.target.o,_pos.x,_pos.y)
+            delete e.target.o.bzTmp
+          }
+          _bzDomPicker._popWin(this._orgDom,_pos)
         }
       }catch(e){}
-      _bzDomPicker._popWin(this._orgDom,_pos)
+      return _end(e)
+    }
+    document.body.oncontextmenu=function(e){
+      return _end(e)
+    }
+    function _end(e){
+      if(e){
+        e.preventDefault();
+        e.stopPropagation()
+      }
+      return false
     }
     o.onkeydown=function(e){
       if(27==e.keyCode){
@@ -40903,7 +40771,7 @@ var _bzDomPicker={
         insertCallFun:1
       },_fun);
     }else{
-      _bzDomPicker._start({_id:"_element",_back:_back,_type:d=="_path"?"":d});
+      _bzDomPicker._start({_id:"_element",_back:_back,t:d=="_path"?"":d});
     }
     function _back(_path,_pos,_element){
       var vs;
@@ -40949,10 +40817,10 @@ var _bzDomPicker={
         insertCallFun:1
       });
     }else{
-      var d={_type:_path};
+      var d={t:_path};
       if(_path.constructor==Object){
         d=_Util._clone(_path)
-        d._type=_path._path
+        d.t=_path.p
       }
       d._id="_element"
       d._back=_back
@@ -40962,17 +40830,12 @@ var _bzDomPicker={
       if(_path._fun){
         p={_path:p,_result:window[_path._scope][_path._fun](_element,p)}
       }
-      if(_path._requireUrl){
-        if(p.constructor==Array){
-          p={_path:p}
-        }
-        p._requireUrl=location.href
-      }
+
       //for force open dom picker
       if(BZ._data._uiSwitch._tmpPath){
         BZ._data._uiSwitch._tmpPath=0
       }
-      BZ._formatInIFramePath(p._path||p)
+      BZ._formatInIFramePath(p.p||p)
       _fun(p)
       _bzDomPicker._endRequire()
     }
@@ -40999,7 +40862,7 @@ var _bzDomPicker={
       _bzDomPicker._removeTmpCover();
       _bzDomPicker._selectedCover=null;
       
-      if(_require._type){
+      if(_require.t){
         _bzDomPicker._autoMarkSelect(_require);
       }else{
         _bzDomPicker._manualSelect();
@@ -41009,7 +40872,7 @@ var _bzDomPicker={
     }else{
       if(!_Util._isBZTWOpened()){
         BZ._launchCurEnvUrl(undefined,function(){
-          _require._path=_require._type
+          _require.p=_require.t
           _popErr();
         })
         return 
@@ -41048,36 +40911,34 @@ var _bzDomPicker={
           BZ._formatInIFramePath(p)
           return p
         },
-        _type:_path
+        t:_path
       });
     }
   },
   _autoMarkSelect:function(_require){
-    var os=null,_type=_require._type;
+    var os=null,t=_require.t;
 
     //manual re-select on old action
-    if($.isArray(_type)){
-      os = $util.findDom(_type);
+    if($.isArray(t)){
+      os = $util.findDom(t);
       if(os){
         os=[os];
         BZ._data._uiSwitch._tmpPath=0
       }else{ // for lost old element from page
         _bzDomPicker._popWin()
-        BZ._data._uiSwitch._tmpPath=_type
-        //_infoManagement._showImportantInfo("The element wasn't found on the current page. Please be sure it is on the page and re-pick it.",0,0,1)
-//        this._manualSelect();
+        BZ._data._uiSwitch._tmpPath=t
         return;
       }
     }else{
       //filter, for form input, or user search dom
       this._data._filter=_require._filter;
-      os = $(_type);
+      os = $(t);
     }
     
     if(!os || !os.length){
-      _bzDomPicker._domPickerWindow.alert(_Util._formatMessage(_bzMessage._picker._noExpectedType,[_require._filter||_type]));
+      _bzDomPicker._domPickerWindow.alert(_Util._formatMessage(_bzMessage._picker._noExpectedType,[_require._filter||t]));
       
-      _bzDomPicker._curRequire._type=_bzDomPicker._preType
+      _bzDomPicker._curRequire.t=_bzDomPicker._preType
       _bzDomPicker._start(_bzDomPicker._curRequire)
       return
     }
@@ -41087,7 +40948,7 @@ var _bzDomPicker={
     }else{
       _bzDomPicker._popWin()
 
-      // this._curRequire._type=null;
+      // this._curRequire.t=null;
     }
   },
   _isActionElementPicking:function(){
@@ -41103,116 +40964,33 @@ var _bzDomPicker={
     return Boolean(BZ._data._domPickerStatus);
   },
   _manualSelect:function(){
-    this._selectedCover=this._createTmpCover();
+    _bzDomPicker._selectedCover=this._createTmpCover();
 
-    $(this._selectedCover).mouseover(function(e){
-      this._startPos = _Util._getMouseXY(e);
-    });
-    $("body").mouseleave(function(e){
-      setTimeout(function(){
-        $(_bzDomPicker._selectedCover).hide();
-      },100);
-    });
-    this._selectedCover.onmousemove=function(e){
-      clearTimeout(this._removeTimer)
-      var ca=_IDE._data._curAction;
-      var at=_ideActionData._type;
-      if(_bzDomPicker._curRequire && ["_actionElementPick","_element"].includes(_bzDomPicker._curRequire._id) && !ca){
-        return _bzDomPicker._removeTmpCover();
-//        return _bzDomPicker._endRequire();
-      }
-      if(this._orgDom && this._orgDom.tagName=="IFRAME"){
-        _bzDomPicker._defineDocMouseover();
-        return _bzDomPicker._removeTmpCover();
-      }
-      if(!this._startPos){
-        this._startPos = _Util._getMouseXY(e);
-      }else{
-        var _newPos = _Util._getMouseXY(e);
-        var dx=_newPos.x-this._startPos.x;
-        var dy=_newPos.y-this._startPos.y;
-        if(dx<-2 || dx>2 || dy<-2 || dy>2){
-          var o=_Util._getMouseOnChild(this.o,_newPos)
-          if(o){
-            _bzDomPicker._setTmpCoverPosByDom(o,this)
-          }else if(this.o.tagName=="CANVAS"){
-            this.o.bzTxtElement=0
-            let pp=TWHandler._getCanvasTextElementByMousePos(this.o,_newPos.x,_newPos.y)
-            if(pp!=this.o.bzTxtElement){
-              this.o.bzTxtElement=pp
-              _bzDomPicker._setTmpCoverPosByDom(this.o,this)
-            }
-          }else{
-            this._removeTimer=setTimeout(()=>{
-              this.remove()
-            },100)
-          }
-        }
-      }
-    };
-    this._selectedCover.onmouseout=function(e){
-      if(this._orgDom && this._orgDom.tagName=="IFRAME"){
-        return
-      }
-      var o=_Util._getMouseOnParent(this.o,_Util._getMouseXY(e))
-      if(o!=this.o){
-        _bzDomPicker._setTmpCoverPosByDom(o,this)
-      }
-    }
-    this._defineDocMouseover();
+    $("body").unbind("mouseout",_bzDomPicker._mouseleaveEvent);
+    $("body").unbind("mousemove",_bzDomPicker._mousemoveEvent);
+
+    $("body").bind("mouseout",_bzDomPicker._mouseleaveEvent);
+    $("body").bind("mousemove",_bzDomPicker._mousemoveEvent);
+
   },
-  _defineDocMouseover:function(){
-    $("body").unbind("mouseover");
-    $("body").bind("mouseover",_bzDomPicker._mouseoverEvent);
-    if(window.extensionContent){
-      $("IFRAME").each(function(i,o){
-        if(!o.src.startsWith("http")){
-          $(o.contentDocument).find("body").bind("mouseover",_bzDomPicker._mouseoverEvent);
-        }
-      })
-    }
-    function _doIt(e){ //document.body.mouseover event
-    }
+  _mouseleaveEvent:function(e){
+    _bzDomPicker._removeTmpCoverTimer=setTimeout(function(){
+      $(_bzDomPicker._selectedCover).hide();
+    },100)
   },
-  _mouseoverEvent:function(e){
-    var _timeoutHandle=null;
-    if(!_bzDomPicker._curRequire){
-      return;
-    }
-    
-    window.clearTimeout(_timeoutHandle);
+  _mousemoveEvent:function(e){
+    let os=document.elementsFromPoint(e.clientX,e.clientY),
+        c=_bzDomPicker._selectedCover;
+    os.find(x=>{
+      if(x.tagName=="IFRAME"||x.id=="BZ_Win"){
+        $(c).hide();
 
-    _timeoutHandle=window.setTimeout(function(){
-      var o =_Util._getSouElementFromEvent(e)
-      if(o.shadowRoot&&_Util._hasDeepContent(o.shadowRoot)){
-        if(!o.shadowRoot._bindPicker){
-          o.shadowRoot._bindPicker=1
-          var os=$(o.shadowRoot).find("*").not("style,script"),oo;
-          os.bind("mouseover",_bzDomPicker._mouseoverEvent)
-          for(var i=0;i<os.length;i++){
-            if($(os[i]).css("pointer-events")!="none"){
-              oo=os[i]
-            }
-          }
-          if(oo){
-            _bzDomPicker._mouseoverEvent({target:oo})
-          }
-        }
-        return
+        return 1
+      }else if(x!=c){
+        _bzDomPicker._setTmpCoverPosByDom(x,c,e.clientX,e.clientY)
+        return 1
       }
-
-      if(o!=_bzDomPicker._selectedCover){
-        $(_bzDomPicker._selectedCover).hide();
-        if(!$(o).hasClass("BZIgnore") && $(".BZIgnore").find(o).length==0){
-          _bzDomPicker._curDom=o;
-          _bzDomPicker._setTmpCoverPosByDom(o,_bzDomPicker._selectedCover);
-          if(!_innerWin._data._pos._inMin){
-            clearTimeout(_bzDomPicker._showPathTimer)
-            _bzDomPicker._showPathTimer=setTimeout(function(){_bzDomPicker._showPath(o)},300)
-          }
-        }
-      }
-    },100);
+    })
   },
   _showPath:function(o){
     if(BZ._autoRecording){
@@ -41227,22 +41005,25 @@ var _bzDomPicker={
     _innerWin._data._curDomPath=vs
   },
   _endRequire:function(){
-    if(_bzDomPicker._curRequire){
-      bzComm.postToAppExtension({
-        fun:"_endRequire",
-        scope:"_bzDomPicker",
-        toIFrameId:0
-      })
-    }
-    $(".BZCover,.ErrBZCover").remove();
-    _bzDomPicker._curRequire=0
+    $("body").unbind("mouseout",_bzDomPicker._mouseleaveEvent);
+    $("body").unbind("mousemove",_bzDomPicker._mousemoveEvent);
 
-    // if(_bzDomPicker._curRequire){
-      // BZ._data._domPickerStatus=_bzDomPicker._curRequire._id;
-    // }else{
-      // BZ._data._domPickerStatus=null;
-    // }
-//    BZ._setOperationInfo("");
+    $("body").unbind("mouseover");
+    $(".BZCover,.ErrBZCover").remove();
+
+    if(_bzDomPicker._curRequire){
+      if(bzComm.getIframeId()){
+        bzComm.postToAppExtension({
+          fun:"_endRequire",
+          scope:"_bzDomPicker",
+          toIFrameId:0
+        })
+      }else{
+        _bzDomPicker._domPickerWindow&&_bzDomPicker._domPickerWindow.close()
+      }
+      bzComm._exeInIframes({fun:"_endRequire",scope:"_bzDomPicker"})
+    }
+    _bzDomPicker._curRequire=0
   },
   _getFinalTargetElement:function(_path,o){
     let p=_Util._clone(_path)
@@ -41272,9 +41053,9 @@ var _bzDomPicker={
         o.bzTmp=0
       }
       var _path
-      if(this._curRequire._type && this._curRequire._type.constructor==Array && this._curRequire._type.length){
-        if(this._curRequire._type[0].startsWith("BZ.TW.document")){
-          _path=_Util._clone(this._curRequire._type);
+      if(this._curRequire.t && this._curRequire.t.constructor==Array && this._curRequire.t.length){
+        if(this._curRequire.t[0].startsWith("BZ.TW.document")){
+          _path=_Util._clone(this._curRequire.t);
           var _idx=parseInt(_path[_path.length-1]);
           if(!_idx && _idx!=0){
             _path.push(0);
@@ -41287,7 +41068,7 @@ var _bzDomPicker={
       if(!_path){
         return
       }
-      if(!BZ._data._uiSwitch._tmpPath&&!this._isDomRootElementPicking() && this._curRequire._id!="_domRoot" && !this._data._filter && (!this._curRequire._type || this._curRequire._type.constructor!=Array)){
+      if(!BZ._data._uiSwitch._tmpPath&&!this._isDomRootElementPicking() && this._curRequire._id!="_domRoot" && !this._data._filter && (!this._curRequire.t || this._curRequire.t.constructor!=Array)){
         _bzDomPicker._curRequire._back(_path,_pos,o);
         _bzDomPicker._endRequire();
         BZ.focusIDE()
@@ -41465,95 +41246,60 @@ var _bzDomPicker={
       _bzDomPicker._setTmpCoverPosByDom(c.o,c)
     }
   },
-  _setTmpCoverPosByDom:function(o,c){    
+  _setTmpCoverPosByDom:function(o,c,mx,my){    
     if(!c || !o){
-      return;
-    }else if(window.name!="bz-master" && BZ.TW && BZ.TW.document && (o==BZ.TW || o==BZ.TW.document)){
-      o=BZ.TW.document.body;
-    }else if(window.extensionContent && o.tagName=="IFRAME" && o.src.startsWith("http")){
       return;
     }
     if(o.tagName=="IFRAME"){
       return;
     }
+    clearTimeout(_bzDomPicker._removeTmpCoverTimer)
     c.o=o;
     c._orgDom=o;
-    
-    // if(c.tagName=="CANVAS"){
-      // if(!["SELECT","BUTTON","A","INPUT","TEXTAREA"].includes(o.tagName)){
-      //   $(o).attr("tabindex",0)
-      //   o.focus()
-      //   o.removeAttribute("tabindex")
-      // }
-      // o.focus()
-
-    // }
-    //$(c).insertAfter(document.body);
-    // if(!BZ._isRecording()){
-    //   _Util._focusElement(o);
-    // }
+    let r=o.getBoundingClientRect();
     o.ownerDocument.body.appendChild(c);
     if(o.tagName=="INPUT"&&o.type=="file"){
       o=o.parentElement
     }
-    var xy = _Util._getDomXY(o),w,h;
-    c.style.top=xy.y+"px";
-    c.style.left=xy.x+"px";
-    if(o.offsetWidth===undefined){
-      w=o.getBoundingClientRect().width
-    }else if(o.offsetWidth>0){
-      w=o.offsetWidth
-    }else{
-      w=(o.getBoundingClientRect().width||10)
-    }
-    if(o.offsetHeight===undefined){
-      h=o.getBoundingClientRect().height
-    }else if(o.offsetHeight>0){
-      h=o.offsetHeight
-    }else{
-      h=(o.getBoundingClientRect().height||10)
-    }
     if(c.tagName=="CANVAS"){
-      c.width=w
-      c.height=h
-      // c.attributes.tabIndex=100
-      // c.focus()
+      c.width=r.width
+      c.height=r.height
     }else{
-      c.style.width=w+"px"
-      c.style.height=h+"px"
+      c.style.width=r.width+"px"
+      c.style.height=r.height+"px"
     }
-    if(o.tagName=="CANVAS"&&o.bzTxtElement){
-      c.style.top=parseFloat(c.style.top)+o.bzTxtElement.y+"px";
-      c.style.left=parseFloat(c.style.left)+o.bzTxtElement.x+"px";
-      c.bzTxtElement=o.bzTxtElement
-      if(_bzDomPicker._curRequire){
-        c.width=o.bzTxtElement.w
-        c.height=o.bzTxtElement.h
-        o.bzTxtElement=0
+    c.style.left=r.left+"px"
+    c.style.top=r.top+"px"
+
+    if(o.tagName=="CANVAS"&&o.attributes.bztxtid){
+      let we=o.bzTxtElement
+      if(we){
+        c.style.top=parseFloat(c.style.top)+we.y+"px";
+        c.style.left=parseFloat(c.style.left)+we.x+"px";
+        c.bzTxtElement=we
+        if(_bzDomPicker._curRequire){
+          c.width=we.w
+          c.height=we.h
+          o.bzTxtElement=0
+        }else{
+          c.style.width=we.w+"px"
+          c.style.height=we.h+"px"
+        }
       }else{
-        c.style.width=o.bzTxtElement.w+"px"
-        c.style.height=o.bzTxtElement.h+"px"
+        Object.values(TWHandler._canvasDataMap[o.attributes.bztxtid.value]).find(o=>{
+          return o.find(x=>{
+            if(x.x+r.left<mx&&x.y+r.top<my&&x.x+r.left+x.w>mx&&x.y+r.top+x.h>my){
+              c.width=x.w
+              c.height=x.h
+              c.style.left=x.x+r.left+"px"
+              c.style.top=x.y+r.top+"px"
+              return 1
+            }
+          })
+        })
       }
-      // c.style.marginTop="7px"
     }
     $(c).show();
-
-    clearTimeout(window.bzScrollSetTime)
-    window.bzScrollSetTime=setTimeout(function(){
-      
-      $(window).unbind("scroll")
-      $(window).unbind("resize")
-      $(window).scroll(_bzDomPicker._scrollSync)
-      $(window).resize(_bzDomPicker._scrollSync)
-      if(_Util._isBZTWOpened()){
-        $(BZ.TW).unbind("scroll")
-        $(BZ.TW).unbind("resize")
-        $(BZ.TW).scroll(_bzDomPicker._scrollSync)
-        $(BZ.TW).resize(_bzDomPicker._scrollSync)
-      }
-      $(c.ownerDocument).find("*").unbind("scroll")
-      $(c.ownerDocument).find("*").scroll(_bzDomPicker._scrollSync)
-    },1000);
   },
   _flashMutipleTmpCover:function(_path){
     if(_path.constructor==String){
@@ -41570,7 +41316,7 @@ var _bzDomPicker={
     let os=_Util._findDoms(_path)
     _bzDomPicker._showTmpCover(os,0,0,1)
   },
-  //os: elements, t, flash times, _fun: update cover and element, 
+  //os: elements, t, flash times, _fun: update cover and element, t
   _showTmpCover:function(os,t,_fun,_keep){
     os=(os||[]).filter(x=>x)
 
@@ -41676,18 +41422,14 @@ var _bzDomPicker={
   //d:{_path, offset}
   _showOffset:function(d){
     if(!window.extensionContent){
-      d={
-        _element:_Util._clone(d._element),
-        _offset:d._offset
-      }
-      _aiPageHandler._updateElementPathByDemoValue(d._element)
+      _aiPageHandler._updateElementPathByDemoValue(d.element)
       return bzComm.postToAppExtension({
         fun:"_showOffset",
         scope:"_bzDomPicker",
         ps:[d]
       });
     }
-    let c=_bzDomPicker._flashTmpCover(d._element,1)
+    let c=_bzDomPicker._flashTmpCover(d.element,1)
     if(!c){
       return
     }
@@ -41698,7 +41440,7 @@ var _bzDomPicker={
       y:r.top,
       h:r.height,
       w:r.width
-    },d._offset)
+    },d.offset)
     let cp={
       left:p.x-5+"px",
       top:p.y-5+"px",
@@ -41898,18 +41640,14 @@ var _bzDomPicker={
     }catch(e){
     }
   },
-  _cancel:function(e){
-    _bzDomPicker._endRequire()
-    _bzDomPicker._domPickerWindow&&_bzDomPicker._domPickerWindow.close()
-  },
   _reSelect:function(){
     _bzDomPicker._removeTmpCover();
     var a=this._curRequire,v=this._data._filter;
-    _bzDomPicker._preType=a._type
+    _bzDomPicker._preType=a.t
     if(v){
-      a._type=`${v},:endContains(${v}),:attr(value=${v})`;
+      a.t=`${v},:endContains(${v}),:attr(value=${v})`;
     }else{
-      a._type=v
+      a.t=v
     }
     a._filter=v
     _bzDomPicker._start(a);
@@ -42676,11 +42414,14 @@ var _pickerTemplate={
                             }
                           },
                           _text:function(d){
-                            return _bzMessage._picker._textOptions[d._item]
+                            return d._item?(_bzMessage._picker._textOptions[d._item]||":textElement"):""
                           },
                           _dataRepeat:function(){
-                            let vs=_bzDomPicker._textMethods
                             let o=_bzDomPicker._data._focusItem._dom
+                            if(o.tagName=="CANVAS"){
+                              return ["",":textElement"]
+                            }
+                            let vs=_bzDomPicker._textMethods
                             for(let n of o.childNodes){
                               if(n.nodeType==3&&n.textContent){
                                 return vs
@@ -43031,7 +42772,7 @@ var _pickerTemplate={
                   _text:"_bzMessage._method._close",
                   _jqext:{
                     click:function(e){
-                      _bzDomPicker._cancel(e)
+                      _bzDomPicker._endRequire(e)
                     }
                   }
                 }
@@ -43094,35 +42835,38 @@ var _tipHandler={
     if(!a.description){
       return
     }
-    let pos="position:absolute;top:100px;left:calc(50% - 100px);"
+    let r=a.e.getBoundingClientRect()
+
     a.description=_tipHandler._resetDesc(a.description)
 
     let _bIdx2=_endIdx&&_idx<_endIdx&&`
-          <button onclick="bzComm.postToAppExtension({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &gt; </button>
-          <button onclick="bzComm.postToAppExtension({fun:'_doAfterComment',scope:'_tipHandler',ps:[2]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;">${_bzMessage._method._fail}</button>
+          <button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &gt; </button>
+          <button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[2]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;">${_bzMessage._method._fail}</button>
         `;
 
     let _bIdx1=_idx&&`
-          <button onclick="bzComm.postToAppExtension({fun:'_setIdx',scope:'_tipHandler',ps:[${_idx-1}]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &lt; </button>
+          <button onclick="bzComm.postToIDE({fun:'_setIdx',scope:'_tipHandler',ps:[${_idx-1}]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &lt; </button>
         `;
     if(_bIdx1||_bIdx2){
-      _bIdx1=`<div>${_bIdx1||""}${_bIdx2||""}</div>`
+      _bIdx1=`<div style='padding: 5px;text-align: center;'>${_bIdx1||""}${_bIdx2||""}</div>`
     }
-    let _bResult=a.showJudge&&`<div>
-          <button onclick="bzComm.postToAppExtension({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;">${_bzMessage._method._pass}</button>
-          <button onclick="bzComm.postToAppExtension({fun:'_doAfterComment',scope:'_tipHandler',ps:[2]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;">${_bzMessage._method._fail}</button>
+    let _bResult=a.showJudge&&`<div style='padding: 5px;text-align: center;'>
+          <button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]})" style="color:#000;font-size:10px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;margin-right:5px;">${_bzMessage._method._pass}</button>
+          <button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[2]})" style="color:#000;font-size:10px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;margin-left:5px;">${_bzMessage._method._fail}</button>
         </div>`;
 
     let os=$(".bz-tip-iframe").remove();
     os=$("<div class='bz-tip-iframe'></div>").appendTo(document.body.parentNode);
     _tipHandler._shadowRoot = os[0].attachShadow({ mode: 'open' });
-    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${SERVER_HOST}/ide/css/bzInsert.css'/>
-    <link rel='stylesheet' href='${SERVER_HOST}/ide/css/insert.icons.css'/>
-    <div class="bz-tip BZIgnore" style="top: 13px; left: 0px;">
-    <button class="bz-close BZIgnore" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 10px;top: 10px;height: 10px;width: 10px;border: 0;background-size: 10px;"></button>
-    <textarea style="overflow: auto;" class="helptip BZIgnore" disabled=""></textarea>
-    ${_bIdx1||_bResult||""}
-    </div>`;
+    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${SERVER_HOST}/ide/css/bzInsert.css'/>`
+    +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/insert.icons.css'/>`
+    +`<div class="bz-tip-2 BZIgnore" style="top: ${r.top+r.height/2+30}px; left: ${Math.max(r.width/2+r.left-150,0)}px;">`
+    +`<div class="bz-tip BZIgnore" style="">`
+    +`<button class="bz-close BZIgnore" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 10px;top: 10px;height: 10px;width: 10px;border: 0;background-size: 10px;"></button>`
+    +`<textarea style="resize: none;overflow: auto;" class="helptip BZIgnore" disabled="">${a.description}</textarea>`
+    +`${_bIdx1||_bResult||""}`
+    +`</div>`
+    +`</div>`;
   }
 };
 var _innerWin={
@@ -43179,7 +42923,7 @@ var _innerWin={
     return `<link rel="stylesheet" type="text/css" href="${_host}/ide/css/bzInsert.css">`
     +`<link rel="stylesheet" type="text/css" href="${_host}/ide/css/insert.icons.css">`
     +`<div id="BZ_Win" class="bz-tb-container BZIgnore"`
-    +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:80px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
+    +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:100px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
     +`  <div class="bz-main-body">`
     +`    <div class="bz-tb-header">`
     +`      <div class="bz-btn-tb-icon bz-boozang-logo-small"`
@@ -43246,8 +42990,35 @@ var _innerWin={
           _innerWin._setPosition(_win,_win.getBoundingClientRect());
         }
       }
-      
+      _innerWin._reminderAppActive();
     }
+  },
+  _reminderAppActive:function(){
+    window.onfocus= function(){
+      _setStatus(1)
+    };
+    window.onblur= function(){
+      window.focus();
+      _setStatus()
+    };
+
+    if(document.hasFocus()){
+      _setStatus(1)
+    }else{
+      _setStatus()
+    }
+
+    function _setStatus(v){
+      let o=$(_innerWin._shadowRoot)
+      if(v){
+        o.find(".bz-boozang-logo-small,.bz-header-right").show()
+        o.find(".bz-tb-header .info").hide()
+      }else if(BZ._isPlaying()){
+        o.find(".bz-boozang-logo-small,.bz-header-right").hide()
+        o.find(".bz-tb-header .info").show()
+      }
+    }
+
   },
   _setToolbarStatus:function(){
     let bs=[1,2,3,4].map(x=>$(_innerWin._shadowRoot).find(".bz-"+x))
@@ -43834,7 +43605,7 @@ var _ideActionManagement={
                   _testTabHandler._data._curCfgTab="main"
                 }
                 if(_this.offset){
-                  _bzDomPicker._showOffset({_element:_this.element,_offset:_this.offset});
+                  _bzDomPicker._showOffset(_this);
                 }else{
                   _bzDomPicker._flashTmpCover(_this.element||_this.panel,1);
                 }
@@ -43893,7 +43664,7 @@ var _ideActionManagement={
                         return
                       }
                       if(!_ideActionManagement._isIfGroupCondition(d)){
-                        return d._actionIdx.replace(/-/g,".")
+                        return d.i.replace(/-/g,".")
                       }
                     }
                   }
@@ -43993,7 +43764,7 @@ var _ideActionManagement={
                 _attr:{
                   class:function(d){
                     let c="bz-nowrap bz-action-main",
-                        r=((_IDE._data._curTest._issueMap||{})[d._item._actionIdx]||{})._level
+                        r=((_IDE._data._curTest._issueMap||{})[d._item.i]||{})._level
                     if(r==1){
                       c+=" bz-error-action"
                     }else if(r==2){
@@ -44002,7 +43773,7 @@ var _ideActionManagement={
                     return c
                   },
                   title:function(d){
-                    let r=(_IDE._data._curTest._issueMap||{})[d._item._actionIdx]
+                    let r=(_IDE._data._curTest._issueMap||{})[d._item.i]
                     if(r){
                       return _bzMessage._test._issueOptions[r._reason]
                     }
@@ -44018,7 +43789,7 @@ var _ideActionManagement={
                     },
                     _html:function(d){
                       d=d._item
-                      let i=d._actionIdx,_msg
+                      let i=d.i,_msg
 
                       if(d.type=="a"){
                         let l=_IDE._data._curTest._curLoadingAPIInfo;
@@ -44337,7 +44108,7 @@ var _ideActionManagement={
                             }
                             k+=" bz-grey"
                           }
-                        }else if(!d._supData._item._actionIdx.includes("c")){
+                        }else if(!d._supData._item.i.includes("c")){
                           k="bz-decision";
                           d=d._supData._item
                           if(!(d.refOfError||d.refOfSuccess||d.refOfFailed)){
@@ -44390,7 +44161,7 @@ var _ideActionManagement={
                       if(d.type==7){
                         return [{_type:"flag"}]
                       }
-                      if(d.type!=4&&!d._actionIdx.includes("c")&&!d.type!=7&&(_ideActionManagement._hasCondition(d)||_IDE._data._curAction==d)){
+                      if(d.type!=4&&!d.i.includes("c")&&!d.type!=7&&(_ideActionManagement._hasCondition(d)||_IDE._data._curAction==d)){
                         vs=[{_type:"condition"}]
                       }
                       if(d.min||d.max||(_IDE._data._curAction==d&&"0123467".includes(d.type))){
@@ -44461,7 +44232,7 @@ var _ideActionManagement={
                   },
                   {
                     _if:function(d){
-                      if(d._item._actionIdx.includes("c")||_IDE._data._setting.debugOneAction||_IDE._data._setting.content.disableAutoOneAction||d._item.disable||BZ._isPlaying()){
+                      if(d._item.i.includes("c")||_IDE._data._setting.debugOneAction||_IDE._data._setting.content.disableAutoOneAction||d._item.disable||BZ._isPlaying()){
                         return
                       }
                       if(d._item.type==7&&d._item.asOneAction){
@@ -44484,7 +44255,7 @@ var _ideActionManagement={
                   },
                   {
                     _if:function(d){
-                      var dd=_IDE._data._curTest._result[d._item._actionIdx]
+                      var dd=_IDE._data._curTest._result[d._item.i]
   
                       return dd&&dd._orgType!==undefined&& dd._orgType!=dd._type&&d._item.type!=4
                     },
@@ -44492,7 +44263,7 @@ var _ideActionManagement={
                     _endItem:1,
                     _attr:{
                       "class":function(d){
-                        var r=_IDE._data._curTest._result[d._item._actionIdx];
+                        var r=_IDE._data._curTest._result[d._item.i];
                         var c="btn btn-icon btn-condition "
                         var _rdm=_taskInfo._type;
                         if(!r){
@@ -44504,7 +44275,7 @@ var _ideActionManagement={
                   },
                   {
                     _if:function(d){
-                      var dd=_IDE._data._curTest._result[d._item._actionIdx]
+                      var dd=_IDE._data._curTest._result[d._item.i]
                       return dd&&dd._orgType!==undefined&&dd._orgType!=dd._type&&d._item.type!=4
                     },
                     _tag:"span",
@@ -44519,7 +44290,7 @@ var _ideActionManagement={
                     _endItem:1,
                     _attr:{
                       class:function(d){
-                        var r=_IDE._data._curTest._result[d._item._actionIdx];
+                        var r=_IDE._data._curTest._result[d._item.i];
                         var c="btn btn-icon btn-condition "
                         var _rdm=_taskInfo._type;
                         if(!r){
@@ -44541,7 +44312,7 @@ var _ideActionManagement={
   
                         var c="",
                             _rdm=_taskInfo._type,
-                            r=t._result[d._item._actionIdx];
+                            r=t._result[d._item.i];
                         if(!r){
                           return "";
                         }
@@ -44564,7 +44335,7 @@ var _ideActionManagement={
                     _jqext:{
                       click:function(){
                         let t=_IDE._data._curTest;
-                        var r=t._result[this._data._item._actionIdx]
+                        var r=t._result[this._data._item.i]
                         if(r&&r._msgMd5){
                           _rootCauseManagement._popItem({
                             errHash:r._msgMd5,
@@ -44631,8 +44402,8 @@ var _ideActionManagement={
     t=_IDE._data._curTest
     _ideTestManagement._initOpenGroup(t)
 
-    a=a&&a._actionIdx
-    let b=(_IDE._data._curAction||{})._actionIdx||""
+    a=a&&a.i
+    let b=(_IDE._data._curAction||{}).i||""
     if(t&&t._openGroups[a]){
       return 1
     }
@@ -44657,14 +44428,14 @@ var _ideActionManagement={
   },
   _inGroupAction:function(a,t){
     a=a||_IDE._data._curAction
-    if(!a._actionIdx){
+    if(!a.i){
       _ideTestManagement._refreshActionIdx(t)
     }
-    return a._actionIdx.includes("-")
+    return a.i.includes("-")
   },
   _inTest:function(t,a){
-    if(a._actionIdx){
-      return _ideActionManagement._findActionByPath(t,a._actionIdx)==a
+    if(a.i){
+      return _ideActionManagement._findActionByPath(t,a.i)==a
     }else if(t._idxMap){
       return
     }else{
@@ -44797,10 +44568,10 @@ var _ideActionManagement={
   },
   _getCurIdx:function(a,t){
     a=a||_IDE._data._curAction
-    if(!a._actionIdx){
+    if(!a.i){
       _ideTestManagement._refreshActionIdx(t)
     }
-    return a._actionIdx
+    return a.i
   },
   _findAction:function(t,_fun,p){
     t=t||_IDE._data._curTest
@@ -44864,10 +44635,10 @@ var _ideActionManagement={
     function _find(as,p){
       for(var i=0;i<as.length;i++){
         let a=as[i]
-        if(a._actionIdx==p){
+        if(a.i==p){
           return a
         }else if(a.actions){
-          if(a.conditionAction&&a.conditionAction._actionIdx==p){
+          if(a.conditionAction&&a.conditionAction.i==p){
             return a.conditionAction
           }
           let r=_find(a.actions,p)
@@ -44889,7 +44660,7 @@ var _ideActionManagement={
         if(!t._idxMap){
           _ideTestManagement._refreshActionIdx(t)
         }
-        let p=a._actionIdx
+        let p=a.i
         if(p){
           p=p.split("-")
           p.pop()
@@ -44911,7 +44682,7 @@ var _ideActionManagement={
         return
       }
     }
-    a=a._actionIdx
+    a=a.i
     if(g[a]){
       g[a]=0
       delete g[a]
@@ -44927,10 +44698,10 @@ var _ideActionManagement={
       }
     }
     let gs=_IDE._data._curTest._openGroups
-    if(gs[a._actionIdx]){
+    if(gs[a.i]){
       return a.conditionAction||a.actions[0]
     }else{
-      gs[a._actionIdx]=1
+      gs[a.i]=1
     }
   },
   _closeGroup:function(a){
@@ -44938,11 +44709,11 @@ var _ideActionManagement={
       a=_ideActionManagement._getCurGroup(a)
     }
     let gs=_IDE._data._curTest._openGroups
-    while(a&&!gs[a._actionIdx]){
+    while(a&&!gs[a.i]){
       a=_ideActionManagement._getCurGroup(a)
     }
     if(a){
-      _CtrlDriver._cleanData(gs,a._actionIdx)
+      _CtrlDriver._cleanData(gs,a.i)
       return a
     }
   },
@@ -45004,13 +44775,13 @@ var _ideActionManagement={
       content:{
         type:"exist"
       },
-      _actionIdx:a._actionIdx
+      i:a.i
     },function(){
       let r=_ideTask._data._lastResult
       if(r){
-        let v=r._canvas||r._img
+        let v=r.CV||r._img
         if(v){
-          delete r._canvas
+          delete r.CV
           delete r._img
           _screenshotManagement._save([{
             md5:_calcMD5(v),
@@ -45381,7 +45152,7 @@ var _ideActionManagement={
   _getSearchData:function(a){
     let w=""
     for(let k in a){
-      if(k=="key"||k=="_actionIdx"){
+      if(k=="key"||k=="i"){
         continue
       }
       let v=a[k]
@@ -46199,8 +45970,8 @@ var _ideActionManagement={
   },
   _sortSelectItems:function(vs){
     vs.sort((a,b)=>{
-      a=a._actionIdx.split("-")
-      b=b._actionIdx.split("-")
+      a=a.i.split("-")
+      b=b.i.split("-")
       let r;
       a.find((x,i)=>{
         r=x-b[i]
@@ -46565,6 +46336,7 @@ var _ideActionManagement={
       }else if(_bzDomPicker._isActionElementPicking()){
         _bzDomPicker._endRequire();
       }
+      _ideActionManagement._setCurAction(a);
     }
     return a;
   },
@@ -47190,7 +46962,7 @@ var _ideActionManagement={
       _bzDomPicker._start({
         _id:"_actionElementPick",
         _back:_back,
-        _type:a&&_pick!=1?a.panel||a.element:null
+        t:a&&_pick!=1?a.panel||a.element:null
       });
     }else{
       return
@@ -48230,7 +48002,7 @@ var _ideActionManagement={
                               $(this).focus()
                             },
                             focus:function(){
-                              _bzDomPicker._showOffset({_element:_IDE._data._curAction.element,_offset:_IDE._data._curAction.offset});
+                              _bzDomPicker._showOffset(_IDE._data._curAction);
                             }
                           }
                         }
@@ -48264,7 +48036,7 @@ var _ideActionManagement={
                             },
                             focus:function(){
                               _IDE._data._curAction.offset[this._data._item]=this.value
-                              _bzDomPicker._showOffset({_element:_IDE._data._curAction.element,_offset:_IDE._data._curAction.offset});
+                              _bzDomPicker._showOffset(_IDE._data._curAction);
                             }
                           }
                         }
@@ -48358,7 +48130,7 @@ var _ideActionManagement={
                               $(this).focus()
                             },
                             focus:function(){
-                              _bzDomPicker._showOffset({_element:_IDE._data._curAction.event.element,_offset:_IDE._data._curAction.event.offset});
+                              _bzDomPicker._showOffset(_IDE._data._curAction.event);
                             }
                           }
                         }
@@ -48392,7 +48164,7 @@ var _ideActionManagement={
                             },
                             focus:function(){
                               _IDE._data._curAction.event.offset[this._data._item]=this.value
-                              _bzDomPicker._showOffset({_element:_IDE._data._curAction.event.element,_offset:_IDE._data._curAction.event.offset});
+                              _bzDomPicker._showOffset(_IDE._data._curAction.event);
                             }
                           }
                         }
@@ -48960,7 +48732,7 @@ var _ideActionManagement={
               let _this=this
               setTimeout(()=>{
                  _testTabHandler._openTab("script",_this,e)
-                 BZ._data._uiSwitch._showActionNote='_loopData'
+                 BZ._data._uiSwitch._showActionNote='LD'
               },100)
             }
           }
@@ -49266,7 +49038,7 @@ var _ideActionManagement={
   _getTmpSolutionAction:function(){
     return {
       _if:function(d){
-        let r=_IDE._data._curTest._result[d._item._actionIdx]
+        let r=_IDE._data._curTest._result[d._item.i]
         if(r&&r._data){
           return !BZ._isPlaying()&&r._tmpRefTest
         }

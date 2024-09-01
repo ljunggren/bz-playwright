@@ -2487,6 +2487,8 @@ window._Util={
   _getElementByQuickPath:function(p){
     if(p.constructor==Array){
       return $util.findDom(p)
+    }else if(p.constructor!=String){
+      return p
     }
     p=p.split(">")
     if(p[0]=="BODY"){
@@ -6556,7 +6558,7 @@ tbody td:first-child,tbody td:last-child{
     document._Contains=document._input=document._link=document._near=document._after=document._before=document._endContains=document._rowcol=0
   },
   _findDoms:function(_paths,_errOnHidden,_bRetry,_toShow){
-    _extendJQuery()
+    extendJQuery()
     _Util._newFindDom()
     if(_paths.constructor==String){
       _paths=_paths.split("\n")
@@ -7834,6 +7836,7 @@ window.BZ={
     let d={
       "BZ._curEnv":BZ._curEnv,
       "BZ._userHabit.toolbarPos":BZ._userHabit.toolbarPos,
+      "BZ._data._status":BZ._data._status,
       "_aiAuthHandler._data":_aiAuthHandler._data,
       "_IDE._data._curModule":m&&{
         data:_Util._cloneSelectData(m._data,0,"code|name|parentModule|bt")
@@ -7954,7 +7957,6 @@ if(!window.bzComm||window.name=="bz-master"){
       _infoManagement:"infoManagement",
       _showImportantInfo:"showImportantInfo",
       _originAJax:"originAJax",
-      _getTWElementPathByCSS:"getTWElementPathByCSS",
       _pickDetails:"pickDetails",
       _editPath:"editPath",
       _flashMutipleTmpCover:"flashMutipleTmpCover",
@@ -8005,12 +8007,12 @@ if(!window.bzComm||window.name=="bz-master"){
       let cp=bzComm.getCurPageType();
   
       window.addEventListener(cp.key, (event) => {
-        console.log("Received message on "+cp.key+" and from the same page",event.detail)
+        // console.log("Received message on "+cp.key+" and from the same page",event.detail)
         bzComm.handleMessage(event.detail)
       });
       if(window.extensionContent){
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-          console.log("Received message on "+cp.key+" and from remote",message)
+          // console.log("Received message on "+cp.key+" and from remote",message)
           bzComm.handleMessage(message)
           sendResponse(0)
         });
@@ -8397,12 +8399,12 @@ if(!window.bzComm||window.name=="bz-master"){
     },
     _postMessage:function(v){
       let cp=bzComm.getCurPageType()
-      console.log("Send message from "+cp.key)
+      // console.log("Send message from "+cp.key,v)
       if(cp.getTabId()==v.toId&&v.toIFrameId==bzComm.getIframeId()){
         window.dispatchEvent(new CustomEvent(v.toPage, {detail:v}));
       }else{
         let _bkFun=function(r){
-          console.log("Get response message on "+cp.key+" and from remote page")
+          // console.log("Get response message on "+cp.key+" and from remote page")
   
           bzComm.handleMessage(r)
         }
@@ -8493,7 +8495,9 @@ if(!window.bzComm||window.name=="bz-master"){
     bzComm.init()
   }else if(window.name=="bz-master"){
     if(!opener){
-      if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
+      if(!window._Util){
+        location.reload()
+      }else if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
         window.name=""
         let p=localStorage.getItem("bz-ide")
         if(p){
@@ -8505,6 +8509,8 @@ if(!window.bzComm||window.name=="bz-master"){
         window.open(v,"bz-master","width="+p.w+",height="+p.h)
         location.href=location.origin
         window.close()
+      }else{
+        bzComm.init()
       }
     }else if(bzComm2){
       bzComm.init()

@@ -411,7 +411,7 @@ var $util={
       fun:"getScreenshot",
       return:(v)=>{
         console.log(v)
-        $util._canvas=v
+        $util.CV=v
         _fun&&_fun(v)
         _callBack&&_callBack(v)
       },
@@ -748,7 +748,7 @@ var $util={
       if(r[0]=="/"&&r[r.length-1]=="/"){
         return _return("/"+r+"/")
       }
-      debugger
+
       r=_Util._getRegexByBZName(r)
       let _std=r.match(/\{(label|random:?|search[\: ]|search-list[\: ]|new[\: ]|exist-new[\: ]|exist[\: ]|exist-list[\: ]|date[\: ]|time[\: ]|num|time|date|module|this|next|last|today|tomorrow|yesterday|timestamp|textstamp|longtextstamp)[^\}]*\}/g)
       if(_std){
@@ -1691,8 +1691,8 @@ var $util={
 
     // 
     function _doFinal(){
-            if(_blur){
-                $util.triggerBlurEvent(o);
+      if(_blur){
+        $util.triggerBlurEvent(o);
       }
       _domActionTask._doLog("util: "+1709+(_fun?1:0))
       if(_fun){
@@ -1763,27 +1763,25 @@ var $util={
   },
   //triggerBlurEvent
   triggerBlurEvent:function(o,_fun){
-    setTimeout(function(){
-
-      if(window.extensionContent){
-        _Util._getWindowFromDom(o).focus();
-        var _path=_Util._getQuickPath(o)
-        window.postMessage({bz:1,_script:"var bzBlur=_Util._getElementByQuickPath('"+_path+"');try{$(bzBlur).blur()}catch(e){bzBlur&&bzBlur.blur()}"}, "*");
-      }else{
-        var _curWin=_Util._getWindowFromDom(o);
-        $(o).blur();
-        if(_curWin.angular){
-          var e=_curWin.angular.element(o);
-          if(e.blur){
-            e.blur();
-          }
-          if(e.triggerHandler){
-            e.triggerHandler("blur");
-          }
-        }
-      }
-      _fun&&_fun()
-    },30)
+    window.focus();
+    if(window.extensionContent){
+      var _path=_Util._getQuickPath(o)
+      bzComm.postToApp({
+        fun:"triggerEventOnApp",
+        scope:"$util",
+        ps:[_path,"Event",["blur"]],
+        insertCallFun:1,
+        return:_fun
+      })
+    }else{
+      $util.triggerEventOnApp(o,"Event",["blur"],_fun)
+    }
+  },
+  triggerEventOnApp:function(o,e,eps,_fun){
+    o=_Util._getElementByQuickPath(o)
+    e=new window[e](...eps)
+    o.dispatchEvent(e)
+    _fun&&_fun()
   },
   findDoms:function(p){
     let o=_Util._findDoms(p)
@@ -2119,10 +2117,11 @@ var __=function(v,c,_tab){
   return JSON.stringify(v,c,_tab);
 }
 
-function _extendJQuery(){
+function extendJQuery(){
   if(jQuery.expr[":"].include){
     return
   }
+
   var _bzExJQueryFun=/\:(attr|Contains|contains|hidden|show|input|data|link|near|panel|afterEqual|after|before|containCss|css|endContains|endEqual|equal|RowCol|rowcol|bz|textElement|blank|Attr|text) *(=|$)/g;
 
   /**
@@ -3403,8 +3402,9 @@ function _extendJQuery(){
     return v.match(/:(include|text|attr|Attr|Contains|hidden|show|panel|match|input|data|link|near|next|previous|parent|afterEqual|after|before|containCss|css|noCss|endContains|contains|endEqual|equal|RowCol|rowcol|textElement|blank|bz|value|val)\([^\)]*\)/)
   }
 }
-
-_extendJQuery();
+if(window.jQuery){
+  extendJQuery()
+};
 var _cssHandler={
   _cssMap:{},
   _maxTextLength:100,
@@ -3570,88 +3570,6 @@ var _cssHandler={
           return 1
         }
       }
-    }
-  },
-  /**/
-  //t: element type, _noText: not include contain css
-  _selectForUI:function(t,w,_includesText,_fun){
-    BZ._data._uiSwitch._tmpCssOptions=[]
-    _Util._confirmMessage({
-      _tag:"div",
-      _items:[
-        {
-          _tag:"div",
-          _attr:{"class":"input-group"},
-          _items:[
-            {
-              _tag:"input",
-              _attr:{
-                "class":"form-control bz-definition-css",
-                value:function(){
-                  return BZ._data._uiSwitch._tmpCssOptions.map((v)=>{return v._key}).join("")||w
-                }
-              }
-            },
-            {
-              _tag:"div",
-              _attr:{"class":"input-group-btn"},
-              _items:[
-                {
-                  _tag:"button",_attr:{"class":"btn btn-icon bz-small-btn bz-dompicker pull-right"},
-                  _jqext:{
-                    click:function(){
-                      _bzDomPicker._pickDetails(0,function(p){
-                        if(!_includesText){
-                          var v=p.pop()
-                          if(!v._css.includes(":Contains")&&!v._css.includes(":endContains")&&!v._css.includes(":near")){
-                            p.push(v)
-                          }
-                        }
-                        BZ._data._uiSwitch._tmpCssOptions=p;
-                        
-                        setTimeout("_Util._resizeModelWindow()",1)
-                      })
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          _tag:"label",_attr:{style:"display:table;margin:5px;"},
-          _items:[
-            {
-              _tag:"input",
-              _dataModel:"_data._item._key",
-              _attr:{type:"checkbox",value:"_data._item._css","class":"bz-select-css"}
-            },
-            {_text:"_data._item._css"},
-          ],
-          _dataRepeat:"BZ._data._uiSwitch._tmpCssOptions"
-        },
-      ]
-    },[{
-      _title:_bzMessage._common._ok,
-      _click:function(c){
-        var v=$(".bz-definition-css").val();
-        if(!v){
-          return alert(_bzMessage._system._error._requiredField,"CSS "+_bzMessage._common._value)
-        }
-        _fun(v)
-        c._ctrl._close()
-      }
-    }],_Util._formatMessage(_bzMessage._setting._objectLib._identifyCss,[t]));
-    
-    
-    function _getSelectCss(vs){
-      var w=""
-      for(var i=0;i<vs.length;i++){
-        if(vs[i]._key){
-          w+=vs[i]._key||""
-        }
-      }
-      return w
     }
   },
 /*  */
@@ -4701,7 +4619,7 @@ var _cssHandler={
   //_simple: 1: only level 1, 2: ignore label, 3: only label
   _findPath:function(e,_withAIAnalysis,_simple){
     try{
-      _extendJQuery()
+      extendJQuery()
       if ($(e).hasClass("BZIgnore") || $(e.ownerDocument).find(".BZIgnore").find(e).length) {
         return;
       }
@@ -6452,7 +6370,13 @@ var _cssHandler={
   },
   _isElementReady:function(ts,_fun){
     if(!window.extensionContent){
-      bzComm.postToAppExtension({fun:"_isElementReady",scope:"_cssHandler",ps:[ts],insertCallFun:1,return:_fun});
+      bzComm.postToAppExtension({
+        fun:"_isElementReady",
+        scope:"_cssHandler",
+        ps:[ts],
+        insertCallFun:1,
+        return:_fun
+      });
       return
     }
     var rs=[],_withElement=ts._withElement
