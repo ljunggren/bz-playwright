@@ -11029,7 +11029,7 @@ var TWHandler={
     }
   },
   _bzOnBeforeUnload:function(){
-    _bzDomPicker._cancel();
+    _bzDomPicker._endRequire();
   },
   _setUnload:function(){
     window.onbeforeunload=TWHandler._bzOnBeforeUnload;
