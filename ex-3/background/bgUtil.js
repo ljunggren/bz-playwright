@@ -25,10 +25,15 @@ globalThis.bgUtil={
     if(data.data){
       data.body=data.body||data.data
     }
+    delete data.data
+    if(data.headers["Content-Type"].includes("form")){
+      if(data.body&&data.body.constructor==Object){
+        data.body=new URLSearchParams(data.body).toString()
+      }
+    }
     if(data.body&&data.body.constructor==Object){
       data.body=JSON.stringify(data.body)
     }
-    delete data.data
     await fetch(data.url,data).then(r=>{
       for (var k of r.headers.entries()) {
         hs[k[0]]=k[1]
