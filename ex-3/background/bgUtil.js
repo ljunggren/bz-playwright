@@ -12,14 +12,21 @@ globalThis.bgUtil={
         headers:hs
       }
     }
+
+    data.headers=data.headers||{}
+
     if(data.contentType){
-      data.headers=data.headers||{}
       data.headers["Content-Type"]=data.contentType
       delete data.contentType
+    }else{
+      data.headers["Content-Type"]="application/json"
     }
     delete data.cache
     if(data.data){
       data.body=data.body||data.data
+    }
+    if(data.body&&data.body.constructor==Object){
+      data.body=JSON.stringify(data.body)
     }
     delete data.data
     await fetch(data.url,data).then(r=>{
