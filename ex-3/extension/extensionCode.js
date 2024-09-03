@@ -9092,7 +9092,9 @@ window._Util={
 
       bzComm.postToBackground({
         fun:"ajax",
-        scope:"bzUtil",
+        scope:"bgUtil",
+        insertCallFun:1,
+        ps:[a],
         return:function(r){
           let ad={}
           for(var k in a){
@@ -15508,8 +15510,6 @@ if(!window.bzComm||window.name=="bz-master"){
       _infoManagement:"infoManagement",
       _showImportantInfo:"showImportantInfo",
       _originAJax:"originAJax",
-      _pickDetails:"pickDetails",
-      _editPath:"editPath",
       _flashMutipleTmpCover:"flashMutipleTmpCover",
       _showTmpCover:"showTmpCover",
       _showOffset:"showOffset",
@@ -15667,8 +15667,8 @@ if(!window.bzComm||window.name=="bz-master"){
       }
       return e&&e.constructor==String&&e.includes("findIframe")&&e
     },
-    _getIframeIdByPath:function(e){
-      e=bzComm._isInIFrame(e)
+    _getIframeIdByPath:function(p){
+      let e=p&&bzComm._isInIFrame(p)
       if(e){
         e=e.match(/findIframe\(([^)]+)\)/)[1]
         if(e.match(/^[0-9, ]+$/)){
@@ -15701,6 +15701,8 @@ if(!window.bzComm||window.name=="bz-master"){
           e=bzComm._findIFrame((x,k)=>{return (x.url||"").includes(e)})
         }
         return e?e.k:0
+      }else if(p&&p[0]=="BZ.TW.document"){
+        return 0
       }
     },
     _forEachIFrame:function(fun,fs){
@@ -23457,20 +23459,23 @@ var _infoManagement={
   },
   _showImportantInfo:function(_text,_type,_extra,_main,_timer){
     if(!window.extensionContent){
-      bzComm.postToAppExtension({scope:"_infoManagement",fun:"_showImportantInfo",ps:[_text,_type,_extra]})
+      bzComm.postToAppExtension({
+        scope:"_infoManagement",
+        fun:"_showImportantInfo",
+        toIFrameId:0,
+        ps:[_text,_type,_extra]
+      })
 
       if(!_main){
         return;
       }
-    }else{
-      if(window.bzIframeId){
-        return
-      }
-      if(BZ._data._dock&&parent.parent!=parent){
-        return
-      }else if(!BZ._data._dock&&parent!=window){
-        return;
-      }
+    }else if(bzComm.getIframeId()){
+      return bzComm.postToAppExtension({
+        scope:"_infoManagement",
+        fun:"_showImportantInfo",
+        toIFrameId:0,
+        ps:[_text,_type,_extra]
+      })
     }
     var w=window
     if(w){
@@ -23509,15 +23514,13 @@ var _infoManagement={
               +_extra
               +"</pre>"
               +"</div>"
-    
-    var _win=$("#BZ_Info")[0];
-    if(!_win){
-      _win=$(`<div id='BZ_Info' class='BZIgnore' style='position:fixed;z-index:${Number.MAX_SAFE_INTEGER};top:100px;'></div>`)[0];
-      try{
-        w.document.body.parentNode.append(_win);
-      }catch(e){}
-    }
+    $("#BZ_Info").remove()
+    let _win=$(`<div id='BZ_Info' class='BZIgnore' style='position:fixed;z-index:${Number.MAX_SAFE_INTEGER};top:100px;'></div>`)[0];
+    try{
+      w.document.body.parentNode.append(_win);
+    }catch(e){}
     _infoManagement._view = _win.attachShadow({ mode: 'open' });
+
     _infoManagement._view.innerHTML = _html;
                       
     setTimeout(function(){
@@ -24201,7 +24204,8 @@ var _optHistoryHandler={
     "actions",
     "note",
     "description",
-    "defParameter"
+    "defParameter",
+    "identifyElementCss"
   ],
   _moduleUpdateKeys:[
     "code",
@@ -27282,7 +27286,10 @@ var _domRecorder={
     // _elementMonitor._handleMonitor();
     // _elementMonitor._close();
     _domRecorder._closeObserver();
-    _domRecorder._removeEventListener();
+    _bzDomPicker._removeTmpCover();
+
+    _domRecorder._removeDomEventListener(document);
+    
     _domRecorder._setBackPopMsg();
     BZ._recording=0;
     
@@ -27713,15 +27720,22 @@ var _domRecorder={
     _domRecorder._lastClickFileInput=Date.now()
     if(_domRecorder._lastNewActionTime&&_domRecorder._lastClickFileInput-_domRecorder._lastNewActionTime.t<200){
       let a=_domRecorder._lastNewActionTime.a,
+          t=_IDE._data._curTest,
           g=_ideActionManagement._getCurGroup(a),
-          _idx=_ideActionManagement._getCurIdx(a);
+          _idx=_ideActionManagement._getCurIdx(a)
 
-      _ideTestManagement._removeAction(_IDE._data._curTest,_domRecorder._lastNewActionTime.a)
-      a=_ideActionManagement._findActionByPath(_idx)
-      if(!a){
-        a=g.actions._last()||g
+      _preAction=_ideActionManagement._getPreAction(t,_ideActionManagement._findActionByPath(t,_idx));
+      _ideTestManagement._removeAction(t,a)
+      
+      // if(!a){
+      //   a=g.actions._last()||g
+      // }
+      _ideTestManagement._refreshActionIdx(t)
+      if(_preAction){
+        BZ._setHash(_preAction)
+      }else{
+        BZ._setHash(t)
       }
-      BZ._setHash(a)
     }
   },
   _setBackPopMsg:function(){
@@ -27789,39 +27803,22 @@ var _domRecorder={
     $(b).on("focus","input,textarea,select",_domRecorder._bindFocus);
     $(b).on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
 
-    // for(var k in _domRecorder._listenEvents){
-    //   if (k=="click") {
-    //     $(_document).find("*").not("style,script").bind("mousedown",_domRecorder._bindFun);
-    //   }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
-    //     continue;
-    //   }else if (k=="focus") {
-    //     continue;
-    //   }else if(k=="dragDrop"){
-    //     $(_document).find("*").not("style,script").bind("mouseup",_domRecorder._bindFun);
-    //     $(_document).find("*").not("style,script").bind("mousemove",_domRecorder._bindFun);
-    //     if(!_domRecorder._listenEvents.mousedown && !_domRecorder._listenEvents.click){
-    //       $(_document).find("*").bind("mousedown",_domRecorder._bindFun);
-    //     }
-    //     continue;
-    //   }else if(k=="change"){
-    //     $(_document).find("input,textarea,select").bind(k,_domRecorder._bindFun);
-    //   }else{
-    //     $(_document).find("*").not("style,script").bind(k,_domRecorder._bindFun);
-    //   }
-    // }
-    // $(_document).find("*").not("style,script").bind("keyup",_domRecorder._bindFun);
-    // $(_document).find("*").not("style,script").bind("keydown",_domRecorder._bindKeydown);
-    /*
-    let iframes=$(_document).find("IFRAME")
-    if(iframes[0]){
-      iframes=iframes.toArray();
-      iframes.forEach(function(v){
-        if(!v.src){
-          _domRecorder._setDomEventListener(v.contentDocument)
-        }
-      })
-    }
-    */
+    $(_document).find("*").toArray().forEach(function(e){
+      e=e.shadowRoot
+      if(e){
+        e=$(e).find("*")
+        e.on("mousedown",_domRecorder._bindFun);
+        e.on("mouseup","*",_domRecorder._bindFun);
+        e.on("mousemove","*",_domRecorder._bindFun);
+        e.on("dblclick","*",_domRecorder._bindFun);
+        e.on("click","*",_domRecorder._bindFun);
+        e.on("keyup","*",_domRecorder._bindFun);
+        e.on("keydown","*",_domRecorder._bindKeydown);
+        e.on("change","input,textarea,select",_domRecorder._bindFun);
+        e.on("focus","input,textarea,select",_domRecorder._bindFocus);
+        e.on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+      }
+    })
   },
   _buildTmpPath:function(o,_last){
     _last=_last||[]
@@ -28537,7 +28534,7 @@ var _domRecorder={
         value:BZ._autoRecording?d._value:_domActionTask._curValueDataBind||d._value
       },
       _tmpUrl:d._tmpUrl,
-      _inUpload:d._inUpload,
+      inUpload:d.inUpload,
       _uploadFile:d._uploadFile,
       _uploadUrl:d._uploadUrl
     };
@@ -28614,7 +28611,7 @@ var _domRecorder={
       this._lastStep=0
     }
     if(_IDE._data._setting.autoMergeToSetValue){
-      a._mergeId=Date.now()
+      a.mergeId=Date.now()
       _domRecorder._monitorSetInputActions._mergeForSetAction(d._element,{
         _action:a,
         _element:d._element,
@@ -28789,7 +28786,7 @@ var _domRecorder={
         _result=JSON.stringify(_result,0,2)
         if(uf||_ideActionManagement._checkFileSize(_result)){
           d._value=uf||("{{"+_result+"}}");
-          d._inUpload=1
+          d.inUpload=1
           d._uploadUrl=uf
           if(uf){
             delete d._uploadFile
@@ -28847,7 +28844,7 @@ var _domRecorder={
     }
   },
   _bindContentEditable:function(a){
-    if(!BZ._isRecording() || (!BZ._autoRecording && _bzDomPicker._isPicking() && !_bzDomPicker._isRecording())){
+    if(!BZ._isRecording()){
       return;
     }
     if(a.target==this){
@@ -28860,12 +28857,6 @@ var _domRecorder={
     }
     if(a.target==this && !$(BZ.TW.document).find(".BZIgnore").find(this).length){
       _domRecorder._recordEvent(a,this.value);
-    }
-  },
-  _removeEventListener:function(){
-    _domRecorder._removeDomEventListener(document)
-    if(!_bzDomPicker._isPicking()){
-      _bzDomPicker._removeTmpCover();
     }
   },
   _removeDomEventListener:function(_document){
@@ -28887,34 +28878,22 @@ var _domRecorder={
       
       $(b).find("CANVAS").unbind("mousedown",_domRecorder._bindFun);
 
-//       $(_document).off("focus","select,input,textarea",_domRecorder._bindFocus);
-// //      $(_document).find("select,input,textarea").unbind("focus",_domRecorder._bindFocus);
-//       $(_document).find("[contenteditable=true]").unbind("blur",_domRecorder._bindContentEditable);
-      
-//       for(var k in _domRecorder._listenEvents){
-//         if (k=="click") {
-//           $(_document).find("*").not("style,script").unbind("mousedown",_domRecorder._bindFun);
-//         }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
-//           continue;
-//         }else if (k=="focus") {
-//           continue;
-//         }else if(k=="dragDrop"){
-//           $(_document).find("*").not("style,script").unbind("mouseup",_domRecorder._bindFun);
-//           $(_document).find("*").not("style,script").unbind("mousemove",_domRecorder._bindFun);
-
-//           if(!_domRecorder._listenEvents.click){
-//             $(_document).find("*").unbind("mousedown",_domRecorder._bindFun);
-//           }
-//           continue;
-//         }
-//         if(k=="change"){
-//           $(_document).find("input,textarea,select").unbind(k,_domRecorder._bindFun);
-//         }else{
-//           $(_document).find("*").not("style,script").unbind(k,_domRecorder._bindFun);
-//         }
-//       }
-//       $(_document).find("*").not("style,script").unbind("keyup",_domRecorder._bindFun);
-//       $(_document).find("*").not("style,script").unbind("keydown",_domRecorder._bindKeydown);
+      $(b).find("*").toArray().forEach(function(e){
+        e=e.shadowRoot
+        if(e){
+          e=$(e).find("*")
+          e.off("mousedown",_domRecorder._bindFun);
+          e.off("mouseup","*",_domRecorder._bindFun);
+          e.off("mousemove","*",_domRecorder._bindFun);
+          e.off("dblclick","*",_domRecorder._bindFun);
+          e.off("click","*",_domRecorder._bindFun);
+          e.off("keyup","*",_domRecorder._bindFun);
+          e.off("keydown","*",_domRecorder._bindKeydown);
+          e.off("change","input,textarea,select",_domRecorder._bindFun);
+          e.off("focus","input,textarea,select",_domRecorder._bindFocus);
+          e.off("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+        }
+      })      
     }catch(e){
       
     }
@@ -40208,6 +40187,13 @@ window.BZ = {
   TW: window,
   _data: { _status: 0, _uiSwitch: { _testPlay: {} } },
   _focusTW: function () {
+    if(bzComm.getIframeId()){
+      return bzComm.postToAppExtension({
+        fun: "_focusTW",
+        scope: "BZ",
+        toIFrameId: 0
+      })
+    }
     if (!window.name) {
       window.name = "bz-client"
     }
@@ -40522,7 +40508,6 @@ var _bzDomPicker={
     ":RowCol",
     ":rowcol"
   ],
-  _preRequire:null,
   _selectedItem:null,
   _selectedCover:null,
   _curDom:null,
@@ -40568,145 +40553,6 @@ var _bzDomPicker={
     }
     return w
   },
-  _getMethodByText:function(o,w){
-    let os=_Util._getTargetElement($(`:endContains(${w})`)),m
-    _Util._spliceAll(os,x=>_Util._isHidden(x))
-    if(!os.length){
-      os=$(`:Contains(${w})`)
-      _Util._spliceAll(os,x=>_Util._isHidden(x))
-      os=_Util._getCeilDom(os)
-    }
-
-    _Util._spliceAll(os,(x,j)=>{
-      if($(o).find(x)[0]||o==x){
-        m=":Contains"
-      }
-    })
-
-    if(m&&($util.getElementText(o)==w||!os.length)){
-      return m;
-    }
-
-    let as=$("*")
-    let ss=os.map(x=>as.index(x)),_idx=as.index(o)
-    os.sort((a,b)=>{
-      return Math.abs(as.index(a)-_idx)-Math.abs(as.index(b)-_idx)
-    })
-    if(as.index(os[0])>_idx){
-      m=":before"
-    }else{
-      m=":after"
-    }
-    return m
-  },
-  _getTextByMethod:function(o,m){
-    let _txt=$util.getElementText(o),
-        p=o.parentElement
-    m=m.replace(":","")
-    setTimeout(()=>{
-      _bzDomPicker._setValue()
-      _bzDomPicker._resetLastIdx()
-    },1000)
-    switch(m){
-      case "near":
-		return _Util._findNearTxt(o)
-      case "after":
-      case "afterEqual":
-        while(p){
-          let t=$util.getElementText(p),w=""
-          if(t!=_txt){
-            for(let n of p.childNodes){
-              if(n==o){
-                break
-              }else{
-                if(n.nodeType==3){
-                  w=n.textContent.trim()||w
-                }else if(n.nodeType==1){
-                  w=$util.getElementText(n)||w
-                }
-              }
-            }
-            w=(w||"").trim()
-            if(w){
-              return w
-            }
-          }
-          o=p
-          p=p.parentElement
-        }
-      case "before":
-        while(p){
-          let t=$util.getElementText(p),w="",_start
-          if(t!=_txt){
-            for(let n of p.childNodes){
-              if(n==o){
-                _start=1
-              }else if(_start){
-                if(n.nodeType==3){
-                  w=" "+n.textContent
-                }else if(n.nodeType==1){
-                  w=" "+$util.getElementText(n)
-                }
-                w=w.trim()
-                if(w){
-                  return w
-                }
-              }
-            }
-          }
-          o=p
-          p=p.parentElement
-        }
-      case "contains":
-      case "Contains":
-      case "equal":
-        return _txt.trim().substring(0,30).trim()
-      case "endContains":
-      case "endEqual":
-        for(let x of o.childNodes){
-          if(x.nodeType==3&&x.textContent.length){
-            return x.textContent
-          }
-        }
-        return ""
-      case "rowcol":
-      case "RowCol":
-        let _area
-        if($("td,th").find(o)[0]){
-          _area=_Util._getClosestElement(o,o,"table")
-        }
-        _area=_area||document.body
-        let os=$(_area).find(":endContains(*)").toArray()
-        while($util.getElementText(o.parentElement)==_txt){
-          o=o.parentElement
-        }
-        let r=o.getBoundingClientRect(),_col,_row
-        os.find(x=>{
-          if(x==o){
-            return 1
-          }
-          if(!_col||!_row){
-            let xr=x.getBoundingClientRect()
-            if(!_col){
-              if(xr.left>=r.left-10&&xr.right<=r.right+10){
-                _col=$util.getElementText(x)
-              }
-            }else{
-              if(xr.top>=r.top-10&&xr.bottom<=r.bottom+10){
-                _row=$util.getElementText(x)
-                if(_row){
-                  return 1
-                }
-              }
-            }
-          }
-        })
-        if(_col&&_row){
-          return _row+"|"+_col
-        }
-        return ""
-    }
-  },
   _setMousedown:function(o){
     o.onmousedown=function(e){
       try{
@@ -40716,9 +40562,11 @@ var _bzDomPicker={
             e.target.o.bzTxtElement=TWHandler._getCanvasTextElementByMousePos(e.target.o,_pos.x,_pos.y)
             delete e.target.o.bzTmp
           }
-          _bzDomPicker._popWin(this._orgDom,_pos)
+          _bzDomPicker._popWin(e.target.o,_pos)
+        }else{
+          _bzDomPicker._endRequire()
         }
-      }catch(e){}
+      }catch(ex){}
       return _end(e)
     }
     document.body.oncontextmenu=function(e){
@@ -40745,147 +40593,68 @@ var _bzDomPicker={
       o.focus()
     },1500)
   },
-  _scrollSync:function(){
-    _bzDomPicker._resetPos($(".BZCover,.ErrBZCover"));
+  _pickElement:function(p,_fun){
+    p=p||""
+    _fun=p.fun||_fun
 
-    $(BZ.TW.document).find("IFRAME").each(function(i,o){
-      try{
-        if(!o.src.startsWith("http")){
-          _bzDomPicker._resetPos($(o.contentDocument).find(".BZCover,.ErrBZCover"))
-        }
-      }catch(e){}
-    });
-    _bzDomPicker._resetPos($(BZ.TW.document).find(".BZCover,.ErrBZCover"));
-  },
-  _pickDetails:function(d,_fun){
-    if(!_Util._isBZTWOpened()){
-      return BZ._launchCurEnvUrl(0,function(){
-        _bzDomPicker._pickDetails(d,_fun)
-      })
-    }
+    p=p.path||p.element||p
     if(!window.extensionContent){
-      bzComm.postToAppExtension({
-        fun:"_pickDetails",
-        scope:"_bzDomPicker",
-        ps:[d],
-        insertCallFun:1
-      },_fun);
-    }else{
-      _bzDomPicker._start({_id:"_element",_back:_back,t:d=="_path"?"":d});
-    }
-    function _back(_path,_pos,_element){
-      var vs;
-      //TODO: 2019-05-12
-      if(d=="_path"){
-        vs=_cssHandler._findPath(_element)
-      }else{
-        vs=[{_css:_element.tagName}]
-        var as=_element.attributes;
-        for(var i=0;i<as.length;i++){
-          var a=as[i]
-
-          if(a.name=="class"){
-            var v=a.value.split(/[ ]+/)
-            v.forEach(function(vv){
-              if(vv){
-                vs.push({_css:"."+vv})
-              }
-            })
-          }else if(a.name=="id"){
-            vs.push({_css:"#"+a.value})
-          }else{
-            vs.push({_css:":attr("+a.name+"="+a.value+")"})
-          }
-        }
-        if(!["SVG","SELECT","TEXTAREA"].includes(_element.tagName)){
-          vs.push({_css:":Contains("+_Util._toTrimSign($util.getElementText(_element),100)+")"})
-        }
-      }
-      _fun(d)
-
-      _bzDomPicker._endRequire()
-    }
-  },
-  _pickElement:function(_path,_fun){
-    _path=_path||""
-    if(!window.extensionContent){
-      bzComm.postToAppExtension({
-        fun:"_pickElement",
-        scope:"_bzDomPicker",
-        ps:[_path],
-        return:_fun,
-        insertCallFun:1
-      });
-    }else{
-      var d={t:_path};
-      if(_path.constructor==Object){
-        d=_Util._clone(_path)
-        d.t=_path.p
-      }
-      d._id="_element"
-      d._back=_back
-      _bzDomPicker._start(d);
-    }
-    function _back(p,_pos,_element){
-      if(_path._fun){
-        p={_path:p,_result:window[_path._scope][_path._fun](_element,p)}
-      }
-
-      //for force open dom picker
-      if(BZ._data._uiSwitch._tmpPath){
-        BZ._data._uiSwitch._tmpPath=0
-      }
-      BZ._formatInIFramePath(p.p||p)
-      _fun(p)
-      _bzDomPicker._endRequire()
-    }
-  },
-  _start:function(_require,_fun){
-    if(bzComm._isAppExtension()){
-      _require._back=_require._back||_fun
-      var w=_bzDomPicker._domPickerWindow;
-      if(w&&!w.closed){
-        _bzDomPicker._preRequire=_bzDomPicker._curRequire
-        w.close();
-      }else{
-        _bzDomPicker._preRequire=0
-      }
-      window._infoManagement&&_infoManagement._showImportantInfo(_bzMessage._picker._reminder,0,0,1)
-
-      BZ.TW.focus();
-
-      _bzDomPicker._curRequire=_require;
-      BZ._data._domPickerStatus=_require._id;
-      let _autoRefresh=_bzDomPicker._data._autoRefresh
-      _bzDomPicker._data=_CtrlDriver._buildProxy({_autoRefresh:_autoRefresh});
-
-      _bzDomPicker._removeTmpCover();
-      _bzDomPicker._selectedCover=null;
-      
-      if(_require.t){
-        _bzDomPicker._autoMarkSelect(_require);
-      }else{
-        _bzDomPicker._manualSelect();
-      }
-      _innerWin._data._pos._inMin=0
-
-    }else{
       if(!_Util._isBZTWOpened()){
-        BZ._launchCurEnvUrl(undefined,function(){
+        return BZ._launchCurEnvUrl(undefined,function(){
           _require.p=_require.t
           _popErr();
         })
-        return 
-      }else{
-        _bzDomPicker._pickElement(_require,_require._back)
       }
+
+      return _postToAppExtension()
+    }
+    
+    if(window.name=="bz-client"){
+      BZ._focusTW()
+      _bzDomPicker._closePopWin()
+      _bzDomPicker._removeTmpCover();
+      _innerWin._data._pos._inMin=0
+    }
+    _bzDomPicker._curRequire={e:p,_back:_back};
+    _bzDomPicker._data=_CtrlDriver._buildProxy({_autoRefresh:_bzDomPicker._data._autoRefresh});
+
+    
+    BZ._data._uiSwitch._tmpPath=p
+    if(p){
+      if(bzComm._getIframeIdByPath(p)==bzComm.getIframeId()){
+        let o=$util.findDom(p);
+        _bzDomPicker._popWin(o,{x:0,y:0});
+      }else if(p==1){
+        _bzDomPicker._manualSelect();
+      }else{
+        _bzDomPicker._curRequire.e=1
+      }
+    }else{
+      _infoManagement._showImportantInfo(_bzMessage._picker._reminder,0,0,1)
+
+      _bzDomPicker._manualSelect();
     }
 
-    function _popErr(){
+    function _back(p,o,_pos){
+      _bzDomPicker._endRequire()
+      BZ._formatInIFramePath(p)
+
+      _fun({
+        p:p,
+        pos:_pos,
+        o:o
+      })
+    }
+
+    function _popErr(_ready){
       if(_ideTask._appReady){
-        setTimeout(()=>{
-          _bzDomPicker._pickElement(_require,_require._back)
-        },1000)
+        if(_ready){
+          _postToAppExtension()
+        }else{
+          setTimeout(()=>{
+            _popErr(1)
+          },1000)
+        }
       }else{
         setTimeout(()=>{
           _popErr()
@@ -40893,75 +40662,44 @@ var _bzDomPicker={
       }
     }
 
-  },
-  _editPath:function(_path,_fun){
-    if(!window.extensionContent){
-      _bzDomPicker._tmpBackFun=_fun
+    function _postToAppExtension(){
       bzComm.postToAppExtension({
-        fun:"_editPath",
+        fun:"_pickElement",
         scope:"_bzDomPicker",
-        ps:[_path],
+        ps:[p],
         return:_fun,
-        insertCallFun:1
-      });
-    }else{
-      _bzDomPicker._start({
-        _id:"_editPath",
-        _back:function(){
-          BZ._formatInIFramePath(p)
-          return p
-        },
-        t:_path
+        insertCallFun:1,
+        toIFrameId:"*"
       });
     }
-  },
-  _autoMarkSelect:function(_require){
-    var os=null,t=_require.t;
 
-    //manual re-select on old action
-    if($.isArray(t)){
-      os = $util.findDom(t);
-      if(os){
-        os=[os];
-        BZ._data._uiSwitch._tmpPath=0
-      }else{ // for lost old element from page
-        _bzDomPicker._popWin()
-        BZ._data._uiSwitch._tmpPath=t
-        return;
+  },
+  _reSelect:function(id){
+    let cd=bzComm.getIframeId()
+    if(id!=cd){
+      _bzDomPicker._removeTmpCover();
+      _bzDomPicker._curRequire.e=1
+
+      _bzDomPicker._manualSelect();
+      if(id===undefined){
+        _bzDomPicker._closePopWin();
+
+        bzComm.postToAppExtension({
+          fun:"_reSelect",
+          scope:"_bzDomPicker",
+          ps:[cd],
+          toIFrameId:0
+        })
       }
-    }else{
-      //filter, for form input, or user search dom
-      this._data._filter=_require._filter;
-      os = $(t);
+      bzComm._exeInIframes({fun:"_reSelect",scope:"_bzDomPicker",ps:[cd]})
     }
-    
-    if(!os || !os.length){
-      _bzDomPicker._domPickerWindow.alert(_Util._formatMessage(_bzMessage._picker._noExpectedType,[_require._filter||t]));
-      
-      _bzDomPicker._curRequire.t=_bzDomPicker._preType
-      _bzDomPicker._start(_bzDomPicker._curRequire)
-      return
-    }
-    var cs=this._showTmpCover(os);
-    if(cs.length==1){
-      cs[0].onmousedown();
-    }else{
-      _bzDomPicker._popWin()
 
-      // this._curRequire.t=null;
+  },
+  _closePopWin:function(){
+    var w=_bzDomPicker._domPickerWindow;
+    if(w&&!w.closed){
+      w.close();
     }
-  },
-  _isActionElementPicking:function(){
-    return BZ._data._domPickerStatus=="_actionElementPick";
-  },
-  _isFormElementPicking:function(){
-    return BZ._data._domPickerStatus=="_formElementPick";
-  },
-  _isDomRootElementPicking:function(){
-    return BZ._data._domPickerStatus=="_domRootElementPick";
-  },
-  _isPicking:function(){
-    return Boolean(BZ._data._domPickerStatus);
   },
   _manualSelect:function(){
     _bzDomPicker._selectedCover=this._createTmpCover();
@@ -40992,19 +40730,9 @@ var _bzDomPicker={
       }
     })
   },
-  _showPath:function(o){
-    if(BZ._autoRecording){
-      return
-    }
-    let vs=_bzDomPicker._getElementOptions(o).map(x=>x._value),
-        w=$util.getElementText(o)
-    if(w){
-      w=": "+w
-    }
-    vs.unshift(o.tagName+(w||""))
-    _innerWin._data._curDomPath=vs
-  },
   _endRequire:function(){
+    _bzDomPicker._closePopWin();
+
     $("body").unbind("mouseout",_bzDomPicker._mouseleaveEvent);
     $("body").unbind("mousemove",_bzDomPicker._mousemoveEvent);
 
@@ -41018,8 +40746,6 @@ var _bzDomPicker={
           scope:"_bzDomPicker",
           toIFrameId:0
         })
-      }else{
-        _bzDomPicker._domPickerWindow&&_bzDomPicker._domPickerWindow.close()
       }
       bzComm._exeInIframes({fun:"_endRequire",scope:"_bzDomPicker"})
     }
@@ -41052,42 +40778,41 @@ var _bzDomPicker={
       if(o.bzTmp&&o.bzTmp.constructor==String){
         o.bzTmp=0
       }
-      var _path
-      if(this._curRequire.t && this._curRequire.t.constructor==Array && this._curRequire.t.length){
-        if(this._curRequire.t[0].startsWith("BZ.TW.document")){
-          _path=_Util._clone(this._curRequire.t);
-          var _idx=parseInt(_path[_path.length-1]);
-          if(!_idx && _idx!=0){
-            _path.push(0);
-          }
+      var _path=_Util._clone(this._curRequire.e)
+      if(_path!=1&&!_Util._isEmpty(_path)){
+        if(!_path[0].startsWith("BZ.TW.document")){
+          _path.unshift("BZ.TW.document")
+        }
+        var _idx=parseInt(_path[_path.length-1]);
+        if(!_idx && _idx!=0){
+          _path.push(0);
         }
       }else{
-        _path = o.bzTmp||_cssHandler._findPath(o,0,_bzDomPicker._curRequire._simple);
-        o=_bzDomPicker._getFinalTargetElement(_path,o)||o
+        _path = o.bzTmp||_cssHandler._findPath(o,0,1);
       }
       if(!_path){
         return
       }
-      if(!BZ._data._uiSwitch._tmpPath&&!this._isDomRootElementPicking() && this._curRequire._id!="_domRoot" && !this._data._filter && (!this._curRequire.t || this._curRequire.t.constructor!=Array)){
+
+      if(!this._curRequire.e){
         _bzDomPicker._curRequire._back(_path,_pos,o);
         _bzDomPicker._endRequire();
         BZ.focusIDE()
         return 1
       }
-      BZ._data._uiSwitch._tmpPath=BZ._data._uiSwitch._tmpPath||1
+
       this._data._pos=_pos;
       _bzDomPicker._setNewPath(_path,o);
     }
-
-    this._domPickerWindow =w= _Util._popWin("","_domPicker",null,800,500,_pickerTemplate,_bzMessage._picker._name);
-    var d=w.document;
-    this._document=d;
     
     if(o){
       this._testPath();
-      o=_bzDomPicker._data._items[_bzDomPicker._data._items.length-1]
+      o=_bzDomPicker._data._items._last()
       _bzDomPicker._setFocusItem(o)
     }
+
+    this._domPickerWindow =_Util._popWin("","_domPicker",null,800,500,_pickerTemplate,_bzMessage._picker._name);
+
   },
   _setNewPath:function(_path,o){
     _bzDomPicker._curDom=o||_bzDomPicker._curDom;
@@ -41229,21 +40954,23 @@ var _bzDomPicker={
     _bzDomPicker._setMousedown(o);
     return o;
   },
-  _removeTmpCover:function(){
+  _removeTmpCover:function(id){
+
     let _fun={
       fun:"_removeTmpCover",
-      scope:"_bzDomPicker"
+      scope:"_bzDomPicker",
+      ps:[id]
     }
     if(bzComm._isIDE()){
       return bzComm.postToAppExtension(_fun);
-    }
-    bzComm._exeInIframes(_fun)
-    $(".BZCover,.ErrBZCover").remove();
-  },
-  _resetPos:function(cs){
-    for(var i=0;i<cs.length;i++){
-      var c=cs[i]
-      _bzDomPicker._setTmpCoverPosByDom(c.o,c)
+    }else if(id!=bzComm.getIframeId()){
+      $(".BZCover,.ErrBZCover").remove();
+      if(id===undefined){
+        _fun.toIFrameId=0
+        _fun.ps=[bzComm.getIframeId()]
+        return bzComm.postToAppExtension(_fun);
+      }
+      bzComm._exeInIframes(_fun)
     }
   },
   _setTmpCoverPosByDom:function(o,c,mx,my){    
@@ -41255,7 +40982,7 @@ var _bzDomPicker={
     }
     clearTimeout(_bzDomPicker._removeTmpCoverTimer)
     c.o=o;
-    c._orgDom=o;
+
     let r=o.getBoundingClientRect();
     o.ownerDocument.body.appendChild(c);
     if(o.tagName=="INPUT"&&o.type=="file"){
@@ -41305,7 +41032,7 @@ var _bzDomPicker={
     if(_path.constructor==String){
       _path=["BZ.TW.document",_path]
     }
-    if(!window.extensionContent && BZ._hasExtension()){
+    if(!window.extensionContent){
       return bzComm.postToAppExtension({
         fun:"_flashMutipleTmpCover",
         scope:"_bzDomPicker",
@@ -41385,6 +41112,7 @@ var _bzDomPicker={
       }
       let c=this._createTmpCover(o.ownerDocument, 0, 1);
       $(c).click(function(e){
+        debugger
         if(e.target==this&&!this.children.length){
           _bzDomPicker._removeTmpCover()
         }else if(e.target.innerText){
@@ -41607,12 +41335,7 @@ var _bzDomPicker={
     _bzDomPicker._curDom=$util.findDom(_path);
     _bzDomPicker._curRequire._back(_path,this._data._pos,_bzDomPicker._curDom);
     _bzDomPicker._endRequire();
-    if(this._domPickerWindow){
-      this._domPickerWindow.opener.focus();
-      this._domPickerWindow.close();
-    }else if(e){
-      e.target.ownerDocument.defaultView.close()
-    }
+    e.target.ownerDocument.defaultView.close()
   },
   _getFinalPaths:function(){    
     var _paths=[];
@@ -41640,19 +41363,8 @@ var _bzDomPicker={
     }catch(e){
     }
   },
-  _reSelect:function(){
-    _bzDomPicker._removeTmpCover();
-    var a=this._curRequire,v=this._data._filter;
-    _bzDomPicker._preType=a.t
-    if(v){
-      a.t=`${v},:endContains(${v}),:attr(value=${v})`;
-    }else{
-      a.t=v
-    }
-    a._filter=v
-    _bzDomPicker._start(a);
-  },
   _setFocusItem:function(o){
+    _bzDomPicker._removeTmpCover();
     _bzDomPicker._data._focusItem=o
     _bzDomPicker._flashTmpCover(o._dom)
 
@@ -43298,7 +43010,10 @@ var _ideActionOptions={
                           _IDE._data._curTest._data.actions.push(_Util._clone(d))
                         }
                         if(d.type<3){
-                          _ideActionManagement._pickElement(1)
+                          _bzDomPicker._pickElement(0,function(v){
+                            a.element=v.p
+                            _ideTestManagement._save()
+                          })
                         }
                       }
                     },
@@ -43448,7 +43163,10 @@ var _ideActionOptions={
                 let d=_ideActionOptions._buildData(this)
                 _ideActionManagement._move([d],_IDE._data._curAction)
                 if(d.type<3){
-                  _ideActionManagement._pickElement(1)
+                  _bzDomPicker._pickElement(0,function(v){
+                    d.element=v.p
+                    _ideTestManagement._save()
+                  })
                 }
               }
             }
@@ -43586,12 +43304,12 @@ var _ideActionManagement={
   
             if(_this.element){
               _ideActionManagement._setCurAction(_this)
-              _bzDomPicker._flashTmpCover(_this)
-              // if(_this.multipleElement){
-              //   _bzDomPicker._flashMutipleTmpCover(_this.element.filter(x=>!$.isNumeric(x)))
-              // }else{
-              //   _bzDomPicker._flashTmpCover(_this.element)
-              // }
+
+              if(_this.multipleElement){
+                _bzDomPicker._flashMutipleTmpCover(_this.element.filter(x=>!$.isNumeric(x)))
+              }else{
+                _bzDomPicker._flashTmpCover(_this.element)
+              }
             }
     
             setTimeout(function(){
@@ -43877,7 +43595,10 @@ var _ideActionManagement={
                         ],
                         _jqext:{
                           click:function(){
-                            _ideActionManagement._pickElement(1)
+                            _bzDomPicker._pickElement(_IDE._data._curAction.element,function(v){
+                              _IDE._data._curAction.element=v.p
+                              _ideTestManagement._save()
+                            })
                           }
                         }
                       }
@@ -44497,7 +44218,7 @@ var _ideActionManagement={
   _surfByKeyboard:function(k){
     var a=_IDE._data._curAction,aa,t=_IDE._data._curTest
     if(k==38){
-      aa=_getPreAction()
+      aa=_ideActionManagement._getPreAction()
       if(!aa&&!a){
         aa=t._data.actions._last()
       }
@@ -44512,60 +44233,59 @@ var _ideActionManagement={
         return
       }
     }else if(k==40){
-      aa=_getNextAction()
+      aa=_ideActionManagement._getNextAction()
       if(!aa&&!a){
         aa=t._data.actions[0]
       }
     }
     BZ._setHash(_IDE._data._curModule,t,_ideActionManagement._getCurIdx(aa))
+  },
+  _getPreAction:function(t,a){
+    t=t||_IDE._data._curTest
+    t=t._data||t
+    a=a||_IDE._data._curAction
+    return _find(t.actions,a)
 
-    function _getPreAction(t,a){
-      t=t||_IDE._data._curTest
-      t=t._data||t
-      a=a||_IDE._data._curAction
-      return _find(t.actions,a)
-  
-      function _find(as,a){
-        for(var i=0;i<as.length;i++){
-          let aa=as[i]
-          if(aa==a){
-            return  as[i-1]||1
-          }else if(aa.actions){
-            if(aa.conditionAction==a){
-              return aa
-            }
-            var r=_find(aa.actions,a)
-            if(r){
-              return r==1?aa:r
-            }
+    function _find(as,a){
+      for(var i=0;i<as.length;i++){
+        let aa=as[i]
+        if(aa==a){
+          return  as[i-1]||1
+        }else if(aa.actions){
+          if(aa.conditionAction==a){
+            return aa
+          }
+          var r=_find(aa.actions,a)
+          if(r){
+            return r==1?aa:r
           }
         }
       }
     }
-    function _getNextAction(t,a){
-      t=t||_IDE._data._curTest
-      t=t._data||t
-      a=a||_IDE._data._curAction
-      return _find(t.actions,a)
-  
-      function _find(as,a){
-        for(var i=0;i<as.length;i++){
-          let aa=as[i]
-          if(aa==a){
-            return  as[i+1]||1
-          }else if(aa.actions){
-            if(aa.conditionAction==a){
-              return aa.actions[0]||1
-            }
-            var r=_find(aa.actions,a)
-            if(r){
-              return r==1?as[i+1]||1:r
-            }
+  },
+  _getNextAction:function(t,a){
+    t=t||_IDE._data._curTest
+    t=t._data||t
+    a=a||_IDE._data._curAction
+    return _find(t.actions,a)
+
+    function _find(as,a){
+      for(var i=0;i<as.length;i++){
+        let aa=as[i]
+        if(aa==a){
+          return  as[i+1]||1
+        }else if(aa.actions){
+          if(aa.conditionAction==a){
+            return aa.actions[0]||1
+          }
+          var r=_find(aa.actions,a)
+          if(r){
+            return r==1?as[i+1]||1:r
           }
         }
       }
-    }  
-  },
+    }
+  },  
   _getCurIdx:function(a,t){
     a=a||_IDE._data._curAction
     if(!a.i){
@@ -46100,6 +45820,9 @@ var _ideActionManagement={
       }
       
       BZ._setSharedData({"_IDE._data._curAction":a});
+      // if(a&&!window.extensionContent&&!BZ._isPlaying()&&BZ._userHabit._inDebuggerData){
+      //   _ideDataManagement._assignTmpCurData()
+      // }
     }
   },
   //mouse click on row of list or action card
@@ -46330,11 +46053,12 @@ var _ideActionManagement={
         setTimeout(function(){
           _IDE._data._curAction=a
           //auto-dom-picker
-          _ideActionManagement._pickElement(1);
+          _bzDomPicker._pickElement(_IDE._data._curAction.element,function(v){
+            _IDE._data._curAction.element=v.p
+            _ideTestManagement._save()
+          })
         },100);
       //  BZ._setOperationInfo(_bzMessage._system._operation._selectElement);
-      }else if(_bzDomPicker._isActionElementPicking()){
-        _bzDomPicker._endRequire();
       }
       _ideActionManagement._setCurAction(a);
     }
@@ -46349,7 +46073,7 @@ var _ideActionManagement={
     n.refOfSuccess=a;
   },
   _updateAction:function(b){
-    if(b._inUpload){
+    if(b.inUpload){
       return
     }
     // if(_ideActionManagement._updateAutoFillAction(b)){
@@ -46474,7 +46198,7 @@ var _ideActionManagement={
     }
     let as=d._actions
     _ideActionManagement._findAction(_IDE._data._curTest,(a,i,p,tas,pa)=>{
-      if(a._mergeId==as[0]._action._mergeId){
+      if(a.mergeId==as[0]._action.mergeId){
         a.event={
           type:"change",
           value:d._data._name||d._data._value,
@@ -46493,7 +46217,7 @@ var _ideActionManagement={
           let y=as.shift()
           for(var j=i+1;j<tas.length;j++){
             let e=tas[j]
-            if(e&&e._mergeId&&e._mergeId==y._action._mergeId){
+            if(e&&e.mergeId&&e.mergeId==y._action.mergeId){
               tas.splice(j,1)
               i=j-1
               break
@@ -46569,9 +46293,9 @@ var _ideActionManagement={
   _addItem:function(a){
     a.key=a.key||_aiAPI._newId();
     a=_CtrlDriver._buildProxy(a);
-    if(a._inUpload){
+    if(a.inUpload){
       setTimeout(()=>{
-        delete a._inUpload
+        delete a.inUpload
         if(a._uploadFile){
           _uploadHandler._askHandleFile(a)
         }
@@ -46929,106 +46653,6 @@ var _ideActionManagement={
       _curAction[k]=a[k]
     }
     _ideTestManagement._save()
-  },
-  _pickElement:function(_pick,fun){
-    let a=_IDE._data._curAction
-    if(!window.extensionContent){
-      if(!_Util._isBZTWOpened()){
-        return BZ._launchCurEnvUrl(undefined,()=>{
-          setTimeout(()=>{
-            _ideActionManagement._pickElement(_pick,fun)
-          },)
-        })
-      }
-      if(!_ideTask._appReady){
-        return setTimeout(()=>{
-          _ideActionManagement._pickElement(_pick,fun)
-        },100)
-      }
-      bzComm.postToAppExtension({
-        fun:"_pickElement",
-        scope:"_ideActionManagement",
-        ps:[_pick||{element:a.element}],
-        insertCallFun:1,
-        toIFrameId:_Util._isEmpty(a.element)?"*":bzComm._getIframeIdByPath(a.element),
-        return:function(e,v){
-          a.element=e
-          _ideDataBind._bindDataOnElement(a,"element");
-          _ideTestManagement._save()
-        }
-      })
-    }else if(a){
-      _descAnalysis._clearTmpPath(1);
-      _bzDomPicker._start({
-        _id:"_actionElementPick",
-        _back:_back,
-        t:a&&_pick!=1?a.panel||a.element:null
-      });
-    }else{
-      return
-    }
-    function _back(_path,_pos,_element){
-      var e=$util.findDom(_path),
-          _curAction=_IDE._data._curAction;
-      if(_curAction.type==8){
-        _curAction.panel=_path;
-      }else{
-        _curAction.element=_path;
-      }
-      
-      if(_curAction.type==_ideActionData._type._triggerEvent&&_pos){
-        _curAction.event.x=_pos.x;
-        _curAction.event.y=_pos.y;
-      }
-      _curAction.failedReaction=0;
-      if(_curAction.type==_ideActionData._type._validation){
-        var s=BZ._data._status;
-        BZ._data._status=""
-        setTimeout(function(){
-          BZ._data._status=s;
-        },500)
-        return _domActionTask._exeAction(_curAction,{_force:1,_taskQueue:[]},function(){
-          _IDE._data._curAction=_curAction
-
-          bzComm.postToIDE({
-            fun:"updateActionAttr",
-            scope:"_ideActionManagement",
-            ps:[{
-              expectation:_curAction.expectation
-            }]
-          })
-          _sendData(_curAction)
-        })
-      }else if(_curAction.type==_ideActionData._type._extractData){
-        if(!_curAction.script && e){
-          var a=_curAction;
-          let v=_glossaryHandler._getVariableName(_descAnalysis._retrieveTextForElementPathItem(a.element))||"tmpValue"
-          a.script="$parameter."+v+" = $util.getElementText($element);"
-        }
-      }else if(_curAction.type==_ideActionData._type._comment){
-        var a=_curAction
-        _element.bzTmp=_path
-        return _screenshotHandler._getScreenshot(_element,0,function(c){
-          _IDE._data._curAction=a;
-          a.img=c
-          _domActionTask._doComment(a,true);
-          _sendData(a)
-        })
-      }
-      
-      _sendData(_IDE._data._curAction)
-    }
-    
-    function _sendData(a,v){
-      if(window.extensionContent){
-        BZ._formatInIFramePath(a.panel||a.element)
-        $(".BZIgnore .bz-tb-buttons .bz-active").removeClass("bz-active")
-
-        fun(a.element,v)
-      }else{
-        _ideTestManagement._save()
-      }
-    }
   },
   _getDescExtra:function(d,_simple){
     if(_simple){
@@ -47876,7 +47500,7 @@ var _ideActionManagement={
                 return [
                   _uiHandler._getElementPath("_IDE._data._curAction.skipActionElement",function(){
                     _bzDomPicker._pickElement(_IDE._data._curAction.skipActionElement,function(v){
-                      _IDE._data._curAction.skipActionElement=v
+                      _IDE._data._curAction.skipActionElement=v.p
                       _ideTestManagement._save()
                       _Util._resizeModelWindow()
                     })
@@ -47892,7 +47516,7 @@ var _ideActionManagement={
               _tag:"div",
               _items:[_uiHandler._getElementPath("_IDE._data._curAction.failElement",function(){
                 _bzDomPicker._pickElement(_IDE._data._curAction.failElement,function(v){
-                  _IDE._data._curAction.failElement=v
+                  _IDE._data._curAction.failElement=v.p
                   _ideTestManagement._save()
                   _Util._resizeModelWindow()
                 })

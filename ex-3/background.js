@@ -20,5 +20,20 @@ async function addPageScript(a,b,c) {
   await chrome.scripting.unregisterContentScripts({ ids }).catch(() => {});
   await chrome.scripting.registerContentScripts(scripts);
 
-
 }
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.tabs.query({ }, (tabs) => {
+    tabs.forEach((tab) => {
+      tab=new BZTab(tab,1)
+      if(tab.ide){
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function:()=>{
+            location.reload()
+          }
+        });
+      }
+    });
+  });
+});

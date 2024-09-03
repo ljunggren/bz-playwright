@@ -18,7 +18,9 @@ globalThis.bgUtil={
       delete data.contentType
     }
     delete data.cache
-    data.body=data.body||data.data
+    if(data.data){
+      data.body=data.body||data.data
+    }
     delete data.data
     await fetch(data.url,data).then(r=>{
       for (var k of r.headers.entries()) {

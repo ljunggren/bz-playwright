@@ -1211,7 +1211,9 @@ window._Util={
 
       bzComm.postToBackground({
         fun:"ajax",
-        scope:"bzUtil",
+        scope:"bgUtil",
+        insertCallFun:1,
+        ps:[a],
         return:function(r){
           let ad={}
           for(var k in a){
@@ -7957,8 +7959,6 @@ if(!window.bzComm||window.name=="bz-master"){
       _infoManagement:"infoManagement",
       _showImportantInfo:"showImportantInfo",
       _originAJax:"originAJax",
-      _pickDetails:"pickDetails",
-      _editPath:"editPath",
       _flashMutipleTmpCover:"flashMutipleTmpCover",
       _showTmpCover:"showTmpCover",
       _showOffset:"showOffset",
@@ -8116,8 +8116,8 @@ if(!window.bzComm||window.name=="bz-master"){
       }
       return e&&e.constructor==String&&e.includes("findIframe")&&e
     },
-    _getIframeIdByPath:function(e){
-      e=bzComm._isInIFrame(e)
+    _getIframeIdByPath:function(p){
+      let e=p&&bzComm._isInIFrame(p)
       if(e){
         e=e.match(/findIframe\(([^)]+)\)/)[1]
         if(e.match(/^[0-9, ]+$/)){
@@ -8150,6 +8150,8 @@ if(!window.bzComm||window.name=="bz-master"){
           e=bzComm._findIFrame((x,k)=>{return (x.url||"").includes(e)})
         }
         return e?e.k:0
+      }else if(p&&p[0]=="BZ.TW.document"){
+        return 0
       }
     },
     _forEachIFrame:function(fun,fs){
@@ -8549,7 +8551,10 @@ var _domRecorder={
     // _elementMonitor._handleMonitor();
     // _elementMonitor._close();
     _domRecorder._closeObserver();
-    _domRecorder._removeEventListener();
+    _bzDomPicker._removeTmpCover();
+
+    _domRecorder._removeDomEventListener(document);
+    
     _domRecorder._setBackPopMsg();
     BZ._recording=0;
     
@@ -8980,15 +8985,22 @@ var _domRecorder={
     _domRecorder._lastClickFileInput=Date.now()
     if(_domRecorder._lastNewActionTime&&_domRecorder._lastClickFileInput-_domRecorder._lastNewActionTime.t<200){
       let a=_domRecorder._lastNewActionTime.a,
+          t=_IDE._data._curTest,
           g=_ideActionManagement._getCurGroup(a),
-          _idx=_ideActionManagement._getCurIdx(a);
+          _idx=_ideActionManagement._getCurIdx(a)
 
-      _ideTestManagement._removeAction(_IDE._data._curTest,_domRecorder._lastNewActionTime.a)
-      a=_ideActionManagement._findActionByPath(_idx)
-      if(!a){
-        a=g.actions._last()||g
+      _preAction=_ideActionManagement._getPreAction(t,_ideActionManagement._findActionByPath(t,_idx));
+      _ideTestManagement._removeAction(t,a)
+      
+      // if(!a){
+      //   a=g.actions._last()||g
+      // }
+      _ideTestManagement._refreshActionIdx(t)
+      if(_preAction){
+        BZ._setHash(_preAction)
+      }else{
+        BZ._setHash(t)
       }
-      BZ._setHash(a)
     }
   },
   _setBackPopMsg:function(){
@@ -9056,39 +9068,22 @@ var _domRecorder={
     $(b).on("focus","input,textarea,select",_domRecorder._bindFocus);
     $(b).on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
 
-    // for(var k in _domRecorder._listenEvents){
-    //   if (k=="click") {
-    //     $(_document).find("*").not("style,script").bind("mousedown",_domRecorder._bindFun);
-    //   }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
-    //     continue;
-    //   }else if (k=="focus") {
-    //     continue;
-    //   }else if(k=="dragDrop"){
-    //     $(_document).find("*").not("style,script").bind("mouseup",_domRecorder._bindFun);
-    //     $(_document).find("*").not("style,script").bind("mousemove",_domRecorder._bindFun);
-    //     if(!_domRecorder._listenEvents.mousedown && !_domRecorder._listenEvents.click){
-    //       $(_document).find("*").bind("mousedown",_domRecorder._bindFun);
-    //     }
-    //     continue;
-    //   }else if(k=="change"){
-    //     $(_document).find("input,textarea,select").bind(k,_domRecorder._bindFun);
-    //   }else{
-    //     $(_document).find("*").not("style,script").bind(k,_domRecorder._bindFun);
-    //   }
-    // }
-    // $(_document).find("*").not("style,script").bind("keyup",_domRecorder._bindFun);
-    // $(_document).find("*").not("style,script").bind("keydown",_domRecorder._bindKeydown);
-    /*
-    let iframes=$(_document).find("IFRAME")
-    if(iframes[0]){
-      iframes=iframes.toArray();
-      iframes.forEach(function(v){
-        if(!v.src){
-          _domRecorder._setDomEventListener(v.contentDocument)
-        }
-      })
-    }
-    */
+    $(_document).find("*").toArray().forEach(function(e){
+      e=e.shadowRoot
+      if(e){
+        e=$(e).find("*")
+        e.on("mousedown",_domRecorder._bindFun);
+        e.on("mouseup","*",_domRecorder._bindFun);
+        e.on("mousemove","*",_domRecorder._bindFun);
+        e.on("dblclick","*",_domRecorder._bindFun);
+        e.on("click","*",_domRecorder._bindFun);
+        e.on("keyup","*",_domRecorder._bindFun);
+        e.on("keydown","*",_domRecorder._bindKeydown);
+        e.on("change","input,textarea,select",_domRecorder._bindFun);
+        e.on("focus","input,textarea,select",_domRecorder._bindFocus);
+        e.on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+      }
+    })
   },
   _buildTmpPath:function(o,_last){
     _last=_last||[]
@@ -9804,7 +9799,7 @@ var _domRecorder={
         value:BZ._autoRecording?d._value:_domActionTask._curValueDataBind||d._value
       },
       _tmpUrl:d._tmpUrl,
-      _inUpload:d._inUpload,
+      inUpload:d.inUpload,
       _uploadFile:d._uploadFile,
       _uploadUrl:d._uploadUrl
     };
@@ -9881,7 +9876,7 @@ var _domRecorder={
       this._lastStep=0
     }
     if(_IDE._data._setting.autoMergeToSetValue){
-      a._mergeId=Date.now()
+      a.mergeId=Date.now()
       _domRecorder._monitorSetInputActions._mergeForSetAction(d._element,{
         _action:a,
         _element:d._element,
@@ -10056,7 +10051,7 @@ var _domRecorder={
         _result=JSON.stringify(_result,0,2)
         if(uf||_ideActionManagement._checkFileSize(_result)){
           d._value=uf||("{{"+_result+"}}");
-          d._inUpload=1
+          d.inUpload=1
           d._uploadUrl=uf
           if(uf){
             delete d._uploadFile
@@ -10114,7 +10109,7 @@ var _domRecorder={
     }
   },
   _bindContentEditable:function(a){
-    if(!BZ._isRecording() || (!BZ._autoRecording && _bzDomPicker._isPicking() && !_bzDomPicker._isRecording())){
+    if(!BZ._isRecording()){
       return;
     }
     if(a.target==this){
@@ -10127,12 +10122,6 @@ var _domRecorder={
     }
     if(a.target==this && !$(BZ.TW.document).find(".BZIgnore").find(this).length){
       _domRecorder._recordEvent(a,this.value);
-    }
-  },
-  _removeEventListener:function(){
-    _domRecorder._removeDomEventListener(document)
-    if(!_bzDomPicker._isPicking()){
-      _bzDomPicker._removeTmpCover();
     }
   },
   _removeDomEventListener:function(_document){
@@ -10154,34 +10143,22 @@ var _domRecorder={
       
       $(b).find("CANVAS").unbind("mousedown",_domRecorder._bindFun);
 
-//       $(_document).off("focus","select,input,textarea",_domRecorder._bindFocus);
-// //      $(_document).find("select,input,textarea").unbind("focus",_domRecorder._bindFocus);
-//       $(_document).find("[contenteditable=true]").unbind("blur",_domRecorder._bindContentEditable);
-      
-//       for(var k in _domRecorder._listenEvents){
-//         if (k=="click") {
-//           $(_document).find("*").not("style,script").unbind("mousedown",_domRecorder._bindFun);
-//         }else if (k=="mousedown" && _domRecorder._listenEvents.click) {
-//           continue;
-//         }else if (k=="focus") {
-//           continue;
-//         }else if(k=="dragDrop"){
-//           $(_document).find("*").not("style,script").unbind("mouseup",_domRecorder._bindFun);
-//           $(_document).find("*").not("style,script").unbind("mousemove",_domRecorder._bindFun);
-
-//           if(!_domRecorder._listenEvents.click){
-//             $(_document).find("*").unbind("mousedown",_domRecorder._bindFun);
-//           }
-//           continue;
-//         }
-//         if(k=="change"){
-//           $(_document).find("input,textarea,select").unbind(k,_domRecorder._bindFun);
-//         }else{
-//           $(_document).find("*").not("style,script").unbind(k,_domRecorder._bindFun);
-//         }
-//       }
-//       $(_document).find("*").not("style,script").unbind("keyup",_domRecorder._bindFun);
-//       $(_document).find("*").not("style,script").unbind("keydown",_domRecorder._bindKeydown);
+      $(b).find("*").toArray().forEach(function(e){
+        e=e.shadowRoot
+        if(e){
+          e=$(e).find("*")
+          e.off("mousedown",_domRecorder._bindFun);
+          e.off("mouseup","*",_domRecorder._bindFun);
+          e.off("mousemove","*",_domRecorder._bindFun);
+          e.off("dblclick","*",_domRecorder._bindFun);
+          e.off("click","*",_domRecorder._bindFun);
+          e.off("keyup","*",_domRecorder._bindFun);
+          e.off("keydown","*",_domRecorder._bindKeydown);
+          e.off("change","input,textarea,select",_domRecorder._bindFun);
+          e.off("focus","input,textarea,select",_domRecorder._bindFocus);
+          e.off("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+        }
+      })      
     }catch(e){
       
     }
