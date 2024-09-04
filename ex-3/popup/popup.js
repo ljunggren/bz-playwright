@@ -5,7 +5,7 @@ let defaultCode={
       || location.href.match(/[\/]builds[\/][0-9]+[\/]logs[\/][0-9]+$/)
 }`,
   identifyWorker:`function(){
-  let k=location.href.match(/\/([0-9]+)\//)[1];
+  let k=location.href.match(/[\/]([0-9]+)[\/]/)[1];
   return [2,3].map(x=>{
     return location.href.replace(k+"/consoleFull","ws/out_"+k+"_"+x+".log")
   })

@@ -7648,6 +7648,17 @@ window.BZ={
       BZ._setSharedData({"BZ._data._status":d})
     }
   },
+  focusMaster:function(){
+    if(bzComm._isIDE()){
+      window.focus()
+      window.open("","bz-master")
+    }else{
+      bzComm.postToIDE({
+        fun:"focusMaster",
+        scope:"BZ"
+      })
+    }
+  },
   toolbar:{
     resize:function(o){
       bzComm.postToAppExtension({
@@ -42542,7 +42553,7 @@ var _innerWin={
     +`    <div class="bz-tb-header">`
     +`      <div class="bz-btn-tb-icon bz-boozang-logo-small"`
     +`        style="width:19px;height:19px;cursor:pointer;float:left;margin:4px;padding:0;border:0;background-position:25px 25px;background-size: 34px !important;margin-bottom:0;"`
-    +`        onclick="BZ.focusMaster('','bz-master')"></div>`
+    +`        onclick="BZ.focusMaster()"></div>`
     +`      <div style="flex:1;text-align: center;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 11px;">`
     +`        <span class="info" style="display: none;">Lost focus</span>`
     +`      </div>`

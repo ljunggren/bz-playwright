@@ -7668,6 +7668,17 @@ window.BZ={
       BZ._setSharedData({"BZ._data._status":d})
     }
   },
+  focusMaster:function(){
+    if(bzComm._isIDE()){
+      window.focus()
+      window.open("","bz-master")
+    }else{
+      bzComm.postToIDE({
+        fun:"focusMaster",
+        scope:"BZ"
+      })
+    }
+  },
   toolbar:{
     resize:function(o){
       bzComm.postToAppExtension({
