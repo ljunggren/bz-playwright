@@ -4638,7 +4638,7 @@ $test.data
     // _autoFill:"Do you want to auto bind-data?",
     _loadDataFailed:"Load data ({0}) failed! {1}",
     _noData:"There is no data to bind.",
-    _autoFill:"Autofill Forms",
+    _autoFill:"Autofill Form",
     _funErr:"Function Data setting error: ",
     _funNameErr:"The function data should not include a function name. The correct format should be: \n\nfunction(){\n  ...\n  return ...\n}",
     _empty:"[Empty]",
@@ -27870,7 +27870,7 @@ var _domRecorder={
     }
     p[0].bzShortCut=0
     p=_cssHandler._findPath(p[0],1,_removedElement.length?2:0);
-    if(_removedElement.length){
+    if(p&&_removedElement.length){
       var i=p._elementPath.pop();
       if(!$.isNumeric(i)){
         p._elementPath.push(i)

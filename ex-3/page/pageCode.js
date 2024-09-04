@@ -9168,7 +9168,7 @@ var _domRecorder={
     }
     p[0].bzShortCut=0
     p=_cssHandler._findPath(p[0],1,_removedElement.length?2:0);
-    if(_removedElement.length){
+    if(p&&_removedElement.length){
       var i=p._elementPath.pop();
       if(!$.isNumeric(i)){
         p._elementPath.push(i)
