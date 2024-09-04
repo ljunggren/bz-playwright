@@ -6289,7 +6289,7 @@ tbody td:first-child,tbody td:last-child{
       }
       return r&&r.find(p,_tmpPanel)
     }catch(e){
-      _domActionTask._reportAppInfo("Error on findInInsensitive: "+e.message)
+      BZ._reportAppInfo("Error on findInInsensitive: "+e.message)
       return r.find(_Util._updateAttrSelector(p))
     }
   },
@@ -6830,7 +6830,7 @@ tbody td:first-child,tbody td:last-child{
         }
       }
     }catch(e){
-      _domActionTask._reportAppInfo("Error on findDoms: "+e.message)
+      BZ._reportAppInfo("Error on findDoms: "+e.message)
       console.log(e.stack)
       if(os && os.constructor==String && !_bRetry){
         return this._findDoms(_paths,_errOnHidden,1);
@@ -7589,13 +7589,11 @@ window.BZ={
     "BZ._data._status":"bzStatus",
     "_ideDataBind._data._key":"ideDataBindKey",
     "_ideDataBind._data._limit":"ideDataBindLimit",
-    "_cssHandler._curPanel":"cssHandlerCurPanel",
     "_innerWin._data._dataBind._showDataBind":"dataBindShowDataBind",
     "_comCss":"comCss",
     "curUser._curProject.setting":"curProjectSetting",
     "_appWordHandler._wordMap":"appWordHandlerWordMap",
     "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
-    "_ideDataManagement._tmpTaskDataMap":"ideDataManagementTmpTaskDataMap",
     "BZ._userHabit.toolbarPos":"userHabitToolbarPos",
     "BZ._data._checkout":"checkout",
   },
@@ -7606,6 +7604,15 @@ window.BZ={
       for(var i=0;i<arguments.length;i++){
         console[i?'log':'warn'](arguments[i])
       }
+    }
+  },
+  _reportAppInfo:function(v){
+    if(window.extensionContent){
+      bzComm.postToIDE({
+        fun:"_receiveAPPInfo",
+        scope:"_ideTask",
+        ps:[v]
+      })
     }
   },
   _getHostList:function(){
@@ -7631,16 +7638,22 @@ window.BZ={
         if(!d){
           if(s=="record"){
             bzComm.postToIDE({fun:"_end",scope:"_ideRecorder"})
-          }else if(s=="play"&&s=="pause"){
+          }else if(s=="play"||s=="pause"){
             bzComm.postToIDE({fun:"_end",scope:"_ideTask",ps:[1]})
             p._inMin=p._inMin==2?1:0;
           }
         }else{
           if(d=="record"){
             bzComm.postToIDE({fun:"_start",scope:"_ideRecorder"})
-          }else if(d=="play"||d=="pause"){
-            bzComm.postToIDE({fun:"_start",scope:"_ideTask"})
+          }else if(d=="play"){
+            if(!s){
+              bzComm.postToIDE({fun:"_start",scope:"_ideTask"})
+            }else{
+              bzComm.postToIDE({fun:"_continuePlay",scope:"_ideTestManagement"})
+            }
             p._inMin=p._inMin?2:1;
+          }else if(d=="pause"){
+            bzComm.postToIDE({fun:"_pause",scope:"_ideTask"})
           }
         }
       }
@@ -7873,7 +7886,13 @@ window.BZ={
         })
       }
     }
-
+    if(bzComm._isAppExtension()){
+      bzComm.postToApp({
+        fun:"assignShareData",
+        scope:"BZ",
+        ps:[dd]
+      })
+    }
     function _parseData(ks,d,r){
       let k=ks.shift()
       r=r||window
@@ -11012,25 +11031,6 @@ var TWHandler={
     window.onbeforeunload=TWHandler._bzOnBeforeUnload;
     
   },
-  _isAfterRequest:function(){
-    var v=0,t=60000;
-    if(window.BZ && BZ._hasExtension()){
-      v= !TWHandler.BZ_sent || TWHandler.BZ_sent<0;
-      t=6000;
-    }else{
-      v=(!TWHandler.BZ_sent || TWHandler.BZ_sent<0) || (BZ.TW && !BZ.TW.XMLHttpRequest.prototype.BZ_Ajax)
-    }
-    if(!v){
-      this._lastAfterRequest=this._lastAfterRequest||Date.now();
-      if(Date.now()-this._lastAfterRequest>t){
-        this._lastAfterRequest=0
-        return 1
-      }
-    }else{
-      this._lastAfterRequest=0
-    }
-    return v;
-  },
   _takeoverOpenWin:function(_win){
     _win=_win||window
     
@@ -11216,23 +11216,10 @@ var TWHandler={
   //h:window size,
   _openUrl:function(_enterPointValue,_callBack,h){
     window.$project&&(window.$project.$flag="")
-    if(!BZ._isPlaying()&&_IDE._data._curTest){
-      setTimeout(function(){
-        _CtrlDriver._refreshDom($(".bz-action-list-content")[0])
-        $(".bz-action-element .bz-popout").hide()  
-      },100)
-    }
     if(_enterPointValue){
       _enterPointValue=_ideTask._setCurValue(_enterPointValue)
     }
 
-    try{
-      if(!BZ._hasExtension()&&_Util._isBZTWOpened()){
-        BZ.TW.document
-      }
-    }catch(e){
-      BZ._closePopWindow()
-    }
     if(h===undefined&&!_ideTestManagement._getCurHost()){
       BZ._setStatus("")
       BZ._setHash("settingEnvironment")
@@ -11272,6 +11259,13 @@ var TWHandler={
         }
       }else{
         _Util._openBZTW(_enterPointValue,ws);
+
+        if(!BZ._isAutoRunning()&&_IDE._data._curTest){
+          setTimeout(function(){
+            _CtrlDriver._refreshDom($(".bz-action-list-content")[0])
+          },100)
+        }
+    
       }
       _finalFun()
     }  

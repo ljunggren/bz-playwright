@@ -1657,7 +1657,7 @@ var $util={
           o.dispatchEvent(event);
         }catch(e){
           _domActionTask._doLog("util 1664: "+e.message)
-          _domActionTask._reportAppInfo("error on Set: "+e.stack)
+          BZ._reportAppInfo("error on Set: "+e.stack)
         }
         try{
           var event = new Event("change", { bubbles: true });
@@ -1757,7 +1757,7 @@ var $util={
           }
         }
       }catch(ex){
-        _domActionTask._reportAppInfo("Set input 88: "+ex.message+"\n"+ex.stack)
+        BZ._reportAppInfo("Set input 88: "+ex.message+"\n"+ex.stack)
       }
     }
   },
@@ -3572,14 +3572,6 @@ var _cssHandler={
       }
     }
   },
-/*  */
-  _setCurPanel:function(v){
-    if(BZ._hasExtension()){
-      BZ._setSharedData({"_cssHandler._curPanel":v})
-    }else{
-      _cssHandler._curPanel=v
-    }
-  },
   _isNatureCustomizeInput:function(e){
     return (e.tagName=="INPUT"&&(e.type=="text"&&($(e).css("opacity")==0||$(e).css("visibility")=="hidden"))||["submit","button","image"].includes(e.type))
           ||(!_Util._isInContentEditable(e)&&(!_Util._isStdInputElement(e)||$(e).attr("readonly")))
@@ -4754,38 +4746,18 @@ var _cssHandler={
         _headers:[],
         _stopLabel:_simple==2,
         _labelOnly:_simple==3,
-        _classFirst:_simple==4,
-        _stopHeader:_cssHandler._curPanel
+        _classFirst:_simple==4
       },o,bk,_chkPanel;
       if(!e.bzShortCut||e.tagName=="CANVAS"){
         e.bzW=0
         var ee=d.ee;
   //      console.time("_findPath")
         while(d.e.ownerDocument){
-          this._checkDescPath(d,_simple||_cssHandler._curPanel);
+          this._checkDescPath(d,_simple);
           if(_simple==1){
             break
           }
-          if(_cssHandler._curPanel){
-            var _tmp=d.oe.bzTmp
-            if(d.ee.length>1){
-              _tmp=_Util._clone(_tmp)
-            }
-            if(_tmp.constructor==String){
-              _tmp=_tmp.split("\n")
-            }
-            _tmp.splice(1,0,_cssHandler._curPanel)
-            if(d.ee.length>1){
-              var os=_Util._findDoms(_tmp)
-              if(os.length==1){
-                d.oe.bzTmp=_tmp
-                break
-              }
-            }else{
-              d.oe.bzTmp=_tmp
-              break
-            }
-          }else if(d._label&&_simple==3&&(d.oe==d.ee||d.ee.length==1)){
+          if(d._label&&_simple==3&&(d.oe==d.ee||d.ee.length==1)){
             break
           }else if(d._label&&!_chkPanel&&(_chkPanel=1)&&_cssHandler._addPanelOnPath(d)){
             break
@@ -4971,52 +4943,6 @@ var _cssHandler={
 
   },
   
-  /*
-  _optimizePath:function(ps,o){
-    var ns=[],_found;
-    if(ps.constructor==String){
-      ps=ps.split("\n");
-    }
-    
-    for(var i=ps.length-1;i>0;i--){
-      var p=ps[i];
-      if(p!=_cssHandler._curPanel&&p.match && p.match(/[.#]/) && !_found){
-        var p1=p.match(/[.#][a-z0-9_-]+/ig)
-        
-        if(p1){
-          var c=p.match(/:[a-z]+\([^)]+\)/gi)
-          if(c){
-            p1.forEach(function(v){
-              var _include=0
-              for(var i=0;i<c.length;i++){
-                if(c[i].includes(v)){
-                  _include=1
-                  break
-                }
-              }
-              if(!_include){
-                _found=1
-                p=p.replace(v,"")
-              }
-            })
-          }else{
-            _found=1
-            p=p.replace(p1[0],"")
-          }
-        }
-      }
-      ns.unshift(p)
-    }
-    if(_found){
-      ns.unshift(ps[0])
-      var oo= $util.findDom(ns)
-      if(oo==o){
-        return _cssHandler._optimizePath(ns,o)
-      }
-    }
-    return ps;
-  },
-  */
   _isIgnoreClass:function(c){
     return c.match(_cssHandler._ignoreClasses)
   },

@@ -596,8 +596,6 @@ var formatter={
         o="worker-1"
       }
       return `[${o}]`
-    }else{
-      debugger
     }
   },
   getGroupElement:function(o){
@@ -876,7 +874,7 @@ var formatter={
     if(!v){
       return bkFun&&bkFun()
     }
-    if(formatter.data.setting.lineClear){
+    if(formatter.data.setting.lineClearChk){
       v=v.split("\n").map(x=>formatter.lineClear(x.trim())).join("\n")
     }
     v=(fd.curEnd||"")+v

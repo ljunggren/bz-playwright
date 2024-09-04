@@ -24,14 +24,13 @@ $("#ide").click(()=>{
   chrome.tabs.create({url: getServerUrl()+`/extension?id=${p}#${p}/${v}/`})
 })
 $("#formatPage").click(()=>{
-  chrome.tabs.query({active: true, currentWindow: true}, function(v){
-    bzFormat.gotoOrg=0
-    chrome.runtime.sendMessage({ pop:1,fun:"formatLog",data:{
-      id:v[0].id,
-      data:bzFormat
-    }});
-    window.close();
-  });
+  bzFormat.gotoOrg=0
+  updateSetting(()=>{
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      // 重新加载当前标签页
+      chrome.tabs.reload(tabs[0].id);
+    });
+  })
 });
 $("#orgPage").click(()=>{
   chrome.tabs.query({active: true, currentWindow: true}, function(v){
@@ -329,7 +328,7 @@ function resetCode(k){
   updateSetting()
 }
 
-function updateSetting(){
+function updateSetting(_fun){
   bzFormat.autoFormat=$("#autoFormat")[0].checked
   bzFormat.lineClearChk=$("#lineClearChk")[0].checked
   bzFormat.withToken=$("#withToken")[0].checked
@@ -359,16 +358,8 @@ function updateSetting(){
   bzFormat.declareTime=$("#declareTime").val()
   bzFormat.initTime=$("#initTime").val()
   bzFormat.actionTime=$("#actionTime").val()
-  chrome.storage.sync.set({"bz-log-format":JSON.stringify(bzFormat)})
-  
-  
-  chrome.tabs.query({active: true, currentWindow: true}, function(v){
-    chrome.runtime.sendMessage({ pop:1,fun:"updateFormatLogSetting",data:{
-      id:v[0].id,
-      data:bzFormat
-    }});
-    
-  });  
+  chrome.storage.sync.set({"bz-log-format":JSON.stringify(bzFormat)},_fun)
+
   if(bzFormat.account.version){
     $("#ide").show()
   }else{
