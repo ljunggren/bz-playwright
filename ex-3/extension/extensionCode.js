@@ -42560,7 +42560,7 @@ var _innerWin={
     +`      <div class="bz-btn-icon-tn bz-header-right bz-minimize-white" style="height:24px;" onclick="BZ.toolbar.resize(this)"></div>`
     +`    </div>`
     +`    <div>`
-    +`      <div class="bz-tb-body">`
+    +`      <div class="bz-tb-body" style='padding:5px 5px 0 5px;'>`
     +`        <div class="bz-tb-buttons">`
     +`          <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)"></button>`
     +`          <button class="bz-btn-tb-icon bz-2 bz-play" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case"></button>`
@@ -42568,7 +42568,7 @@ var _innerWin={
     +`          <button class="bz-btn-tb-icon bz-4 bz-comment" onclick='BZ.toolbar.exeCmd(this)' title="Comment"></button>`
     +`        </div>`
     +`      </div>`
-    +`      <div class="bz-tb-body">`
+    +`      <div class="bz-tb-body" style='border-top:1px solid #999;'>`
     +`        <div class="bz-tb-subheader"><a`
     +`            style="position:absolute;right:10px;bottom:0;font-size:10pt;text-decoration: underline;color:#66F;"`
     +`            href="javascript:" onclick="bzComm.postToAppExtension({fun:'_autoFill',scope:'_ideDataBind'});">Autofill Forms</a></div>`
@@ -42676,6 +42676,8 @@ var _innerWin={
       default:
         bs[0].addClass("bz-record").removeClass("bz-stop");
         bs[1].addClass("bz-play").removeClass("bz-pause");
+        bs[0].attr({disabled:false});
+        bs[1].attr({disabled:false});
         bs[2].attr({disabled:false});
         bs[3].attr({disabled:false});
     }
