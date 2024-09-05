@@ -3408,10 +3408,6 @@ if(window.jQuery){
 var _cssHandler={
   _cssMap:{},
   _maxTextLength:100,
-  _findElementKey:function(e){
-    let p=_cssHandler._findPath(e)
-    return _descAnalysis._retrieveTextForElementPathItem(p)
-  },
   _priorityItems:[],
   /*
   _cssMap={
@@ -3525,14 +3521,6 @@ var _cssHandler={
     this._ignoreClasses=_IDE._data._curVersion.setting.content.ignoreClasses.replace(/\s/g,"").replace(/,/g,"|");
     return 1;
   },
-  _isDuplicateCssKey:function(k){
-    var os=_IDE._data._curVersion.setting.objectLib.element;
-    for(var i=0;i<os.length;i++){
-      if(os[i].key==k){
-        return 1
-      }
-    }
-  },
 /*
   _addCss:function(d,v){
     if(d){
@@ -3575,51 +3563,6 @@ var _cssHandler={
   _isNatureCustomizeInput:function(e){
     return (e.tagName=="INPUT"&&(e.type=="text"&&($(e).css("opacity")==0||$(e).css("visibility")=="hidden"))||["submit","button","image"].includes(e.type))
           ||(!_Util._isInContentEditable(e)&&(!_Util._isStdInputElement(e)||$(e).attr("readonly")))
-  },
-  _getComponeDefinitionSetting:function(_type){
-    let _setting=[{_text:"_panel",_value:"panel",_required:1}]
-    if(["dropdownInput","menu"].includes(_type)){
-      _setting.unshift({_text:"_value",_value:"value",_required:1})
-      _setting.unshift({_text:"_toggle",_value:"toggle",_required:1})
-    }
-    if(["dropdownInput"].includes(_type)){
-      _setting.push({_text:"_clear",_value:"clear",_required:0})
-    }
-    if(["container","popWindow","table","list"].includes(_type)){
-      _setting.push(
-        {_text:"_objTitle",_value:"title"},
-        {_text:"_ctrlPanel",_value:"ctrlPanel"}
-      )
-    }
-    if(_type=="table"){
-      _setting.push(
-        {_text:"_header",_value:"header"},
-        {_text:"_row",_value:"row",_required:1},
-        {_text:"_col",_value:"col",_required:1},
-        {_text:"_paging",_value:"paging"}
-      )
-    }else if(["list","navigator","path","menu","tab"].includes(_type)){
-      _setting.push({_text:"_item",_value:"item",_required:1})
-      if(_type=="tab"){
-        _setting.push({_text:"_content",_value:"content",_required:1})
-      }
-    }
-    return _setting
-  },
-  _getInitCustomizeSetting:function(_type){
-    let o={type:_type,steps:[],name:_bzMessage._setting._objectLib._options.component[_type]};
-    if(_type=="table"){
-      Object.assign(o,{
-        row:["tr"],col:["td"],header:["thead"],title:["caption"]
-      })
-    }else if(["dropdownInput","rangeSlider"].includes(_type)){
-      o.input=1
-      if(_type=="dropdownInput"){
-        o.clear=[".close|.remove|.clear|.clean|.cross"]
-        o.format="$1"
-      }
-    }
-    return o;
   },
   _lookLikeInput:function(l,i){
     return !_Util._isHidden(i)&&(_Util._isInputObj(i)||(_isInputSize(i)&&_isInputPos(l,i)))
@@ -3729,37 +3672,6 @@ var _cssHandler={
       return v1.match(v2)
     }
   },
-  /**/
-  //f:format ($1/$2), s:steps
-  _getValiableParameterBySteps:function(f,s){
-    if(f){
-      f=f.match(/\$[0-9]+/g)
-      if(f.length){
-        s.forEach(function(v){
-          if(v.event && v.event.value){
-            var i=f.indexOf(v.event.value)
-            if(i>=0){
-              f.splice(i,1)
-            }
-          }else{
-            v.element.forEach(function(vv){
-              if(vv.match){
-                vv=vv.match(/\$[0-9]+/)
-                if(vv){
-                  vv=vv[0]
-                  var i=f.indexOf(vv)
-                  if(i>=0){
-                    f.splice(i,1)
-                  }
-                }
-              }
-            })
-          }
-        })
-        return f[0]
-      }
-    }
-  },
   //split css setting, like: "button,.btn" to ["button",".btn"]  
   _parseGroup:function(_css){
     _css=_css||""
@@ -3826,14 +3738,6 @@ var _cssHandler={
       vs.push(v)
     }
     return vs;
-  },
-  //split element path from "BZ.TW.document DIV:Contains(lws ok) 0" --> ["BZ.TW.document","DIV:Contains(lws ok)",0]
-  _parseElementPath:function(v){
-    if(!v){
-      return
-    }
-    v=_Util._parseExpression(v+" ",/ /)
-    return v._headers
   },
   //from ["LABEL",":endContains(Name)"] to ["{LABEL}","\"Name\""]
   _cssToDesc:function(p){
@@ -4424,16 +4328,6 @@ var _cssHandler={
     }
     
   },
-  _hasAIFlag:function(e){
-    return e.dataset.bz
-  },
-  _getButtonLabel:function(e){
-    let v=_cssHandler._findLabel({e:e,oe:e})
-    if(v){
-      return v.w
-    }
-    return _cssHandler._findTitleAttribute(e)
-  },
   _getOptionElementByBZFlag:function(e){
     return e.constructor==Array&&e
   },
@@ -4942,36 +4836,8 @@ var _cssHandler={
     }
 
   },
-  
   _isIgnoreClass:function(c){
     return c.match(_cssHandler._ignoreClasses)
-  },
-  _getFormBtnType:function(b){
-    b=["$submit","$cancel","$confirm","$next","$back"].find(x=>{
-      return _cssHandler._isBtnByType(b,x)
-    })
-    return b
-  },
-  _isBtnByType:function(o,_type){
-    let w=o.innerHTML.toLowerCase(),m=_bzMessage._method,s;
-    switch(_type){
-      case "$submit":
-        s=`/${m._submit}|${m._save}|submit|save|store/i`
-        break
-      case "$cancel":
-        s=`/${m._cancel}|${m._close}|close|cancel/i`
-        break
-      case "$confirm":
-        s=`/${m._confirm}|confirm/i`
-        break
-      case "$next":
-        s=`/${m._next}|${m._continue}|next|continue/i`
-        break
-      case "$back":
-        s=`/${m._back}|${m._previous}|back|previous/i`
-    }
-    
-    return w.match(eval(s))
   },
   _findForm:function(_root){
     _root=_root||document.body
@@ -5264,14 +5130,6 @@ var _cssHandler={
       }
     }
   },
-  _isInputElementPath:function(e){
-    for(var i=e.length-1;i<e.length;i--){
-      let v=e[i]
-      if(v.constructor==String){
-        return _Util._isInputTag((v.match(/input/i)||[])[0])
-      }
-    }
-  },
   /*
     To find element all features.
     e: current element
@@ -5398,21 +5256,7 @@ var _cssHandler={
         _data.lCss=_cssHandler._getElementCss(l.e)
       }
     }
-    /*
-    function _getText(_data){
-      if(_data._result._main.length==1){
-        let t=_Util._filterTxt(_data.e.innerText.toLowerCase());
-        if(t){
-          for(var i=0;i<_data.ps.length;i++){
-            if(_data.ps[i]._type=="text"&&_data.ps[i]._value==t){
-              return
-            }
-          }
-          return t.substring(0,100)
-        }
-      }
-    }
-    */
+
     function _setHeader(_data,fs,g){
       if(_data._stopHeader||(_data._headers&&_data._headers.length)){
         return
@@ -5566,16 +5410,6 @@ var _cssHandler={
     }
     if(os.length>1){
       return os.map(x=>x.o)
-    }
-  },
-  _hasList:function(c){
-    if(this._isList(c)){
-      return 1
-    }
-    for(var i=0;i<c.children.length;i++){
-      if(this._hasList(c.children[i])){
-        return 1;
-      }
     }
   },
   //e: element, oe: org element
@@ -5748,12 +5582,6 @@ var _cssHandler={
     }
     return 1;
   },
-  _hasCheckboxOrRadio:function(e){
-    if(e.nodeType==1){
-      var c=_cssHandler._keyMap.checkbox._css+","+_cssHandler._keyMap.radio._css;
-      return $(e).is(c) || $(e).find(c).length;
-    }
-  },
   _hasInput:function(e){
     if(e.nodeType==1){
       return _cssHandler._findAllInputs(e).length;
@@ -5875,26 +5703,6 @@ var _cssHandler={
     
     return m;
   },
-  _getPanel:function(oe,e){
-    if(oe.tagName=="BODY"){
-      return oe;
-    }
-    if(!e){
-      return this._getPanel(oe,oe.parentElement);
-    }
-    if(e.tagName!="BODY"){
-      var p=e.parentElement;
-      var _pBGColor=$(p).css("background-color");
-      var _eBColor=$(p).css("border-color");
-      var _eBWidth=parseInt($(e).css("border-width"))||0;
-      var _eBGColor=$(e).css("background-color");
-      if((_pBGColor!=_eBGColor && _eBGColor!="rgba(0, 0, 0, 0)") || (_eBWidth && _eBColor!=_eBGColor && _eBColor!="rgba(0, 0, 0, 0)")){
-        return e;
-      }
-      return this._getPanel(oe,p);
-    }
-    return e
-  },
   _findLabelText:function(nd,_first,oe){
     var t="";
     if(!_first){
@@ -5924,32 +5732,6 @@ var _cssHandler={
     }
     return t;
   },
-  _getCssByType:function(t){
-    var d=this._typeCss
-    if(!d){
-      d=this._typeCss={}
-    }
-    if(!d[t]){
-      switch(t){
-        case "checkbox":
-          d[t]="INPUT[type=checkbox]";
-          break
-        case "radio":
-          d[t]="INPUT[type=radio]";
-          break
-        case "select":
-          d[t]="SELECT";
-          break
-        case "input":
-          d[t]="";
-      }
-
-      if(t=="input"){
-        d[t]=d[t].substring(1)
-      }
-    }
-    return d[t]
-  },
   _filterText:function(v){
     var vs=(v||"").trim().split(/[\*\n\[\]\,\(\)\}\{\:\|]/),_max="";
     for(var i=0;i<vs.length;i++){
@@ -5962,31 +5744,6 @@ var _cssHandler={
       }
     }
     return _max;
-  },
-  _findSimilar:function(n,c){
-    var v={n:_cssHandler._nameMap[n],c:""},vs=[];
-    if(v.n && v.n._css.includes(c)){
-      v.c=c;
-      v.n=n;
-      return [v];
-    }else if(v.n){
-      v.n=n;
-      vs=[v];
-      v={}
-    }
-    for(var k in _cssHandler._nameMap){
-      var o=_cssHandler._nameMap[k]._css;
-      if(o.includes(c)){
-        v.n=k;
-        v.c=c;
-        vs.push(v)
-        v={}
-      }
-    }
-    if(vs.length==1 && !vs[0].n){
-      vs=[]
-    }
-    return vs;
   },
   _isButton:function(e){
     var es=$(e.ownerDocument).find(_cssHandler._keyMap.button._css);
@@ -6094,17 +5851,17 @@ var _cssHandler={
         return;
       }
       var hs=$(t).find("tr:eq(0) th");
-      r=this._getEnableTDs(r)
+      r=th_cssHandleris._getEnableTDs(r)
       if(hs.length<2){
-        hs=this._findTableOuterHeader(t,r);
+        hs=_cssHandler._findTableOuterHeader(t,r);
         if(!hs){
-          hs=this._getEnableTDs($(t).find("tr:eq(0)")[0]);
+          hs=_cssHandler._getEnableTDs($(t).find("tr:eq(0)")[0]);
         }
       }else{
-        hs=this._getEnableTDs(hs[0].parentElement);
+        hs=_cssHandler._getEnableTDs(hs[0].parentElement);
       }
       if(hs.length!=r.length){
-        if(this._getColCountWidth(hs)!=this._getColCountWidth(r)){
+        if(_cssHandler._getColCountWidth(hs)!=_cssHandler._getColCountWidth(r)){
           return
         }
       }
@@ -6178,122 +5935,6 @@ var _cssHandler={
     var b=["INPUT","TEXTAREA","SELECT"].includes(e.tagName) && !["image","button","reset","submit"].includes(e.type)
     return b
   },
-  _getInputMsg:function(o,_css){
-    let p=o.parentElement,_final=0
-    while(p){
-      let os=_cssHandler._findAllInputs(p)
-      if(_final&&os.length>_final-1){
-        return
-      }
-      
-      _final=os.includes(o)?os.length-1:os.length
-      
-      let _success=_css.success?$(p).find(_css.success):0,
-          _error=$(p).find(_css.error),
-          _msg={};
-      if(_success&&_success[0]){
-        _msg._success=_success.toArray()
-      }
-      
-      if(_error[0]){
-        _error=_error.toArray();
-        for(var i=0;i<_error.length;i++){
-          var eo=_error[i]
-          if(_Util._isHidden(eo)){
-            _error.splice(i--,1)
-          }
-        }
-        if(_error[0]){
-          _msg._error=_error
-        }
-      }
-      
-      if(_msg._error){
-        let _txt=""
-        if(!_final){
-          for(var i=0;i<_msg._error.length;i++){
-            _txt=_getTxt(_msg._error[i],_txt)
-          }
-        }else{
-          for(var i=0;i<_msg._error.length;i++){
-            let oo=_findCloserInput(_msg._error[i],os)
-            if(oo.includes(o)){
-              _txt=_getTxt(_msg._error[i],_txt)
-            }
-          }
-        }
-        if(!_txt){
-          _txt={}
-        }
-        return _txt
-      }else if(_msg._success){
-        return
-      }
-      p=p.parentElement
-    }
-    function _getTxt(o,tt){
-      var t=$(o).text().trim()||_cssHandler._getElementTitle(o)
-      if(t.length>tt.length){
-        tt=t
-      }
-      return tt
-    }
-    function _findCloserInput(m,os){
-      var mr=m.getBoundingClientRect();
-      let oo=[]
-      for(var n=0;n<os.length;n++){
-        let r=os[n].getBoundingClientRect();
-        if(mr.bottom>r.top){
-          for(var q=0;q<oo.length;q++){
-            let rr=oo[q].getBoundingClientRect()
-            if(r.top>=rr.bottom){
-              oo.splice(q--,1)
-            }else if(rr.top>=r.bottom){
-              r=0
-              break
-            }
-          }
-          if(r){
-            oo.push(os[n])
-          }
-        }
-      }
-      return oo
-    }
-  },
-  _getActionMsgCss:function(a,_checkType){
-    let _css={
-      success:a.lineSuccess,
-      error:a.lineError||"[class*=error],[class*=fail],[class*=warn]"
-    }
-    if(_checkType&2){
-      _css={
-        success:a.finalSuccess,
-        error:a.finalError||_css.error
-      }
-    }
-    return _css;
-  },
-  _isCloserElement:function(o,c){
-    var os=$(o.ownerDocument.body).find("*")
-    var oi=os.index(o),
-        ci=os.index(c),
-        or=o.getBoundingClientRect(),
-        cr=c.getBoundingClientRect();
-    if(ci<oi){
-      return _cssHandler._isCloserElement(c,o)
-    }
-    for(var i=oi+1;i<ci;i++){
-      var oo=os[i];
-      if(!$(oo).find(c).length){
-        oor=oo.getBoundingClientRect()
-        if(or.bottom<=oor.top&&oor.bottom<=cr.top&&($util.getElementText(oo)||_Util._isInputObj(oo))){
-          return
-        }
-      }
-    }
-    return 1
-  },
   _isElementReady:function(ts,_fun){
     if(!window.extensionContent){
       bzComm.postToAppExtension({
@@ -6334,102 +5975,6 @@ var _cssHandler={
     })
     _fun(t) 
   },
-  _findInputByLabel:function(_panel,_name){
-    if(_panel.constructor==Array){
-      _panel=$util.findDom(_panel)
-    }
-    if(!_panel||_Util._isHidden(_panel)){
-      return
-    }
-    _name=_name.replace(/_/g," ")
-    
-    let os,o,w,e,
-        cs=[],
-        ns=_name.split("=>")
-        ns[1]=ns[1]||ns[0]
-    if(cs.find((c,j)=>{
-      let cc=[]
-      c.toggle.forEach(ci=>{
-        cc.push(ci.replace("$header",ns[0]).replace("$label",ns[1]))
-      })
-      e=$(_panel).find(cc.join(" "))[0]
-      if(e){
-        cc.unshift("BZ.TW.document")
-        cc.push(0)
-        e._bzPath=cc
-        return e
-      }
-    })){
-      return e
-    }
-    
-    var ls=_IDE._data._curVersion.setting.content.contentAttribute.split("|")
-    for(var i=0;i<ls.length;i++){
-      var l=ls[i]
-      os=$(_panel).find(":attr("+l+"="+_name+")").toArray()
-      if(os.length){
-        break
-      }
-    }
-    
-    if(!os.length){
-      os=_Util._getTargetElement($(_panel).find(":endContains("+_name+")"))
-    }
-    if(!os.length){
-      return
-    }
-    for(var i=0;i<os.length;i++){
-      var v=$util.getElementText(os[i])
-      if(_name==v){
-        o=os[i]
-        break
-      }else if(!w||w.length>v.length){
-        o=os[i]
-      }
-    }
-    e=o
-    while(o!=_panel.parentElement){
-      os=_cssHandler._findAllInputs(o)
-      if(!os.length){
-        if(o.tagName=="LABEL"){
-          if(o.htmlFor){
-            os=$(os).find("#"+o.htmlFor)
-            if(os.length){
-              return os[0]
-            }
-          }
-        }
-        o=o.parentElement
-      }else{
-        if(os.length==1){
-          return os[0]
-        }else{
-          var oo=$(o).find("*")
-          var ei=oo.index(e),_readonly
-          for(var i=0;i<os.length;i++){
-            if(os[i].readOnly){
-              _readonly=os[i]
-            }else if(oo.index(os[i])>ei){
-              if(!i){
-                return os[i]
-              }else if(os[i-1].type=="checkbox"){
-                return os[i-1]
-              }
-              return os[i]
-            }else if(i==os.length-1){
-              return os[i]
-            }
-          }
-          if(_readonly){
-            return _readonly
-          }
-        }
-        
-        break
-      }
-    }
-    
-  },
   _findAllInputs:function(e,_noReadonly,_includeHidden){
     let _body=document.body
     
@@ -6456,34 +6001,6 @@ var _cssHandler={
     }
     return os
   },
-  //a: element, e: target css
-  _findCloseElement:function(a,e){
-    e=e.join(" ")
-    while(!$(a).find(e).length&&a.tagName!="BODY"){
-      a=a.parentElement
-    }
-    return $(a).find(e)[0]
-  },
-  _getOutestCover:function(e){
-    let r=e.getBoundingClientRect();
-    while(e.tagName!="BODY"){
-      let pr=e.parentElement.getBoundingClientRect()
-      if(pr.width<=r.width+50&&pr.width>=r.width&&pr.height<=r.height+20&&pr.height>=r.height&&pr.left<r.left+10&&pr.left>=r.left-50){
-        e=e.parentElement
-      }else{
-        return e
-      }
-    }
-  },
-  //a:arround element
-  //e:target element
-  _findCloserElement:function(a,e,_fun){
-    var x=$(a).find(e)
-    if(x.length){
-      return _fun(x[0])
-    }
-    _domActionTask._mouseoverItems(a,e,_fun)
-  },
   _getParentSelect:function(e){
     var _css=_cssHandler._keyMap.dropdownList._css.split(",");
     for(var i=0;i<_css.length;i++){
@@ -6498,14 +6015,6 @@ var _cssHandler={
         }
       }
     }
-  },
-  _isSelectOption:function(p,e){
-    p=p.getBoundingClientRect();
-    e=e.getBoundingClientRect();
-    return p.top>=e.bottom || p.bottom<=e.top
-  },
-  _isDropdownlist:function(e){
-    return e.tagName=="SELECT" || this._isLookingForElement(_cssHandler._keyMap.dropdownList._css,e);
   },
   _isCheckboxOrRadio:function(e){
     if(e.tagName=="INPUT" && ["checkbox","radio"].includes(e.type)){
@@ -6682,15 +6191,6 @@ var _cssHandler={
     for(var i=es.length-1;i>=0;i--){
       if((!t||es[i].data.type==t)&&$(e).is(es[i].css)){
         return es[i]
-      }
-    }
-  },
-  _getDefinitionAttrInElement:function(e,t,a){
-    var es=_IDE._data._curVersion.setting.objectLib.element
-    for(var i=es.length-1;i>=0;i--){
-      var o=es[i].data;
-      if(o.type==t&&$(e).is(es[i].css)){
-        return $(e).find(o[a].join(","))
       }
     }
   },

@@ -1,4 +1,57 @@
-//bz-ignore
+
+!Array.prototype._last&&Object.defineProperty(Array.prototype, "_last", {
+                    enumerable: false,
+                    value:function(){
+                      return this[this.length-1]
+                    }
+                  });!Array.prototype._after&&Object.defineProperty(Array.prototype, "_after", {
+                    enumerable: false,
+                    value:function(a){
+                      return this[this.indexOf(a)+1]
+                    }
+                  });!Array.prototype._before&&Object.defineProperty(Array.prototype, "_before", {
+                    enumerable: false,
+                    value:function(a){
+                      return this[this.indexOf(a)-1]
+                    }
+                  });!Array.prototype._insertToSet&&Object.defineProperty(Array.prototype, "_insertToSet", {
+                    enumerable: false,
+                    value:function(a){
+                      if(!this.includes(a)){
+                        this.push(a);
+                        return a
+                      }
+                   }
+                 });!Array.prototype._spliceByData&&Object.defineProperty(Array.prototype, "_spliceByData", {
+                    enumerable: false,
+                    value:function(v,k,_all){
+                      if(v&&v.constructor==Array){
+                        v.forEach(x=>{
+                          this._spliceByData(x,k,_all)
+                        })
+                      }else if(v&&v.constructor==Function){
+                        for(var i=0;i<this.length;i++){
+                          if(v(this[i],i)){
+                            this.splice(i--,1)
+                            if(!_all){
+                              break;
+                            }
+                          }
+                        }
+                      }else{
+                        _all=_all?"forEach":"find"
+                        let vs=[...this],
+                        n=0;
+                        vs[_all]((x,i)=>{
+                            if(x==v||(k&&x[k]==v[k])||(k&&x[k]==v)){
+                                this.splice(i+n--,1)
+                                return 1
+                            }
+                        })
+                      }
+                      return this;
+                    }
+                  });//bz-ignore
 window._Util={
   _attrRegex:/\[(.+)\=('|)(\$label|\$header)('|)\]/,
   _bzJQFun:/\:(near|input|data|panel|Contains|textElement|afterEqual|after|before|endContains|contains|endEqual|equal|RowCol|rowcol|text)\((\$label|\$header)\)/,
