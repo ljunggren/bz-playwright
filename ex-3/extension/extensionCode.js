@@ -7664,7 +7664,7 @@ window.BZ={
       bzComm.postToAppExtension({
         fun:"resize",
         scope:"_innerWin",
-        ps:[1]
+        ps:[o]
       })
     },
     addValidation:function(){
@@ -23535,8 +23535,7 @@ var _infoManagement={
     _extra=_extra?"<div class='extra'>"+_extra+"</div>":"";
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
 
-    var _html =`<link rel="stylesheet" type="text/css" href="${_host}/ide/css/bzInsert.css">`
-              +`<link rel="stylesheet" type="text/css" href="${_host}/ide/css/insert.icons.css">`
+    var _html =`<link rel="stylesheet" type="text/css" href="chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css">`
               +"<div class='bz-importantInfo-bk' onmouseover='this.remove()'>"
               +"<pre class='bz-importantInfo "+_type+"' style='"+wl+"'>"
               +"<a class='bz-close-white bz-small-icon bz-small-btn' style='border:0;float:right;margin:-15px -15px;'></a>"
@@ -42460,7 +42459,7 @@ var _tipHandler={
 
     a.description=_tipHandler._resetDesc(a.description)
 
-    let _nextBtn=`<div style='padding: 5px;text-align: center;'><button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]});$('.bz-tip-iframe').remove();" style="color:#000;font-size:10px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &gt; </button></div>`;
+    let _nextBtn=`<div style='padding: 5px;text-align: center;'><button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]});$('.bz-tip-iframe').remove();" style="color:#000;font-size:10px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> ▶ </button></div>`;
 
     let _bIdx2=_endIdx&&_idx<_endIdx&&`
           <button onclick="bzComm.postToIDE({fun:'_doAfterComment',scope:'_tipHandler',ps:[4]})" style="color:#000;font-size:10px;float:left;margin-left:20px;background-color: #CCC;border: 1px solid #FFF;padding:1px 5px;"> &gt; </button>
@@ -42481,11 +42480,16 @@ var _tipHandler={
     let os=$(".bz-tip-iframe").remove();
     os=$("<div class='bz-tip-iframe'></div>").appendTo(document.body.parentNode);
     _tipHandler._shadowRoot = os[0].attachShadow({ mode: 'open' });
-    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${SERVER_HOST}/ide/css/bzInsert.css'/>`
-    +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/insert.icons.css'/>`
+    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css'/>`
     +`<div class="bz-tip-2 BZIgnore" style="top: ${r.top+r.height/2+30}px; left: ${Math.max(r.width/2+r.left-150,0)}px;">`
     +`<div class="bz-tip BZIgnore" style="">`
-    +`<button class="bz-close BZIgnore" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 10px;top: 10px;height: 10px;width: 10px;border: 0;background-size: 10px;"></button>`
+    +`<button class="bz-close BZIgnore bz-icon" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 5px;top: 4px;padding:0;">`
+    +`  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">`
+    +`    <g id="Menu / Close_MD">`
+    +`      <path id="Vector" d="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    +`    </g>`
+    +`  </svg>`    
+    +`</button>`
     +`<textarea style="resize: none;overflow: auto;" class="helptip BZIgnore" disabled="">${a.description}</textarea>`
     +`${_bIdx1||_bResult||_nextBtn}`
     +`</div>`
@@ -42545,27 +42549,82 @@ var _innerWin={
   },
   _getHTML:function(){
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
-    return `<link rel="stylesheet" type="text/css" href="${_host}/ide/css/bzInsert.css">`
-    +`<link rel="stylesheet" type="text/css" href="${_host}/ide/css/insert.icons.css">`
+    return `<link rel="stylesheet" type="text/css" href="chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css">`
     +`<div id="BZ_Win" class="bz-tb-container BZIgnore"`
     +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:100px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
     +`  <div class="bz-main-body">`
     +`    <div class="bz-tb-header">`
-    +`      <div class="bz-btn-tb-icon bz-boozang-logo-small"`
-    +`        style="width:19px;height:19px;cursor:pointer;float:left;margin:4px;padding:0;border:0;background-position:25px 25px;background-size: 34px !important;margin-bottom:0;"`
-    +`        onclick="BZ.focusMaster()"></div>`
+    +`      <svg onclick="BZ.focusMaster()" width="15" height="15" style='padding:5px;' class='bz-boozang-logo-small bz-icon' viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">`
+    +`        <g clip-path="url(#clip0_2416_86)">`
+    +`          <path d="M783.046 626.401C718.538 626.401 667.277 571.416 667.277 506.826C667.277 442.367 718.538 387.327 783.046 387.327C847.558 387.327 903.497 442.367 903.497 506.826C903.497 571.416 847.558 626.401 783.046 626.401ZM902.571 272.593V309.541C902.571 309.541 859.854 265.9 783.046 265.9C649.267 265.9 543.971 373.071 543.971 506.827C543.971 640.631 649.267 748.786 783.046 748.786C859.854 748.786 902.571 705.172 902.571 705.172V752.567C902.571 835.032 831.149 894.018 758.343 875.517L711.898 984.892C734.754 991.859 758.396 995.423 782.095 995.423C912.065 995.423 1024 903.435 1024 752.567V272.594H902.571V272.593ZM240.953 608.092C176.416 608.092 120.477 553.107 120.477 488.517C120.477 424.005 176.416 369.018 240.953 369.018C305.463 369.018 356.695 424.005 356.695 488.517C356.695 553.107 305.463 608.092 240.953 608.092ZM240.953 246.639C164.064 246.639 121.375 290.253 121.375 290.253V242.857C121.375 159.656 194.129 100.288 267.59 120.368L314.034 11.237C290.526 3.836 266.257 0 241.879 0C111.935 0 0.00195312 91.99 0.00195312 242.857V722.883H121.376V685.88C121.376 685.88 164.065 729.523 240.954 729.523C374.708 729.523 480.029 622.269 480.029 488.518C480.029 354.763 374.708 246.639 240.954 246.639H240.953Z" fill="white"/>`
+    +`        </g>`
+    +`        <defs>`
+    +`          <clipPath id="clip0_2416_86">`
+    +`            <rect width="1024" height="1024" fill="white"/>`
+    +`          </clipPath>`
+    +`        </defs>`
+    +`      </svg>`
     +`      <div style="flex:1;text-align: center;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 11px;">`
     +`        <span class="info" style="display: none;">Lost focus</span>`
     +`      </div>`
-    +`      <div class="bz-btn-icon-tn bz-header-right bz-minimize-white" style="height:24px;" onclick="BZ.toolbar.resize(this)"></div>`
+    +`      <svg width="15" height="15" style='padding:5px;' class='bz-minus bz-icon' onclick="BZ.toolbar.resize(1)" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">`
+    +`         <path d="M0 416V608C0 625.672 14.328 640 32 640H992C1009.67 640 1024 625.672 1024 608V416C1024 398.328 1009.67 384 992 384H32C14.328 384 0 398.328 0 416Z" fill="white"/>`
+    +`      </svg>`
+    +`      <svg width="15" height="15" style='padding:5px;' class='bz-plus bz-icon' onclick="BZ.toolbar.resize(2)" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">`
+    +`        <g clip-path="url(#clip0_2416_96)">`
+    +`          <path d="M992 384H640V32C640 14.328 625.672 0 608 0H416C398.328 0 384 14.328 384 32V384H32C14.328 384 0 398.328 0 416V608C0 625.672 14.328 640 32 640H384V992C384 1009.67 398.328 1024 416 1024H608C625.672 1024 640 1009.67 640 992V640H992C1009.67 640 1024 625.672 1024 608V416C1024 398.328 1009.67 384 992 384Z" fill="white"/>`
+    +`        </g>`
+    +`        <defs>`
+    +`          <clipPath id="clip0_2416_96">`
+    +`            <rect width="1024" height="1024" fill="white"/>`
+    +`          </clipPath>`
+    +`        </defs>`
+    +`      </svg>`
     +`    </div>`
     +`    <div>`
     +`      <div class="bz-tb-body" style='padding:5px 5px 0 5px;'>`
     +`        <div class="bz-tb-buttons">`
-    +`          <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)"></button>`
-    +`          <button class="bz-btn-tb-icon bz-2 bz-play" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case"></button>`
-    +`          <button class="bz-btn-tb-icon bz-3 bz-validate" onclick='BZ.toolbar.exeCmd(this)' title="Validation"></button>`
-    +`          <button class="bz-btn-tb-icon bz-4 bz-comment" onclick='BZ.toolbar.exeCmd(this)' title="Comment"></button>`
+    +`          <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)">`
+    +`            <svg width="20" height="20" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">`
+    +`              <defs>`
+    +`                <linearGradient id="linear-gradient" x1="256" y1="593.47" x2="256" y2="-81.47" gradientUnits="userSpaceOnUse">`
+    +`                  <stop offset="0" stop-color="#231f20"/><stop offset="1" stop-color="#58595b"/>`
+    +`                </linearGradient>`
+    +`              </defs>`
+    +`              <title>record</title>`
+    +`              <path fill="#f66" d="M512,256c0,141.39-114.6,256-256,256S0,397.38,0,256,114.62,0,256,0,512,114.6,512,256Z" fill-rule="evenodd"/>`
+    +`            </svg>`
+    +`          </button>`
+    +`          <button class="bz-btn-tb-icon bz-1 bz-stop" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)">`
+    +`            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 1024 1024">`
+    +`              <g id="icomoon-ignore"></g>`
+    +`              <path d="M128 128h768v768h-768z" fill="#A66"></path>`
+    +`            </svg>`
+    +`          </button>`
+    +`          <button class="bz-btn-tb-icon bz-2 bz-play" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case">`
+    +`            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 1024 1024">`
+    +`              <g id="icomoon-ignore"></g>`
+    +`              <path d="M192 128l640 384-640 384z" fill="#F66"></path>`
+    +`            </svg>`
+    +`          </button>`
+    +`          <button class="bz-btn-tb-icon bz-2 bz-pause" onclick='BZ.toolbar.exeCmd(this)' title="Play Test Case">`
+    +`            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 1024 1024">`
+    +`              <g id="icomoon-ignore"></g>`
+    +`              <path d="M409.6 102.4h-204.8v819.2h204.8v-819.2zM870.4 102.4h-204.8v819.2h204.8v-819.2z" fill="#A66"></path>`
+    +`            </svg>`
+    +`          </button>`
+    +`          <button class="bz-btn-tb-icon bz-3 bz-validate" onclick='BZ.toolbar.exeCmd(this)' title="Validation">`
+    +`            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="25" height="26" viewBox="0 0 1069 1024">`
+    +`              <g id="icomoon-ignore"></g>`
+    +`              <path fill="#666" d="M982.283 13.579c-7.302 1.692-11.219 4.096-17.274 10.596-2.938 3.117-130.716 167.357-284.004 364.945-153.244 197.587-278.973 359.602-279.329 360.003-0.356 0.445-46.481-44.967-102.534-100.886-109.88-109.568-109.479-109.212-123.949-106.496-9.394 1.736-21.727 11.264-27.915 21.504-6.5 10.73-7.034 17.987-2.182 28.004 2.271 4.63 42.652 46.125 122.435 125.774 110.815 110.592 119.719 119.051 127.866 121.678 12.6 4.051 21.593 1.514 31.833-8.993 9.483-9.706 589.067-756.113 594.588-765.685 4.586-7.969 5.254-20.703 1.514-27.96-7.257-14.024-28.182-25.466-41.049-22.483zM175.371 150.35c-66.649 6.5-122.524 51.289-144.428 115.667-8.726 25.6-8.682 24.042-8.682 309.96 0 287.744-0.089 284.761 9.082 310.895 14.915 42.696 43.097 75.999 81.252 95.944 8.993 4.675 23.24 10.685 31.699 13.357l15.36 4.764 284.138 0.49c314.457 0.534 295.001 1.158 324.875-10.552 20.979-8.361 40.092-20.801 56.231-36.597 16.144-15.796 28.988-34.633 37.799-55.43 13.267-31.343 12.867-23.73 12.867-228.797 0.045-134.634-0.49-184.142-1.959-189.084-8.281-27.559-58.368-26.624-66.115 1.247-1.291 4.675-1.87 60.149-1.87 182.406 0 119.318-0.579 179.245-1.87 186.858-2.315 13.891-12.733 35.885-22.083 46.659-11.469 12.475-25.627 22.172-41.405 28.36l-12.288 4.497-274.387 0.445c-302.926 0.49-285.83 1.069-307.423-10.24-14.202-7.435-34.861-28.138-41.761-41.806-11.13-22.038-10.463-3.072-10.463-303.416 0-239.794 0.312-274.387 2.627-283.203 7.613-29.251 31.744-55.608 61.574-67.183l11.754-4.586 275.634-0.846c257.113-0.801 275.99-1.069 281.021-3.784 11.487-6.322 16.963-18.966 15.405-35.929-1.247-14.024-5.743-21.638-15.805-26.847l-8.326-4.274-263.747-0.223c-145.052-0.089-270.47 0.445-278.706 1.247z"></path>`
+    +`            </svg>`
+    +`          </button>`
+    +`          <button class="bz-btn-tb-icon bz-4 bz-comment" onclick='BZ.toolbar.exeCmd(this)' title="Comment">`
+    +`            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="26" height="25" viewBox="0 0 1122 1024">`
+    +`              <g id="icomoon-ignore"></g>`
+    +`              <path fill="#666" d="M301.14 728.683l-63.424 131.213 194.801-85.923 18.931 3.316c32.791 5.739 66.013 8.684 99.303 8.802 263.5-0.234 450.526-166.844 450.526-343.186 0-176.353-187.065-342.942-450.658-342.942-263.028 0-449.864 165.927-450.655 341.821 2.044 51.858 16.877 102.41 43.187 147.159 26.503 45.076 63.817 82.842 108.572 109.88l49.417 29.862zM36.571 442.904c0-224.402 230.156-406.333 514.048-406.333s514.048 181.882 514.048 406.333c0 224.451-230.156 406.382-513.999 406.577-36.927-0.122-73.779-3.384-110.153-9.752l-334.848 147.7 113.274-234.35c-53.767-32.485-98.595-77.858-130.435-132.008-31.84-54.155-49.689-115.385-51.935-178.166zM263.12 371.762c-21.83 0-42.766 8.672-58.202 24.108s-24.108 36.372-24.108 58.202c0 16.279 4.827 32.193 13.872 45.728 9.044 13.536 21.899 24.084 36.94 30.315s31.59 7.86 47.557 4.686c15.967-3.179 30.633-11.015 42.144-22.528s19.35-26.177 22.527-42.143c3.176-15.967 1.546-32.516-4.684-47.557s-16.78-27.895-30.316-36.94c-13.536-9.044-29.45-13.872-45.729-13.872zM542.33 371.762c16.282 0 32.193 4.827 45.729 13.872s24.084 21.899 30.315 36.94c6.232 15.040 7.86 31.59 4.686 47.557-3.179 15.967-11.015 30.631-22.528 42.143s-26.175 19.349-42.145 22.528c-15.965 3.174-32.514 1.546-47.557-4.686-15.038-6.232-27.893-16.779-36.937-30.315s-13.872-29.449-13.872-45.728c0-21.83 8.672-42.766 24.108-58.202s36.371-24.108 58.201-24.108zM821.541 536.381c-45.461 0-82.31-36.849-82.31-82.309s36.849-82.31 82.31-82.31c45.461 0 82.31 36.851 82.31 82.31s-36.849 82.309-82.31 82.309z"></path>`
+    +`            </svg>`
+    +`          </button>`
     +`        </div>`
     +`      </div>`
     +`      <div class="bz-tb-body" style='border-top:1px solid #999;'>`
@@ -42646,64 +42705,65 @@ var _innerWin={
 
   },
   _setToolbarStatus:function(){
-    let bs=[1,2,3,4].map(x=>$(_innerWin._shadowRoot).find(".bz-"+x))
+    debugger
+    let bs=["record","stop","play","pause","validate","comment"].map(x=>$(_innerWin._shadowRoot).find(".bz-"+x))
 
     if(BZ._data._checkout){
       bs[0].attr({disabled:false});
-      bs[2].attr({disabled:false});
-      bs[3].attr({disabled:false});
+      bs[4].attr({disabled:false});
+      bs[5].attr({disabled:false});
     }
+    bs[2].attr({disabled:false});
 
     switch(BZ._data._status){
       case "play":
-        bs[0].addClass("bz-stop").removeClass("bz-record");
-        bs[1].addClass("bz-pause").removeClass("bz-play");
-        bs[2].attr({disabled:true});
-        bs[3].attr({disabled:true});
+        bs[0].addClass("bz-hide")
+        bs[1].removeClass("bz-hide")
+        bs[2].addClass("bz-hide")
+        bs[3].removeClass("bz-hide")
+        bs[4].attr({disabled:true});
+        bs[5].attr({disabled:true});
         break;
       case "pause":
-        bs[0].addClass("bz-stop").removeClass("bz-record");
-        bs[1].addClass("bz-play").removeClass("bz-pause");
-        bs[2].attr({disabled:true});
-        bs[3].attr({disabled:true});
+        bs[0].addClass("bz-hide")
+        bs[1].removeClass("bz-hide")
+        bs[2].removeClass("bz-hide")
+        bs[3].addClass("bz-hide")
         break;
       case "record":
-        bs[0].addClass("bz-stop").removeClass("bz-record");
-        bs[1].attr({disabled:true});
-        bs[2].attr({disabled:false});
-        bs[3].attr({disabled:false});
+        bs[0].addClass("bz-hide")
+        bs[1].removeClass("bz-hide")
+        bs[2].removeClass("bz-hide")
+        bs[2].attr({disabled:true});
+        bs[3].addClass("bz-hide")
         break;
       default:
-        bs[0].addClass("bz-record").removeClass("bz-stop");
-        bs[1].addClass("bz-play").removeClass("bz-pause");
-        bs[0].attr({disabled:false});
-        bs[1].attr({disabled:false});
-        bs[2].attr({disabled:false});
-        bs[3].attr({disabled:false});
+        bs[0].removeClass("bz-hide")
+        bs[1].addClass("bz-hide")
+        bs[2].removeClass("bz-hide")
+        bs[3].addClass("bz-hide")
     }
     if(!BZ._data._checkout){
       bs[0].attr({disabled:true});
-      bs[2].attr({disabled:true});
-      bs[3].attr({disabled:true});
-    }
-    if(BZ._data._status=="play"||BZ._data._status=="pause"){
-      bs[0].attr({disabled:false});
+      bs[4].attr({disabled:true});
+      bs[5].attr({disabled:true});
     }
   },
   resize:function(o){
     let u=BZ._userHabit.toolbarPos
-    let oo=$(_innerWin._shadowRoot).find(".bz-header-right")
     if(o){
-      u.min=oo.hasClass("bz-minimize-white")
+      u.min=o==1
       BZ._storeUserHabit();
     }
 
     if(u.min){
-      oo.addClass("bz-plus-white").removeClass("bz-minimize-white");
+      $(_innerWin._shadowRoot).find(".bz-tb-header .bz-minus").addClass("bz-hide")
+      $(_innerWin._shadowRoot).find(".bz-tb-header .bz-plus").removeClass("bz-hide")
       $(_innerWin._shadowRoot).find(".bz-tb-body").hide()
     }else{
-      oo.addClass("bz-minimize-white").removeClass("bz-plus-white");
       $(_innerWin._shadowRoot).find(".bz-tb-body").show()
+      $(_innerWin._shadowRoot).find(".bz-tb-header .bz-plus").addClass("bz-hide")
+      $(_innerWin._shadowRoot).find(".bz-tb-header .bz-minus").removeClass("bz-hide")
     }
   }
 };

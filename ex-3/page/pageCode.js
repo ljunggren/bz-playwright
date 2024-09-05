@@ -7684,7 +7684,7 @@ window.BZ={
       bzComm.postToAppExtension({
         fun:"resize",
         scope:"_innerWin",
-        ps:[1]
+        ps:[o]
       })
     },
     addValidation:function(){
