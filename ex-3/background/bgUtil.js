@@ -130,6 +130,9 @@ globalThis.bgUtil={
         fun(img)
       })
     }
-  }
+  },
+  focusTab:function(t){
+    chrome.tabs.update(t.id,{active:true})
+  },
 }
 

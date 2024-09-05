@@ -8113,6 +8113,12 @@ if(!window.bzComm||window.name=="bz-master"){
         return v
       }
     },
+    _focusTW:function(){
+      bzComm.postToBackground({fun:"focusTab",scope:"bgUtil",ps:[bzComm.getAppTabId()]})
+    },  
+    _focusIDE:function(){
+      bzComm.postToBackground({fun:"focusTab",scope:"bgUtil",ps:[bzComm.getIdeTabId()]})
+    },  
     _getNotReadyIFrame:function(){
       let v= bzComm._findIFrame((x)=>{return !x.bzCommReady})
       if(v){
