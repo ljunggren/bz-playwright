@@ -5037,13 +5037,21 @@ window._Util={
     v=_compressJSON._convertToEntities(v);
     return JSON.parse(v);
   },
-  _unConvertObj:function(v){
-    if(!v){
-      return v;
+  _unConvertObj:function(o){
+    if(!o){
+      return o;
     }
-    v=JSON.stringify(v);
-    v=_compressJSON._unConvert(v);
-    return JSON.parse(v);
+    var t=JSON.stringify(o);
+    var rs=t.match(/&#[0-9]+;/g);
+    if (rs) {
+      for(var i=0;i<rs.length;i++){
+        t=t.replace(rs[i],String.fromCharCode(parseInt(rs[i].substring(2))));
+      }
+      return JSON.parse(t);
+
+    }else{
+      return o;
+    }
   },
   _chkExistDataAttr:function(d,as){
     as.find(a=>{

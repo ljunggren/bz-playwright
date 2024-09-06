@@ -12895,13 +12895,21 @@ window._Util={
     v=_compressJSON._convertToEntities(v);
     return JSON.parse(v);
   },
-  _unConvertObj:function(v){
-    if(!v){
-      return v;
+  _unConvertObj:function(o){
+    if(!o){
+      return o;
     }
-    v=JSON.stringify(v);
-    v=_compressJSON._unConvert(v);
-    return JSON.parse(v);
+    var t=JSON.stringify(o);
+    var rs=t.match(/&#[0-9]+;/g);
+    if (rs) {
+      for(var i=0;i<rs.length;i++){
+        t=t.replace(rs[i],String.fromCharCode(parseInt(rs[i].substring(2))));
+      }
+      return JSON.parse(t);
+
+    }else{
+      return o;
+    }
   },
   _chkExistDataAttr:function(d,as){
     as.find(a=>{
@@ -16401,7 +16409,7 @@ var $util={
         _domActionTask._lastAction._url=url
       }
     }
-    v=_compressJSON._unConvert(v)
+    v=_Util._unConvertObj(v)
     console.log("BZ-LOG: BZ-Start-Validating:"
                 +"url: "+url
                 +"-- Data --"
@@ -33372,8 +33380,8 @@ var _cssHandler={
         }
         var v=e.value.toLowerCase();
         var vs=v.split("/");
-        var cs=this._parseGroup(e.css);
-        this._keyMap[e.key]={_name:vs,_css:e.css,_type:k};
+        var cs=_cssHandler._parseGroup(e.css);
+        _cssHandler._keyMap[e.key]={_name:vs,_css:e.css,_type:k};
         
         vs.forEach(function(a){
           var vm=_cssHandler._nameMap[a];
@@ -33417,7 +33425,7 @@ var _cssHandler={
       return alert(_msg);
     }
     //ignore class
-    this._ignoreClasses=_IDE._data._curVersion.setting.content.ignoreClasses.replace(/\s/g,"").replace(/,/g,"|");
+    _cssHandler._ignoreClasses=_IDE._data._curVersion.setting.content.ignoreClasses.replace(/\s/g,"").replace(/,/g,"|");
     return 1;
   },
 /*
@@ -33643,7 +33651,7 @@ var _cssHandler={
     var ss=[],_css=[];
 
     for(var n=0;n<p.length;n++){
-      var c=this._findDesc(p[n]);
+      var c=_cssHandler._findDesc(p[n]);
       if(!c){
         continue;
       }else if('"'==c[0]){
@@ -33740,7 +33748,7 @@ var _cssHandler={
         }
         si=v.substring(si,ei);
         if(v.match(/^:has\(/)){
-          return this._findDesc(si);
+          return _cssHandler._findDesc(si);
         }else{
           si="\""+si+"\"";
         }
@@ -33961,7 +33969,6 @@ var _cssHandler={
             }
             return w
           }else if(x.nodeType==1){
-            // if(_Util._isEmpty(_cssHandler._findAllInputs(x))){
               w=_cleanWord(x.innerText||"")
               if(w){
                 if(_Util._isHidden(x)){
@@ -34266,7 +34273,7 @@ var _cssHandler={
       if(!$.isNumeric(p[p.length-1])){
         p.push(0)
       }
-      // _cssHandler._attachRealTargetElementCss(e,p)
+
       if(_withAIAnalysis){
         p={
           W:{HH:[],WW:[]},
@@ -34278,7 +34285,6 @@ var _cssHandler={
     
   },
   _findStdTextElement:function(e,w,_panel){
-    // w=_Util._removeSign((w||e.innerText||e.value||"").trim().split("\n")[0]," ")
     let _path,p
     let _data={e:e,oe:e,_headers:[]}
     _cssHandler._findAttributes(_data)
@@ -34424,7 +34430,7 @@ var _cssHandler={
         return _definitedPath
       }
 
-      e=this._findCellElement(e);
+      e=_cssHandler._findCellElement(e);
 
       let _table=_Util._getParentElementByCss("table",e),_curScope
       if(_table){
@@ -34466,20 +34472,6 @@ var _cssHandler={
             return _path
           }
         }
-
-        // if(_cssHandler._hasAIFlag(e)){
-        //   let fe=_cssHandler._findPathByAIFlag(e)
-        //   if(fe){
-        //     if(_withAIAnalysis){
-        //       return {
-        //         W:{HH:[],WW:[]},
-        //         _elementPath:fe
-        //       }
-        //     }else{
-        //       return fe
-        //     }
-        //   }
-        // }
       }else{
         let _quickPath= _cssHandler._findInputPath(e,_curScope)
         if(_quickPath){
@@ -34495,10 +34487,7 @@ var _cssHandler={
               return 1
             }
           })
-
-          // let _attachFlag=_chkInput?0:_cssHandler._attachRealTargetElementCss(e,_quickPath)
           
-          // if(_chkInput||_chkPath(e,_quickPath,_attachFlag)){
           if(_chkInput||_chkPath(e,_quickPath)){
             if(_simple!=3){
               if(_withAIAnalysis){
@@ -34546,7 +34535,7 @@ var _cssHandler={
         var ee=d.ee;
   //      console.time("_findPath")
         while(d.e.ownerDocument){
-          this._checkDescPath(d,_simple);
+          _cssHandler._checkDescPath(d,_simple);
           if(_simple==1){
             break
           }
@@ -34606,19 +34595,11 @@ var _cssHandler={
           }
           _descAnalysis._findElementIdx(d.oe,_simple)
         }
-        
-  //      d.oe.bzTmp=this._optimizePath(d.oe.bzTmp,d.oe);
-  //      console.timeEnd("_findPath")
       }
       if(d.oe.bzTmp.constructor==String){
         d.oe.bzTmp=d.oe.bzTmp.split("\n")
       }
-      let p=_Util._clone(d.oe.bzTmp)
-      // if(_cssHandler._attachRealTargetElementCss(d.oe,p)){
-      //   if(_chkPath(d.oe,p,1)){
-      //     d.oe.bzTmp=p
-      //   }
-      // }
+
       if(_withAIAnalysis){
         if(d.oe.bzShortCut){
           return d.oe.bzShortCut
@@ -34642,15 +34623,6 @@ var _cssHandler={
       return e.bzTmp
     }
 
-    
-    // function _chkPath(e,p,_attachFlag){
-    //   let fe=$util.findDom(p)
-    //   if(_attachFlag){
-    //     return fe&&(e==fe||$(e).find(fe)[0])
-    //   }else{
-    //     return fe==e||(fe&&fe.type=="radio"&&e.type=="radio"&&fe.name==e.name)
-    //   }
-    // }
     function _chkPath(e,p){
       let fe=$util.findDom(p)
       return fe==e||(fe&&fe.type=="radio"&&e.type=="radio"&&fe.name==e.name)
@@ -34852,7 +34824,7 @@ var _cssHandler={
   },
   //Sing element path description
   _checkDescPath:function(_data,_simple){
-    this._findAttributes(_data);
+    _cssHandler._findAttributes(_data);
     var o=_data._result,e=_data.e;
 
     //Clean text when the text to short and appear in multiple elements
@@ -34958,7 +34930,7 @@ var _cssHandler={
         _root.bzTmp=_cssHandler._getDocPath(_root);
       }
       var ee=_descAnalysis._findElement(pps,_root,0,_cssHandler._isCheckboxOrRadio(_data.oe),_data.oe);
-//    console.log("_findPath --> _descAnalysis._findElement "+_data.oe.bzTmp);
+
       if(_data.oe.tagName=="BODY"){
         ee=_data.oe;
         ee.bzTmp=[_data.oe.bzTmp[0],"BODY",0]
@@ -34984,7 +34956,7 @@ var _cssHandler={
     }
   },
   _inTag:function(e,t){
-    return e && e.parentNode && e.tagName!=="BODY" && (e.parentNode.tagName==t || this._inTag(e.parentNode,t))
+    return e && e.parentNode && e.tagName!=="BODY" && (e.parentNode.tagName==t || _cssHandler._inTag(e.parentNode,t))
   },
   _getDocPath:function(_doc){
     if(_doc==BZ.TW.document){
@@ -35041,11 +35013,11 @@ var _cssHandler={
     if(oe!=e){
       fs=parseInt($(oe.ownerDocument.body).css("font-size"))
     }else{
-      fs=this._getFontSize(e,oe);
+      fs=_cssHandler._getFontSize(e,oe);
     }
     
     var g={_text:""};
-    this._findCss(e,g)
+    _cssHandler._findCss(e,g)
     if(oe==e){
       //Old button (input button)
       if(_data._stopLabel){
@@ -35060,7 +35032,7 @@ var _cssHandler={
           _setHeader(_data,fs,g)
           if(!g._text){
             if(_data.e.tagName=="TD"){
-              g._text=this._getRowColDesc(_data.e);
+              g._text=_cssHandler._getRowColDesc(_data.e);
             }
           }
           
@@ -35069,7 +35041,7 @@ var _cssHandler={
           }
         }
         if(!g._text){
-          g._text=this._findTitleAttribute(e)
+          g._text=_cssHandler._findTitleAttribute(e)
         }
       }
       if(!_data._headers.length && !_Util._isInputObj(e)){
@@ -35079,7 +35051,6 @@ var _cssHandler={
           _data._label=g._text
         }
       }
-      //_data.oeCss=_cssHandler._getElementCss(_data.oe)
 
     }else if(!_data._label && !_data._stopLabel){
       var p=_cssHandler._getParentSelect(e);
@@ -35106,7 +35077,7 @@ var _cssHandler={
     }else if(_data.e.tagName=="TR" && _data._label && _data._label.match(/^(.+)\|(.+)$/)){
     }else{
       if(_data.e.tagName=="TD"){
-        g._text=this._getRowColDesc(_data.e);
+        g._text=_cssHandler._getRowColDesc(_data.e);
 //        if(!_data._label && g._text){
       }
       if(g._text){
@@ -35134,15 +35105,6 @@ var _cssHandler={
     }else if(_noLabel && _data._label){
     }else if(_data._stopHeader){
     }else if(_data._headers.length==_headerLevel && _data.e.tagName!="BODY"){
-      /*
-      if(_data.ee.length){
-        let t=_getText(_data)
-        if(t){
-          _data._result._text=t;
-          return
-        }
-      }
-      */
       if(_data.e.parentElement){
         _data.e=_data.e.parentNode;
         return _cssHandler._findAttributes(_data)
@@ -35216,7 +35178,7 @@ var _cssHandler={
   },
   _findInnerWords:function(e,_ignoreIconWord){
     if(_ignoreIconWord){
-      if(this._isIcon(e)){
+      if(_cssHandler._isIcon(e)){
         return ""
       }
     }
@@ -35228,7 +35190,7 @@ var _cssHandler={
       e=es[i];
       if(e.nodeType==1){
         if(!_Util._isHidden(e)){
-          var ww=this._findInnerWords(e,_ignoreIconWord);
+          var ww=_cssHandler._findInnerWords(e,_ignoreIconWord);
           if(ww.trim()){
             w=ww.trim()
             break
@@ -35338,7 +35300,7 @@ var _cssHandler={
     if(_data.e==_data.oe){
       return {}
     }
-    var _isInput=_Util._isInputObj(_data.oe)
+
     let e=_data.ie||_data.oe
     let oer=e.getBoundingClientRect()
     
@@ -35405,7 +35367,7 @@ var _cssHandler={
             _labelE=e
           }
           v=_Util._removeEndSign(v);
-          var cc=this._hasInput(c);
+          var cc=_cssHandler._hasInput(c);
           if(!_bRight){
             if(cc){
               _label="";
@@ -35617,10 +35579,10 @@ var _cssHandler={
       if(n.nodeType==3){
         var tt=_Util._pickTextFromNode(nd.childNodes,i)
         i=tt.i
-        t=this._filterText(tt.t)||t;
+        t=_cssHandler._filterText(tt.t)||t;
       }else if(n.nodeType==1 && n.innerText && n.innerText.trim()){
         if(!_cssHandler._isButton(n)){
-          t=this._findLabelText(n,_first,oe)||t
+          t=_cssHandler._findLabelText(n,_first,oe)||t
         }
       }else{
         continue;
@@ -35745,7 +35707,7 @@ var _cssHandler={
     try{
       var r=e.parentElement;//tr
       var t=r.parentElement.parentElement; //table
-      var tt=this._getTableType(t);
+      var tt=_cssHandler._getTableType(t);
       if(!["dataTable","dataForm","editorTable"].includes(tt)){
         return;
       }
@@ -36051,7 +36013,7 @@ var _cssHandler={
     while(!e.className && e!=oe){
       e=e.children[0]
     }
-    e=this._getElementCss(e)
+    e=_cssHandler._getElementCss(e)
 //    e.tag=ts
     e.fontSize=f;
     return e
@@ -36139,28 +36101,6 @@ var _descAnalysis={
   _keyboardMap:{
     enter:13,tab:9,space:32,f1:112,f2:113,f3:114,f4:115,f5:116,f6:117,f7:118,f8:119,f9:120,f10:121,f11:122,f12:123,home:36,end:35,pageup:33,pagedown:34,arrowleft:37,arrowup:38,arrowright:39,arrowdown:40,capslock:20,esc:27,escape:27,insert:45,"delete":46
   },
-  _codeToDesc:function(v,_simple){
-    if(v){
-      if(_simple){
-        if(_Util._isFileData(v)){
-          v=JSON.parse(v)
-          return v[0].name+" ("+Math.ceil(v[0].size/1024)+"K)"
-        }
-        v=_JSHandler._formatInsertCodeToDisplay(v);
-      }
-      return '('+v+')';
-    }
-    return ""
-  },
-  _getDescOfElement:function(a){
-    let w=_descAnalysis._getCurLanguageElement(a.element||a.panel)
-    
-    w= _descAnalysis._getDescFromPath(w,1)
-    if(a.offset){
-      w+=" (offset: "+a.offset.X+", "+a.offset.Y+")"
-    }
-    return w
-  },
   _getCurLanguageElement:function(e){
     if(BZ._data._uiSwitch._curAppLanguage){
       let ee=[],
@@ -36208,150 +36148,45 @@ var _descAnalysis={
       return v.replace(w,ww)
     }
   },
-  _getDescFromPath:function(ps,_simple){
-    if(!ps){
-      return
-    }
-    var s="",_customizeIdx=0;
-    
-    if(ps[0]&&ps[0].constructor==String&&!ps[0].includes("BZ.TW")){
-      ps=_Util._clone(ps)
-      ps.unshift("BZ.TW.document")
-    }
-    
-    for(var i=1;i<ps.length;i++){
-      var p1=ps[i];
-      if(p1.constructor==String){
-        p1=p1.replace(/:eq\([0-9]+\)$/,"")
-      }
-      if(i==ps.length-1 && $.isNumeric(p1)){
-        if(!_simple && p1+""!=="0"){
-          s+=" {"+p1+"}";
-        }
-      }else{
-        if(_simple){
-          p1=_JSHandler._formatInsertCodeToDisplay(p1)
-        }
-        var cs=_generateDesc(_cssHandler._cssToDesc(_cssHandler._parseItems(p1)),i==ps.length-1);
-        if(_customizeIdx==i){
-          cs+=" "+g.name
-        }
-        if(_simple && cs.match(/\"|\$(parameter|parentModule|test|module|project|loop|data)/)){
-          var ss=cs.match(/(\"[^"]+\")( \"[0-9]+\")+/)
-          if(ss){
-            s=ss[1]
-          }else{
-            s=cs
-          }
-        }else if(!_simple || !s){
-          s+=cs
-        }
-      }
-    }
-    return s.trim();
-    
-    function _filterForCustomize(k,ps){
-      try{
-        var ns=_Util._clone(ps),
-            _customizeIdx=0
-        g[k].forEach(function(v,i){
-          for(var j=_customizeIdx;j<ns.length;j++){
-            if(ns[j].includes(v)){
-              if(i){
-                ns.splice(j,1)
-                break
-              }else{
-                ns[j]=ns[j].replace(v,"")
-                _customizeIdx=j+1
-                break
-              }
-            }
-          }
-        })
-        if(_customizeIdx){
-          _customizeIdx--
-        }
-        return {
-          ns:ns,
-          _customizeIdx:_customizeIdx
-        }
-      }catch(e){}
-    }
-    
-    function _generateDesc(ss,_lastIdx){
-      var cs=""
-      if(ss[0] && ss[0][0]=="{"){
-        if(_lastIdx){
-          if(ss.length>2 || (ss.length==2 && ss[1][0]!='"')){
-            ss.splice(0,1);
-          }else{
-            ss.push(ss.shift())
-          }
-        }else if(ss.length>1){
-          ss.splice(0,1);
-        }
-      }else if(ss.length>1){
-        ss.push(ss.shift())
-      }
-      
-      for(var i=0;i<ss.length;i++){
-        if(ss[i][0]=='"'){
-          ss.unshift(ss.splice(i,1));
-        }
-      }
-      
-      var _last=""
-      for(var n=0;n<ss.length;n++){
-        //Merge two css blocks
-        if(_last[0]=="{" && ss[n][0]=="{" && !ss[n][0].match(/^{[0-9]+}$/)){
-          cs=s.substring(0,s.length-1)+ss[n].substring(1)
-        }else{
-          cs+=" "+ss[n];
-        }
-        _last=ss[n]
-      }
-      return cs
-    }
-  },
   _init:function(){
     var es=_bzMessage._syntax;
-    if(!this._syntaxList||!this._syntaxList.length){
-      this._syntaxList=[];
-      this._syntaxKey={};
-      this._syntaxGroup={};
-      this._syntaxMap={};
+    if(!_descAnalysis._syntaxList||!_descAnalysis._syntaxList.length){
+      _descAnalysis._syntaxList=[];
+      _descAnalysis._syntaxKey={};
+      _descAnalysis._syntaxGroup={};
+      _descAnalysis._syntaxMap={};
       for(var k in es){
-        this._syntaxGroup[k]=[]
-        this._syntaxMap[k]={}
+        _descAnalysis._syntaxGroup[k]=[]
+        _descAnalysis._syntaxMap[k]={}
         for(var kk in es[k]){
           var t=es[k][kk];
-          this._addKey(t,kk,k,this._syntaxKey,this._syntaxList,this._syntaxGroup,this._syntaxMap);
+          _descAnalysis._addKey(t,kk,k,_descAnalysis._syntaxKey,_descAnalysis._syntaxList,_descAnalysis._syntaxGroup,_descAnalysis._syntaxMap);
         }
       }
-      this._syntaxList.sort(function(a,b){
+      _descAnalysis._syntaxList.sort(function(a,b){
         return a.length<b.length;
       });
 
       es=_bzMessage._syntaxOption;
-      this._syntaxOptionKey={};
-      this._syntaxOptionList=[];
-      this._syntaxOptionGroup={};
-      this._syntaxOptionMap={};
+      _descAnalysis._syntaxOptionKey={};
+      _descAnalysis._syntaxOptionList=[];
+      _descAnalysis._syntaxOptionGroup={};
+      _descAnalysis._syntaxOptionMap={};
       for(var k in es){
-        this._syntaxOptionGroup[k]=[]
-        this._syntaxOptionMap[k]={}
+        _descAnalysis._syntaxOptionGroup[k]=[]
+        _descAnalysis._syntaxOptionMap[k]={}
         for(var kk in es[k]){
           var t=es[k][kk];
-          this._addKey(t,kk,k,this._syntaxOptionKey,this._syntaxOptionList,this._syntaxOptionGroup,this._syntaxOptionMap);
+          _descAnalysis._addKey(t,kk,k,_descAnalysis._syntaxOptionKey,_descAnalysis._syntaxOptionList,_descAnalysis._syntaxOptionGroup,_descAnalysis._syntaxOptionMap);
         }
       }
-      this._syntaxOptionList.sort(function(a,b){
+      _descAnalysis._syntaxOptionList.sort(function(a,b){
         return a.length<b.length;
       });
       
     }
     
-    this._contentKey={
+    _descAnalysis._contentKey={
       "$project":{_value:"$project",_type:"data"},
       "$module":{_value:"$module",_type:"data"},
       "$test":{_value:"$test",_type:"data"},
@@ -36359,33 +36194,33 @@ var _descAnalysis={
       "$parameter":{_value:"$parameter",_type:"data"},
       "$data":{_value:"$data",_type:"data"},
     };
-    this._contentList=["$project","$module","$test","$loop","$parameter","$data"];
-    this._contentGroup={data:["$project","$module","$test","$loop","$parameter","$data"]}
-    this._contentMap={data:{"$project":["$project"],"$module":["$module"],"$test":["$test"],"$loop":["$loop"],"$parameter":["$parameter"],"$data":["$data"]}}
+    _descAnalysis._contentList=["$project","$module","$test","$loop","$parameter","$data"];
+    _descAnalysis._contentGroup={data:["$project","$module","$test","$loop","$parameter","$data"]}
+    _descAnalysis._contentMap={data:{"$project":["$project"],"$module":["$module"],"$test":["$test"],"$loop":["$loop"],"$parameter":["$parameter"],"$data":["$data"]}}
     es=_bzMessage._syntaxExtra;
     for(var k in es){
-      this._contentGroup[k]=[];
-      this._contentMap[k]={}
+      _descAnalysis._contentGroup[k]=[];
+      _descAnalysis._contentMap[k]={}
       for(var kk in es[k]){
         var t=es[k][kk];
-        this._addKey(t,kk,k,this._contentKey,this._contentList,this._contentGroup,this._contentMap);
+        _descAnalysis._addKey(t,kk,k,_descAnalysis._contentKey,_descAnalysis._contentList,_descAnalysis._contentGroup,_descAnalysis._contentMap);
       }
     }
     var os=_IDE._data._curVersion.setting.objectLib;
-    this._elementMap={};
-    this._contentGroup.element=[];
-    this._contentMap.element={}
+    _descAnalysis._elementMap={};
+    _descAnalysis._contentGroup.element=[];
+    _descAnalysis._contentMap.element={}
     for(var k in os){
       es=os[k];
       for(var i=0;i<es.length;i++){
         var e=es[i];
-        this._elementMap[e.key]=e;
+        _descAnalysis._elementMap[e.key]=e;
         v=(e.value||_bzMessage._setting._objectLib._options[k][e.key]||"").toLowerCase();
-        this._addKey(v,e.key,"element",this._contentKey,this._contentList,this._contentGroup,this._contentMap)
+        _descAnalysis._addKey(v,e.key,"element",_descAnalysis._contentKey,_descAnalysis._contentList,_descAnalysis._contentGroup,_descAnalysis._contentMap)
       }
     }
 
-    this._contentList.sort(function(a,b){
+    _descAnalysis._contentList.sort(function(a,b){
       return a.length<b.length;
     });
     
@@ -36427,7 +36262,7 @@ var _descAnalysis={
         for(var n=i+1;n<es.length;n++){
           var ee=es[n];
           if(ee._type=="element"){
-            ee._css=this._mergePath(e._css,ee._css);
+            ee._css=_descAnalysis._mergePath(e._css,ee._css);
             es.splice(i--,1);
             break;
           }
@@ -36456,11 +36291,11 @@ var _descAnalysis={
     if(!cs._element){
       return;
     }
-    var e=this._findElement(cs._element,_root,["typing","check","set","uncheck"].includes(cs._action._key),cs._action._key.includes("check")),_first,ee;
+    var e=_descAnalysis._findElement(cs._element,_root,["typing","check","set","uncheck"].includes(cs._action._key),cs._action._key.includes("check")),_first,ee;
     if(e && !e.bzTmp){
       for(var i=0;i<e.length;i++){
         if(!_Util._isHidden(e[i])){
-          ee=this._findElementIdx(e[i]);
+          ee=_descAnalysis._findElementIdx(e[i]);
           if(!cs._action || cs._action._key!="click" || $(ee).css("cursor")=="pointer"){
             return ee;
           }
@@ -36574,7 +36409,7 @@ var _descAnalysis={
       }
     }
     
-    this._mergeExpr(es);
+    _descAnalysis._mergeExpr(es);
     var _result={
       _path:[],
       _bLeft:_bLeft,
@@ -36590,7 +36425,7 @@ var _descAnalysis={
     for(var i=es.length-1;i>=0;i--){
       e=es[i];
       
-      var _tmpList=this._findElementInArea(e,_result,0,_orgElement);
+      var _tmpList=_descAnalysis._findElementInArea(e,_result,0,_orgElement);
       if(!_tmpList){
         continue
       }else if($(_tmpList).is(_orgElement) || !_orgElement){
@@ -36602,7 +36437,7 @@ var _descAnalysis={
       }
       if(i==es.length-1){
         _result._endList=_result._endList.not(".BZIgnore *");
-        //_result._endList=this._removeParentItemFromResult(_result._endList);
+
         if(_orgElement && !_result._endList.is(_orgElement)){
           _result._endList.push(_orgElement)
         }
@@ -36610,7 +36445,7 @@ var _descAnalysis={
       if(_result._endList){
         _descAnalysis._cleanTagName(_result._endList)
         if(i){
-          this._cleanRootPath(_result._endList,_result._root)
+          _descAnalysis._cleanRootPath(_result._endList,_result._root)
         }
         if(_limit && _limit._init && ["text","group"].includes(e._type) && _result._endList.length>1 && _result._endList[0]!=_orgElement){
           for(var ii=0;ii<_result._endList.length;ii++){
@@ -36618,7 +36453,7 @@ var _descAnalysis={
             _result._endList[ii].bzTmp=_result._endList[ii].bzTmp.replace(/(\:)(contains|equal)(.+\))/i,"");
           }
           _limit._root=_result._root;
-          _limit=this._findElementInArea(e,_limit,1,_orgElement);
+          _limit=_descAnalysis._findElementInArea(e,_limit,1,_orgElement);
           if(_limit){
             if(_limit.length==_result._endList.length){
               var _newList=[]
@@ -36644,7 +36479,7 @@ var _descAnalysis={
                   _result._endList[ii].bzTmp=_result._endList[ii].bzOldTmp;
                 }
               }
-              this._cleanRootPath(_limit,_result._root)
+              _descAnalysis._cleanRootPath(_limit,_result._root)
             }
             _descAnalysis._cleanTagName(_limit)
           }
@@ -36665,7 +36500,7 @@ var _descAnalysis={
       if(e[0].bzTmp.constructor==String){
         e[0].bzTmp=e[0].bzTmp.split("\n")
       }
-      return e[0];//this._findElementIdx(e[0]);
+      return e[0];//_descAnalysis._findElementIdx(e[0]);
     }else if(e && e.length>1){
       var _list=[]
       if(_limit && !_limit._init){
@@ -36678,22 +36513,14 @@ var _descAnalysis={
         }
       }
       if(_list.length==1){
-        return this._findElementIdx(_list[0]);
+        return _descAnalysis._findElementIdx(_list[0]);
       }else if(_list.length){
         e=_list;
       }
       if(_cssIdx!==undefined && e.length>_cssIdx){
-        return this._findElementIdx(e[_cssIdx]);
+        return _descAnalysis._findElementIdx(e[_cssIdx]);
       }else if(_cssIdx!==undefined){
         e=null;
-//      }else if(_orgElement){
-        /*
-        for(var i=0;i<e.length;i++){
-          if(e[i]==_orgElement){
-            return this._findElementIdx(e[i]);
-          }
-        }
-        */
       }
     }else if(!e&&_reTry){
       es.pop()
@@ -36866,12 +36693,7 @@ var _descAnalysis={
       }
       
       var f=":equal("+_cssHandler._handleContainText(pl)+")";
-      // if(_orgElement){
-        // if(!$(_orgElement).is(f)){
-          // f=":Contains("+_cssHandler._handleContainText(pl)+")";
-        // }
-      // }
-      //var f=":Contains("+_cssHandler._handleContainText(pl)+")";
+
       var ff=_Util._getAttrPath("value",_cssHandler._handleContainText(pl));
       var kp=p,kpl=pl
       var _list=$([]),_lastNot,_startBZ=_result._endList[0]
@@ -36879,38 +36701,7 @@ var _descAnalysis={
       if(!_list.length){
         _list=_result._endList.filter(f)
       }
-      // for(var i=0;i<_result._endList.length;i++){
-      //   var e=_result._endList[i];
-      //   if(!e.bzTmp || !e.bzTmp.startsWith){
-      //     continue
-      //   }
-      //   if(_lastNot&&_lastNot.find(e).length){
-      //     continue
-      //   }
-      //   var _bInput=_Util._isStdInputElement(e)
-      //   if(!_bInput && ($(e).is(f).length || $(e).filter(f).length)){
-      //     let vv=_getNewTmp(e,kp,kpl,f)
-      //     if(!vv){
-      //       return
-      //     }
-      //     e.bzTmp=vv
-      //     _list=_list.add(e)
-      //   }else if(_bInput){
-      //     if($(e).filter(ff).length){
-      //       if(_startBZ){
-      //         e.bzTmp+=p==pl?ff:_Util._getAttrPath("value",p)
-      //       }else{
-      //         if(e.bzTmp.match(/value\*\=/i)){
-      //           return 0;
-      //         }
-      //         e.bzTmp = this._getRootPath(_result._root,e)+"\n"+ e.bzTmp+(p==pl?ff:_Util._getAttrPath("value",p));
-      //       }
-      //       _list=_list.add(e)
-      //     }
-      //   }else{
-      //     _lastNot=$(e)
-      //   }
-      // }
+
       if(!_list.length){
         pl=pl.toLowerCase();
         for(var i=0;i<_result._endList.length;i++){
@@ -36935,9 +36726,9 @@ var _descAnalysis={
                 if(e.bzTmp && e.bzTmp.startsWith("BZ.")){
                   e.bzTmp+=c;
                 }else if(!e.bzTmp.includes(c)){
-                  e.bzTmp=this._getRootPath(_result._root,e)+"\n"+e.bzTmp+c;
+                  e.bzTmp=_descAnalysis._getRootPath(_result._root,e)+"\n"+e.bzTmp+c;
                 }else{
-                  e.bzTmp=this._getRootPath(_result._root,e)+"\n"+e.bzTmp;
+                  e.bzTmp=_descAnalysis._getRootPath(_result._root,e)+"\n"+e.bzTmp;
                 }
                 _list=_list.add(e);
                 break;
@@ -36952,23 +36743,6 @@ var _descAnalysis={
         return 1;
       }
     }
-    
-    // function _getNewTmp(_startBZ,kp,kpl,f){
-    //   let _newTmp
-    //   if(_startBZ){
-    //     if(_startBZ.bzTmp.startsWith("BZ.")){
-    //       _newTmp=_startBZ.bzTmp+(kp==kpl?f:":Contains("+kp+")")
-    //       _startBZ=1
-    //     }else{
-    //       if(_startBZ.bzTmp.match(/:contains|:endcontains|:endequal|:equal/i)){
-    //         return 0
-    //       }else{
-    //         _newTmp=_descAnalysis._getRootPath(_result._root,_startBZ)+"\n"+ _startBZ.bzTmp+(kp==kpl?f:":Contains("+kp+")");
-    //       }
-    //     }
-    //   }
-    //   return _newTmp
-    // }
   },
   _getRootPath:function(_root,e){
     if(_root.bzTmp){
@@ -37032,13 +36806,7 @@ var _descAnalysis={
           }
           
           _descAnalysis._setBzTmpPath(e,_path,cf,_limit);
-          /*
-          if(e.bzTmp.match(/:Contains\(.+\)$/)){
-            e.bzTmp=e.bzTmp.replace(/:Contains\(.+\)$/,f);
-          }else{
-            e.bzTmp+=f;
-          }
-          */
+
           return e;
         }));
         
@@ -37054,7 +36822,6 @@ var _descAnalysis={
       var os=[];
       
       for(var i=0;i<ps.length;i++){
-//        if(ps[i].tagName!="OPTION" || (ps[i].parentElement && !["SELECT","OPTGROUP"].includes(ps[i].parentElement.tagName))){
         if(ps[i].tagName!="OPTION"){
           os.push(ps[i])
         }
@@ -37217,7 +36984,7 @@ var _descAnalysis={
         }
       }
 
-      if(!p && this._filterTextInEndList(_result,e,0,_orgElement)){
+      if(!p && _descAnalysis._filterTextInEndList(_result,e,0,_orgElement)){
         return _result._endList;
       }
       if(e._value.match(/^\[.+|.+\]$/)){
@@ -37241,9 +37008,9 @@ var _descAnalysis={
       _type=p
       if(p=="near"){
         if(_result._endList && _result._endList.length){
-          p=this._getTextList(_result._endList,e,p,_limit)
+          p=_descAnalysis._getTextList(_result._endList,e,p,_limit)
         }else{
-          p=this._getTextList(r,e,p,_limit)
+          p=_descAnalysis._getTextList(r,e,p,_limit)
         }
         if(p.length && (!_orgElement || p.is(_orgElement))){
           for(var i=0;i<p.length;i++){
@@ -37256,15 +37023,15 @@ var _descAnalysis={
         }
       }
       if(p.constructor==String){
-        p=this._getTextList(r,e,p,_limit)
+        p=_descAnalysis._getTextList(r,e,p,_limit)
       }
     }else{
       if(e._extraText){
-        p=this._findInCss(this._getTextList(r,e._extraText,_limit?"contains":"Contains",_limit),e._css,"filter");
+        p=_descAnalysis._findInCss(_descAnalysis._getTextList(r,e._extraText,_limit?"contains":"Contains",_limit),e._css,"filter");
       }else{
-        p=this._findInCss(r,e._css,"find");
+        p=_descAnalysis._findInCss(r,e._css,"find");
         if(!p.length){
-          p=this._findInCss(r,e._css,"filter");
+          p=_descAnalysis._findInCss(r,e._css,"filter");
         }
       }
     }
@@ -37354,7 +37121,7 @@ var _descAnalysis={
             if(_orgElement){
               ppp=[_orgElement];
             }else if(ppp.length>1 && ps.length==1){
-              ppp=this._findNextInPos(po[0],ppp,_result._bLeft)
+              ppp=_descAnalysis._findNextInPos(po[0],ppp,_result._bLeft)
             }
             if(!ppp[0].bzTmp.startsWith){
               continue
@@ -37452,34 +37219,6 @@ var _descAnalysis={
       }
     }
     return [_result]
-  },
-  _actionsToDesc:function(t){
-    var s=this._getTestDesc(t)
-
-    return s+_scriptActionHandler._doTestActionsToText(t)
-  },
-  _getTestDesc:function(t,_simple){
-    var s="",l=t.loopData,st=_descAnalysis._syntaxMap.test,sl=_descAnalysis._syntaxOptionMap.loop,w;
-
-    if(_simple){
-      w=_JSHandler._formatInsertCodeToDisplay(w)
-    }
-
-    
-    if(l && l.loopValue){
-      w=_ideDataHandler._getNamePathFromDataPath(l.loopValue);
-      if(w){
-        s+=st.loopData[0]+": "+w+" ["+sl.loopStart[0]+"="+l.loopStart;
-        if(l.loopEnd){
-          s+=", "+sl.loopEnd[0]+"="+l.loopEnd
-        }
-        if(l.exitLoop){
-          s+=", "+sl.exitLoop[0]
-        }
-        s+="]\n"
-      }
-    }
-    return _compressJSON._unConvert(s);
   }
 };
 var _aiDataHandler={
@@ -43062,127 +42801,7 @@ var _ideActionManagement={
                         }
                       }
                     ]
-                  },
-                  //Description
-                  // {
-                  //   _tag:"div",
-                  //   _attr:{
-                  //     "class":"bz-action-desc"
-                  //   },
-                  //   _items:[
-                  //     {
-                  //       _if:"!_data._item.content||_data._item.content.type!='screenshot'||!_data._item.expectation",
-                  //       _tag:"span",
-                  //       _attr:{
-                  //         style:function(a){
-                  //           a=a._item
-                  //           if(a==_IDE._data._curAction&&a.type==4&&a.refOfSuccess){
-                  //             return "text-decoration:underline"
-                  //           }else{
-                  //             return "text-decoration:unset"
-                  //           }
-                  //         }
-                  //       },
-                  //       _items:[
-                  //         {
-                  //           _if:"_data._item.type!='a'&&!_data._item.apiReplaceEvent",
-                  //           _html:function(d){
-                  //             d=d._item
-                  //             let na=d.conditionAction
-                  //             let _msg=""
-                  //             if(d.type===undefined){
-                  //               return
-                  //             }
-                  //             if(!d.element&&d.description&&_IDE._data._curTest._data.type!='scenario'){
-                  //               _msg=(d.description||"").replace(new RegExp("^"+_ideActionManagement._getActionMethod(d)),"")
-                  //             }else if(d.type==6){ //refresh
-                  //               _msg=_ideActionManagement._getAutoDescription(d)
-                  //             }else if("23".includes(d.type)||(!d.type&&d.method==1)){ //extract, script
-                  //               _msg=_ideDataHandler._parseToExeCode(d.script)
-                  //             }else{
-                  //               _msg=_ideActionManagement._getValueDesc(d,_IDE._data._curTest)||""
-                  //               if(_msg.toLowerCase()==d.groupType){
-                  //                 return ""
-                  //               }else if(d.groupType=="if"||d.groupType=="else if"){
-                  //                 if(!na){
-                  //                   return `<span class="bz-action-desc bz-error-action">${_bzMessage._action._missConditionAction}</span>`
-                  //                 }
-                  //               }else if(d.groupType=="for"){
-                  //                 if(!d.loopData){
-                  //                   return `<span class="bz-action-desc bz-error-action">${_bzMessage._action._missRepeatData}</span>`
-                  //                 }else if(!_msg){
-                  //                   return d.loopData.trim().substring(0,50)
-                  //                 }
-                  //               }
-                  //             }
-                  //             _msg=(_msg||"").toString();
-                  //             if(!_msg&&d.type==4&&d.description){
-                  //               _msg=d.description
-                  //             }else if(!_msg||_msg.trim()=="=="){
-                  //               if(d.type!=7){
-                  //                 _msg=_bzMessage._action._missData[_ideActionManagement._getMissValue(d)]
-                  //               }
-                  //             }
-
-                  //             _msg=(_msg||"").replace(/[\<]/g,"&lt;").replace(/[\>]/g,"&gt;")
-                  //             if(_IDE._data._curTest._data.type=='scenario'&&d.type==4&&d.refOfSuccess){
-                  //               let k=d.refOfSuccess.match(/m[0-9]+\.t[0-9]+/)
-                  //               if(k){
-                  //                 _msg+=" ["+k[0]+"]"
-                  //               }
-                  //             }
-
-                  //             let _style=""
-
-                  //             if(d.type==7){
-                  //               if(na){
-                  //                 _style=" class='bz-group-desc'"
-                  //               }
-                  //               _msg=(_msg||"")+ ` (${_bzMessage._common._actions}: ${d.actions.length})`
-                  //             }
-                  //             if(_msg.includes("\n")){
-                  //               _msg=_msg.trim().split("\n")[0]+" ..."
-                  //             }
-                  //             return "<span"+_style+">"+_msg+"</span>"
-                  //           }
-                  //         }
-                  //       ]
-                  //     },
-                  //     // {
-                  //     //   _if:"_data._item.content&&_data._item.content.type=='screenshot'&&_data._item.expectation",
-                  //     //   _tag:"div",
-                  //     //   _attr:{style:"margin:-7px"},
-                  //     //   _items:[
-                  //     //     _uiHandler._getScreenshot("_data._item.expectation"),
-                  //     //   ]
-                  //     // }
-                  //   ],
-                  //   _jqext:{
-                  //     mouseover:function(){
-                  //       if(this._data._item.type==_ideActionData._type._script){
-                  //         return
-                  //       }
-                  //       try{
-                  //         this.title=_JSHandler._prepareData($(this).text())
-                  //         if(this._data._item.note){
-                  //           this.title+="\n\n"+_bzMessage._common._note+":\n"+this._data._item.note
-                  //         }
-                  //         if($(this).hasClass("bz-red-data-point2")){
-                  //           this.title=_bzMessage._action._noBestPath+"\n\n"+this.title
-                  //         }
-                  //         if(this._data._item.type==4){
-                            
-                  //         }
-                  //       }catch(e){}
-                  //     },
-                  //     click:function(e){
-                  //       let a=this._data._item
-                  //       if(a==_IDE._data._curAction&&a.type==4&&a.refOfSuccess&&!a.refOfSuccess.includes('{')&&e.target.tagName=="SPAN"){
-                  //         BZ._setHash(a.refOfSuccess)
-                  //       }
-                  //     }
-                  //   }
-                  // },
+                  }
                 ]
               },
               //conditions/timer/setting menu
@@ -46158,35 +45777,6 @@ var _ideActionManagement={
     }
     return ""
   },
-  _getValidateDesc:function(d){
-    if(d.method==2){
-      let a=d.api
-      let _host=BZ._curEnv.items[a.host],_url=a.httpURL;
-      if(_host){
-        _host=_host.host
-        _url=_Util._mergeURL(_host,_url)
-      }
-      if(_url){
-        _url= a.httpMethod+ " "+_url+" == "+d.expectation
-        if(_url.length>100){
-          _url=_url.substring(0,100)+" ..."
-        }
-        return _url
-      }
-    }else if(d.content){
-      let w=_bzMessage._action._content,
-          dd=(d.expectation||_bzMessage._method._not)
-      switch(d.content.type){
-        case "exist":return w._exist;
-        case "unexist":return w._unExist;
-        case "data":return d.expectation;
-        case "disable":return w._disable+" ("+dd+")";
-        case "checked":return w._checked+" ("+dd+")";
-        case "enable":return w._enable+" ("+dd+")";
-      }
-      return this._getExpectationDesc(d,1)
-    }
-  },
   _getExpectationDesc:function(d,_simple){
     var s="";
     if(!["exist","unexist"].includes(d.content.type)){
@@ -46380,24 +45970,6 @@ var _ideActionManagement={
       }
     }
   },
-  _getValueDesc:function(a,_test){
-    switch(a.type){
-      case 0:return this._getValidateDesc(a);
-      case 1:
-        let _msg=_descAnalysis._codeToDesc((a.event&&a.event.value)||(a.event&&a.event.keyCode&&_bzMessage._common._key+": "+a.event.keyName)||"",1);
-        if(a.withEntry){
-          _msg +=" + "+_bzMessage._common._enter
-        }else if(a.withSubmit){
-          _msg +=" + "+_bzMessage._method._submit
-        }
-        return _msg
-      case 2:case 3: return a.script;
-      case 4: return this._refTestPathToDisplay(a,0,_test);
-      case 5:case 6:return a.description||a.url||"";
-      case 7:return (a.description||"");
-      case 9: return a.data?a.data.map(a=>{return a.key}).join(", "):""
-    }
-  },
   _loadDataForLoadTest:function(){
     let _timer;
     _ideVersionManagement._loadAllData(function(){
@@ -46478,6 +46050,19 @@ var _ideActionManagement={
     }
     return w[_key]
   },
+  _codeToDesc:function(v,_simple){
+    if(v){
+      if(_simple){
+        if(_Util._isFileData(v)){
+          v=JSON.parse(v)
+          return v[0].name+" ("+Math.ceil(v[0].size/1024)+"K)"
+        }
+        v=_JSHandler._formatInsertCodeToDisplay(v);
+      }
+      return '('+v+')';
+    }
+    return ""
+  },
   _getAutoDescription:function(d,_simple,_test){
     var t=_ideActionData._type;
     var _fType=d.type;
@@ -46498,7 +46083,7 @@ var _ideActionManagement={
     }
     
     if (![t._ref,t._refresh].includes(d.type) && (![t._validation,t._extractData].includes(d.type) || d.method!=2) && es && es.length) {
-      _title=_descAnalysis._getDescOfElement(d);
+      _title=_ideActionManagement._getDescOfElement(d);
 
       if(_fType==t._validation){
         if(d.method==1 || d.method==2){
@@ -46518,7 +46103,7 @@ var _ideActionManagement={
               _title=_Util._formatMessage(_desc._trigger._check,[_title]);
             }
           }else{
-            _title+=" = "+_descAnalysis._codeToDesc(d.event.value,_simple);
+            _title+=" = "+_ideActionManagement._codeToDesc(d.event.value,_simple);
             _title=_Util._formatMessage(_desc._trigger._change,[_title]);
           }
           if(d.withEntry){
@@ -46550,7 +46135,7 @@ var _ideActionManagement={
         }else if(et=="key"){
           if(ea=="group"){
             if(d.event.value){
-              _title+=" = "+_descAnalysis._codeToDesc(d.event.value,_simple);
+              _title+=" = "+_ideActionManagement._codeToDesc(d.event.value,_simple);
               _title=_desc._trigger._typing+" "+_title;
             }else{
               _title="keygroup"+this._getDescExtra(d)+" "+_title;
@@ -46641,7 +46226,7 @@ var _ideActionManagement={
         }
       })
     }
-    _title= "\n"+_JSHandler._formatInsertCodeToDisplay(_compressJSON._unConvert(_title));
+    _title= "\n"+_JSHandler._formatInsertCodeToDisplay(_Util._unConvertObj(_title));
     return _title
     
     function _getFillFormItemNameList(_title,d){
@@ -46657,11 +46242,125 @@ var _ideActionManagement={
   },
   _getDragdropDesc:function(d){
     let to="[x = "+d.event.x+", y = "+d.event.y+"]"
-    let _from=_descAnalysis._getDescOfElement(d)
+    let _from=_ideActionManagement._getDescOfElement(d)
     if(d.event.element){
-      to=_descAnalysis._getDescOfElement(d.event)
+      to=_ideActionManagement._getDescOfElement(d.event)
     }
     return _Util._formatMessage(_bzMessage._syntaxOption.mouse.dragdrop,[_from,to])
+  },
+  _getDescOfElement:function(a){
+    let w=_descAnalysis._getCurLanguageElement(a.element||a.panel)
+    
+    w= _ideActionManagement._getDescFromPath(w,1)
+    if(a.offset){
+      w+=" (offset: "+a.offset.X+", "+a.offset.Y+")"
+    }
+    return w
+  },
+  _getDescFromPath:function(ps,_simple){
+    if(!ps){
+      return
+    }
+    var s="",_customizeIdx=0;
+    
+    if(ps[0]&&ps[0].constructor==String&&!ps[0].includes("BZ.TW")){
+      ps=_Util._clone(ps)
+      ps.unshift("BZ.TW.document")
+    }
+    
+    for(var i=1;i<ps.length;i++){
+      var p1=ps[i];
+      if(p1.constructor==String){
+        p1=p1.replace(/:eq\([0-9]+\)$/,"")
+      }
+      if(i==ps.length-1 && $.isNumeric(p1)){
+        if(!_simple && p1+""!=="0"){
+          s+=" {"+p1+"}";
+        }
+      }else{
+        if(_simple){
+          p1=_JSHandler._formatInsertCodeToDisplay(p1)
+        }
+        var cs=_generateDesc(_cssHandler._cssToDesc(_cssHandler._parseItems(p1)),i==ps.length-1);
+        if(_customizeIdx==i){
+          cs+=" "+g.name
+        }
+        if(_simple && cs.match(/\"|\$(parameter|parentModule|test|module|project|loop|data)/)){
+          var ss=cs.match(/(\"[^"]+\")( \"[0-9]+\")+/)
+          if(ss){
+            s=ss[1]
+          }else{
+            s=cs
+          }
+        }else if(!_simple || !s){
+          s+=cs
+        }
+      }
+    }
+    return s.trim();
+    
+    function _filterForCustomize(k,ps){
+      try{
+        var ns=_Util._clone(ps),
+            _customizeIdx=0
+        g[k].forEach(function(v,i){
+          for(var j=_customizeIdx;j<ns.length;j++){
+            if(ns[j].includes(v)){
+              if(i){
+                ns.splice(j,1)
+                break
+              }else{
+                ns[j]=ns[j].replace(v,"")
+                _customizeIdx=j+1
+                break
+              }
+            }
+          }
+        })
+        if(_customizeIdx){
+          _customizeIdx--
+        }
+        return {
+          ns:ns,
+          _customizeIdx:_customizeIdx
+        }
+      }catch(e){}
+    }
+    
+    function _generateDesc(ss,_lastIdx){
+      var cs=""
+      if(ss[0] && ss[0][0]=="{"){
+        if(_lastIdx){
+          if(ss.length>2 || (ss.length==2 && ss[1][0]!='"')){
+            ss.splice(0,1);
+          }else{
+            ss.push(ss.shift())
+          }
+        }else if(ss.length>1){
+          ss.splice(0,1);
+        }
+      }else if(ss.length>1){
+        ss.push(ss.shift())
+      }
+      
+      for(var i=0;i<ss.length;i++){
+        if(ss[i][0]=='"'){
+          ss.unshift(ss.splice(i,1));
+        }
+      }
+      
+      var _last=""
+      for(var n=0;n<ss.length;n++){
+        //Merge two css blocks
+        if(_last[0]=="{" && ss[n][0]=="{" && !ss[n][0].match(/^{[0-9]+}$/)){
+          cs=s.substring(0,s.length-1)+ss[n].substring(1)
+        }else{
+          cs+=" "+ss[n];
+        }
+        _last=ss[n]
+      }
+      return cs
+    }
   },
   _getRefDesc:function(a,k){
     var v=a?(a[k]||"").match(_IDE._testKeyRegex):""
@@ -46669,7 +46368,7 @@ var _ideActionManagement={
       v=v[0]
       var vv=_ideObjHandler._getDataByPath(v);
       if(vv){
-        return _compressJSON._unConvert(_ideTestManagement._getPathNameByPath(v)||_JSHandler._formatInsertCodeToDisplay(v))
+        return _Util._unConvertObj(_ideTestManagement._getPathNameByPath(v)||_JSHandler._formatInsertCodeToDisplay(v))
       }
     }else if(a&&a[k]){
       v=a[k].match(/\{\{(.+)\}\}/)
