@@ -29482,12 +29482,12 @@ var _domActionTask={
                   return _doIt(a)
                 }else if(r.stillRetryable){
                   _tryNotWait=0
-                  a._doRetryPreviousAction=1
+                  a.doRetryPreviousAction=1
                   delete a.e
                   a.min=1
                   return _doIt(a)
                 }else if(r.redidPreviousAction){
-                  a._doRetryPreviousAction=0
+                  a.doRetryPreviousAction=0
                   _retry=0
                   a.min=_speed
                   return _doIt(a)
@@ -29823,7 +29823,7 @@ var _domActionTask={
     function _doRedoLastAction(r,a,_call){
       let d=BZ._lastMouseAction
       if(d){
-        if(a._doRetryPreviousAction){
+        if(a.doRetryPreviousAction){
           r.redidPreviousAction=1
           
           delete BZ._lastMouseAction
