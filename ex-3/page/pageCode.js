@@ -8594,7 +8594,8 @@ if(!window.bzComm||window.name=="bz-master"){
     bzComm.init()
   }else if(window.name=="bz-master"){
     if(!opener){
-      if(!window._Util){
+      if(!window.BZ){
+        debugger
         location.reload()
       }else if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
         window.name=""
