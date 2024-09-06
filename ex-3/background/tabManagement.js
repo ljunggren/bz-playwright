@@ -11,6 +11,7 @@ class BZTab{
         this.myIde=parseInt(v[2])
         _tabManagement._getTabById(this.myIde,(v)=>{
           if(v){
+            v.myApp=t.tabId||t.id
             this.appIFrames=v.appIFrames
           }
         })
@@ -168,6 +169,7 @@ const _tabManagement={
             fun:"infoLoadingNewPage",
             scope:"BZ"
           })
+
           let fs=i.appIFrames
           if(!f){
             fs[0]={bzCommReady:1,idx:0}

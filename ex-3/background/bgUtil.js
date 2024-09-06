@@ -115,8 +115,10 @@ globalThis.bgUtil={
   getScreenshot:function(t,fun){
     _tabManagement._getTabById(t.tab.id,function(o){
       if(o){
-        if(o.myApp){
-          _tabManagement._getTabById(o.myApp,doFinal)
+        if(o.ide){
+          if(o.myApp){
+            _tabManagement._getTabById(o.myApp,doFinal)
+          }
         }else{
           doFinal(o)
         }
