@@ -7991,7 +7991,10 @@ if(!window.bzComm||window.name=="bz-master"){
   window.bzComm={
     _shareData:{},
     _callBackMap:{},
-    _newId:Date.now(),
+    _newIdValue:Date.now(),
+    _newId:function(){
+      return bzComm._newIdValue++
+    },
     _keyToCodeMap:{
       _setSharedData:"setSharedData",
       _timingInfo:"timingInfo",
@@ -8571,7 +8574,7 @@ if(!window.bzComm||window.name=="bz-master"){
     _handleReturnFun:function(v,fun){
       fun=v.return||fun
       if(fun&&fun.constructor==Function){
-        let rd=bzComm._newId++;
+        let rd=bzComm._newId();
         v.return=v.return||fun
         bzComm._callBackMap[rd]={...v}
         v.return=rd

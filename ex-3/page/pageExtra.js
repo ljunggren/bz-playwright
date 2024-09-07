@@ -1288,7 +1288,7 @@ var $util={
     let cs=_cssHandler._findHoverCssByElement(o)||[]
     cs.forEach(x=>{
       let o=x.o
-      o._tmpClass=o._tmpClass||("bz"+_aiAPI._newId())
+      o._tmpClass=o._tmpClass||("bz"+bzComm._newId())
       $(o).addClass(o._tmpClass)
       let c=x.v.split(":hover")
       let _last=c.pop()
