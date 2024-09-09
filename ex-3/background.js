@@ -10,7 +10,7 @@ async function addPageScript(a,b,c) {
   console.log("installed ....")
   const scripts = [{
     id: 'override',
-    js: ['page/pageCode.js','page/innerScript.js','page/pageExtra.js'],
+    js: ['page/pageCode.js','page/insertScript.js','page/pageExtra.js'],
     matches: ['<all_urls>'],
     runAt: 'document_start',
     world: 'MAIN',

@@ -57,7 +57,7 @@
     "default_popup": "popup/popup.html"
   },
   "web_accessible_resources": [{
-    "resources": ["lib/jquery.min.v1.12.4.js","page/pageExtra.js","css/bzInsert.css","css/insert.icons.css"],
+    "resources": ["lib/jquery.min.v1.12.4.js","ide/main.js","ide/cn/config.js","ide/cn/word.js","ide/en/config.js","ide/en/word.js","page/pageExtra.js","css/bzInsert.css"],
     "matches": ["<all_urls>"]
   }]
 }
