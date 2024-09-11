@@ -183,12 +183,17 @@ const _tabManagement={
           if(!f){
             fs[0]={bzCommReady:1,idx:0}
           }else{
+            debugger
             let p=i.getIframeById(pf)
             if(p){
-              p[f]={url:t.url,bzCommReady:t.url=="about:blank"?1:0}
-              Object.values(p).forEach(v=>{
-                delete v.idx
-              })
+              p[f]={
+                url:t.url,
+                idx:Object.keys(p).length,
+                bzCommReady:1//t.url=="about:blank"?1:0
+              }
+              // Object.values(p).forEach(v=>{
+              //   delete v.idx
+              // })
             }
           }
           a.appIFrames=fs

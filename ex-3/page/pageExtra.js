@@ -1666,9 +1666,8 @@ var $util={
           console.log(e.stack);
         }
         if(_withEnter){
-                    return $util.triggerKeyEvents(o,13,0,false,false,false,function(){
-                        _doFinal()
-          });
+          $util.triggerEnterEvent(o);
+          _doFinal()
         }else if(_withSubmit){
           let _form=_Util._getParentElementByCss("form",o)
           if(_form){
@@ -1760,6 +1759,50 @@ var $util={
         BZ._reportAppInfo("Set input 88: "+ex.message+"\n"+ex.stack)
       }
     }
+  },
+  triggerEnterEvent:function(o){
+    // 选择要触发事件的元素
+    let d={
+      key: "Enter",
+      keyCode: 13,
+      code: "Enter",
+      which: 13,
+      bubbles: true,
+      cancelable: true
+    }
+    // 创建并触发 keydown 事件
+    let e = new KeyboardEvent("keydown", d);
+    o.dispatchEvent(e);
+
+    // 创建并触发 keypress 事件
+    e = new KeyboardEvent("keypress", d);
+    o.dispatchEvent(e);
+
+    // 创建并触发 keyup 事件
+    e = new KeyboardEvent("keyup", d);
+    o.dispatchEvent(e);
+  },
+  triggerTabEvent:function(o){
+    // 选择要触发事件的元素
+    let d={
+      key: 'Tab',
+      keyCode: 9,
+      code: 'Tab',
+      which: 9,
+      bubbles: true,
+      cancelable: true
+    };
+    // 创建并触发 keydown 事件
+    let e = new KeyboardEvent("keydown", d);
+    o.dispatchEvent(e);
+
+    // 创建并触发 keypress 事件
+    e = new KeyboardEvent("keypress", d);
+    o.dispatchEvent(e);
+
+    // 创建并触发 keyup 事件
+    e = new KeyboardEvent("keyup", d);
+    o.dispatchEvent(e);
   },
   //triggerBlurEvent
   triggerBlurEvent:function(o,_fun){
