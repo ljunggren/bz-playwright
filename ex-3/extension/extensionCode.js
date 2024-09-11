@@ -16072,33 +16072,27 @@ window.bzComm={
     }else{
       bzComm.postToIDE(d,fun)
     }
+  },
+  popIDE:function(){
+    window.name=""
+    let p=localStorage.getItem("bz-ide")
+    if(p){
+      p=JSON.parse(p)
+    }else{
+      p={w:screen.availWidth/2,h:screen.availHeight}
+    }
+    let v=location.href
+    window.open(v,"bz-master","width="+p.w+",height="+p.h)
+    location.href=location.origin
   }
 }
 if(window.name=="bz-client"){
   bzComm.init()
 }else if(window.name=="bz-master"){
-  if(!opener){
-    if(!window.BZ){
-      location.reload()
-    }else if(!window.extensionContent&&!_Util._isPopWin()&&location.href.includes("/extension")){
-      window.name=""
-      let p=localStorage.getItem("bz-ide")
-      if(p){
-        p=JSON.parse(p)
-      }else{
-        p={w:screen.availWidth/2,h:screen.availHeight}
-      }
-      let v=location.href
-      window.open(v,"bz-master","width="+p.w+",height="+p.h)
-      location.href=location.origin
-      window.close()
-    }else{
-      bzComm.init()
-    }
-  }else{
-    if(window.extensionContent){
-      bzComm.init()
-    }
+  if(!window.BZ){
+    location.reload()
+  }else if(window.extensionContent){
+    bzComm.init()
   }
 }else{
   bzComm._chkInit()

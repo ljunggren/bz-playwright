@@ -161,6 +161,12 @@ const _tabManagement={
       _tabManagement._map[a.id]=a
       a.url=f?a.url:t.url
       if(a.ide){
+        if(t.documentLifecycle=="prerender"){
+          return
+        }else if(!t.url.includes("token=")&&t.transitionType!="link"&&t.transitionType!="reload"){
+          delete _tabManagement._map[a.id]
+          return bgComm.exeScriptInExtension(`debugger;bzComm.popIDE()`,a.id)
+        }
         _closeApp(a)
         _tabManagement._assignId({ide:a.id,appIFrames:a.appIFrames},a.id)
         delete a.myApp
