@@ -151,7 +151,10 @@ const _tabManagement={
 
 
     function _loadTab(t){
-      let a=_tabManagement._map[t.tabId||t.id]||new BZTab(t),f=t.frameId,pf=t.parentFrameId;
+      let a=_tabManagement._map[t.tabId||t.id]||new BZTab(t),
+          f=t.frameId,
+          pf=t.parentFrameId;
+
       if(!a.url){
         return
       }
