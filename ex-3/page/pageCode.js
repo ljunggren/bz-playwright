@@ -4478,8 +4478,8 @@ window._Util={
         $("#bz-dialog").remove()
         let o=$("<div id='bz-dialog' style='position:fixed;width:0;height:0;z-index:"+Number.MAX_SAFE_INTEGER+"'></div>").appendTo(document.body.parentElement)
         _body=o[0].attachShadow({mode:"open"})
-        _body.innerHTML=`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.max.css'>`
-                       +`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.icons.css'>`
+        _body.innerHTML=`<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/main.max.css'>`
+                       +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/main.icons.css'>`
                        +`<style>.bz-bg>*{background:#FFF;box-shadow: inset 2px 2px 2px hsla(0,0%,100%,.25), inset -2px -2px 2px rgba(0,0,0,.25);border: 2px solid #CCC;border-radius: 10px;}</style>`
       }else{
         _body=_body||_Util._getCurDocument().body
@@ -4797,8 +4797,8 @@ window._Util={
     if(_Util._style){
       d.write("<style>"+_Util._style+"</style>")
     }else{
-      d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/js-editor.css'>");
-      d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.max.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/js-editor.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/main.max.css'>");
     }
     d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.icons.css'>");
     d.write("<style>input{font-family: Courier;}\n#_content span{color:blue;}\nul input{border: 0;margin: 2px;}</style>");
@@ -8195,6 +8195,9 @@ window.bzComm={
       e=e[0]
     }
     return e&&e.constructor==String&&e.includes("findIframe")&&e
+  },
+  _getResourceRoot:function(){
+    return "chrome-extension:/"+"/"+bzComm.getBZId()
   },
   _getIframeIdByPath:function(p){
     let e=p&&bzComm._isInIFrame(p)

@@ -14,15 +14,6 @@
 body{
   margin:0;
 }
-.bz-hide{
-  display: none;
-}
-.bz-icon{
-  cursor:pointer;
-  background-color: transparent;
-  border: 0;
-}
-
 .bz-tip-iframe { 
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
@@ -103,6 +94,14 @@ body{
 }
 .bz-modal-body a{
   text-decoration:underline;
+}
+.bz-hide{
+  display: none;
+}
+.bz-icon{
+  cursor:pointer;
+  background-color: transparent;
+  border: 0;
 }
 .bz-modal-window .bz-modal-footer {
   position: absolute;

@@ -12340,8 +12340,8 @@ window._Util={
         $("#bz-dialog").remove()
         let o=$("<div id='bz-dialog' style='position:fixed;width:0;height:0;z-index:"+Number.MAX_SAFE_INTEGER+"'></div>").appendTo(document.body.parentElement)
         _body=o[0].attachShadow({mode:"open"})
-        _body.innerHTML=`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.max.css'>`
-                       +`<link rel='stylesheet' href='${SERVER_HOST.replace(/^https?:/,location.protocol)}/ide/css/main.icons.css'>`
+        _body.innerHTML=`<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/main.max.css'>`
+                       +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/main.icons.css'>`
                        +`<style>.bz-bg>*{background:#FFF;box-shadow: inset 2px 2px 2px hsla(0,0%,100%,.25), inset -2px -2px 2px rgba(0,0,0,.25);border: 2px solid #CCC;border-radius: 10px;}</style>`
       }else{
         _body=_body||_Util._getCurDocument().body
@@ -12659,8 +12659,8 @@ window._Util={
     if(_Util._style){
       d.write("<style>"+_Util._style+"</style>")
     }else{
-      d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/js-editor.css'>");
-      d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.max.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/js-editor.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/main.max.css'>");
     }
     d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.icons.css'>");
     d.write("<style>input{font-family: Courier;}\n#_content span{color:blue;}\nul input{border: 0;margin: 2px;}</style>");
@@ -15721,6 +15721,9 @@ window.bzComm={
       e=e[0]
     }
     return e&&e.constructor==String&&e.includes("findIframe")&&e
+  },
+  _getResourceRoot:function(){
+    return "chrome-extension:/"+"/"+bzComm.getBZId()
   },
   _getIframeIdByPath:function(p){
     let e=p&&bzComm._isInIFrame(p)
@@ -23570,7 +23573,7 @@ var _infoManagement={
     _extra=_extra?"<div class='extra'>"+_extra+"</div>":"";
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
 
-    var _html =`<link rel="stylesheet" type="text/css" href="chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css">`
+    var _html =`<link rel="stylesheet" type="text/css" href="${bzComm._getResourceRoot()}/css/bzInsert.css">`
               +"<div class='bz-importantInfo-bk' onmouseover='this.remove()'>"
               +"<pre class='bz-importantInfo "+_type+"' style='"+wl+"'>"
               +"<a class='bz-close-white bz-small-icon bz-small-btn' style='border:0;float:right;margin:-15px -15px;'></a>"
@@ -25743,45 +25746,6 @@ var _timingInfo={
         return
       }
     }
-    // if(this._setCmd("window._timingInfo?_timingInfo._setInfo("+JSON.stringify(m)+"):''")){
-    //   return
-    // }
-    // this._build(_doIt)
-    // function _doIt(_iframe,doc){
-    //   if(!_iframe.contentDocument){
-    //     return setTimeout(function(){
-    //       _doIt(_iframe,doc)
-    //     },10)
-    //   }
-    //   if(!_iframe.contentDocument.body.innerHTML){
-    //     var _html="<link rel='stylesheet' href='"+SERVER_HOST+"/ide/css/bzInsert.css'/><link rel='stylesheet' href='"+SERVER_HOST+"/ide/css/insert.icons.css'/><div style='background-color: rgba(0, 0, 0, 0.6);float:left;padding:10px;user-select:none;' class='bz-timing-info BZIgnore'></div>"
-    //     _iframe.contentDocument.write(_html)
-    //   }
-    //   var o=doc.createElement("div"),r;
-    //   o.className="bz-item-info";
-    //   o.innerHTML="<div class='bz-info-text'></div><div class='bz-sub-info'></div>";
-    //   _timingInfo._setHighLight()
-    //   i=i||0;
-    //   if(!m[i]){
-    //     return
-    //   }
-    //   localStorage.setItem(_timingInfo._messageKey,JSON.stringify(m))
-    //   if(!i){
-    //     _timingInfo._message=m;
-    //     r=$(doc).find(".bz-timing-info")[0];
-    //     r.innerHTML=""
-    //     r.append(o)
-    //   }else{
-    //     $(p).find(".bz-sub-info")[0].append(o)
-    //   }
-    //   $(o).find(".bz-info-text")[0].innerText=m[i++].trim();
-    //   if(m[i]){
-    //     _timingInfo._setInfo(m,i,o)
-    //   }
-    //   if(r){
-    //     _timingInfo._resize(_iframe,r)
-    //   }
-    // }
   },
   _end:function(){
     localStorage.removeItem(this._messageKey)
@@ -41601,7 +41565,7 @@ var _tipHandler={
     let os=$(".bz-tip-iframe").remove();
     os=$("<div class='bz-tip-iframe'></div>").appendTo(document.body.parentNode);
     _tipHandler._shadowRoot = os[0].attachShadow({ mode: 'open' });
-    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css'/>`
+    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/bzInsert.css'/>`
     +`<div class="bz-tip-2 BZIgnore" style="top: ${r.top+r.height/2+30}px; left: ${Math.max(r.width/2+r.left-150,0)}px;">`
     +`<div class="bz-tip BZIgnore" style="">`
     +`<button class="bz-close BZIgnore bz-icon" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 5px;top: 4px;padding:0;">`
@@ -41652,10 +41616,29 @@ var _innerWin={
       }
       _pos.top=_pos.top||0;
       _pos.left=_pos.left||0;
+      let _left=_pos.left,_top=_pos.top;
+      if(u.min){
+        if(_left>window.innerWidth-50){
+          _left=window.innerWidth-50
+        }else if(_left<-50){
+          _left=-50
+        }
+      }else{
+        if(_left>window.innerWidth-50){
+          _left=window.innerWidth-50
+        }else if(_left<u-150){
+          _left=-150
+        }
+      }
+      if(_top>window.innerHeight-20){
+        _top=window.innerHeight-20
+      }else if(_top<0){
+        _top=0
+      }
 
       $(_win).css({
-        top:_pos.top,
-        left:_pos.left,
+        top:_top,
+        left:_left,
         position:"fixed",
         "z-index":Number.MAX_SAFE_INTEGER,
         width: 0,
@@ -41670,7 +41653,7 @@ var _innerWin={
   },
   _getHTML:function(){
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
-    return `<link rel="stylesheet" type="text/css" href="chrome-extension:/${"/"+bzComm.getBZId()}/css/bzInsert.css">`
+    return `<link rel="stylesheet" type="text/css" href="${bzComm._getResourceRoot()}/css/bzInsert.css">`
     +`<div id="BZ_Win" class="bz-tb-container BZIgnore"`
     +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:100px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
     +`  <div class="bz-main-body">`
@@ -41704,7 +41687,7 @@ var _innerWin={
     +`    </div>`
     +`    <div>`
     +`      <div class="bz-tb-body" style='padding:5px 5px 0 5px;'>`
-    +`        <div class="bz-tb-buttons">`
+    +`        <div class="bz-tb-buttons" style="width:180px;">`
     +`          <button class="bz-btn-tb-icon bz-1 bz-record" onclick='BZ.toolbar.exeCmd(this)' title="Record (Insert into selected Test Case)">`
     +`            <svg width="20" height="20" id="Layer_1" data-name="Layer 1" viewBox="0 0 512 512">`
     +`              <defs>`

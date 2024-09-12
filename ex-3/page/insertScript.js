@@ -14,13 +14,30 @@ window.insertScript={
     }
   },
   insertIDE:function(appLang,ideLang,_fun){
-    insertScript.insertJS("ide/"+appLang+"/config.js",()=>{
-      insertScript.insertJS("ide/"+ideLang+"/word.js",()=>{
-        insertScript.insertJS("ide/main.js",()=>{
-          _fun&&_fun()
+    if(document.body){
+      insertScript.insertCss(()=>{
+        insertScript.insertJS("ide/"+appLang+"/config.js",()=>{
+          insertScript.insertJS("ide/"+ideLang+"/word.js",()=>{
+            insertScript.insertJS("ide/main.js",()=>{
+              _fun&&_fun()
+            })
+          })
         })
       })
+    }else{
+      setTimeout(function(){
+        insertScript.insertIDE(appLang,ideLang,_fun)
+      },100)
+    }
+  },
+  insertCss:function(_fun){
+    ["main.max.css","main.icon.css","js-editor.css"].forEach(x=>{
+      var _style=document.createElement("link")
+      _style.rel="stylesheet"
+      _style.href=bzComm._getResourceRoot()+'/css/'+x
+      document.body.appendChild(_style)
     })
+    _fun()
   },
   insertJS:function(d,_fun){
     var _script=document.createElement("script")
