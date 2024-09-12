@@ -34,7 +34,7 @@ window.insertScript={
     ["js-editor.css"].forEach(x=>{
       var _style=document.createElement("link")
       _style.rel="stylesheet"
-      _style.href=bzComm._getResourceRoot()+'/css/'+x
+      _style.href=bzComm.getResourceRoot()+'/css/'+x
       document.body.appendChild(_style)
     })
     _fun()

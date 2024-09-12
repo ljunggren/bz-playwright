@@ -1700,9 +1700,11 @@ var formatter={
 
         if(v.autoFormat&&!window.name){
           if(parent==window){
-            _load()
+            _load(v)
           }else{
-            bzComm._chkInit(0,0,_load)
+            bzComm.chkInit(0,0,()=>{
+              _load(v)
+            })
           }
         }
         formatter.chkXray(v);
@@ -1712,7 +1714,7 @@ var formatter={
       }
     })
 
-    function _load(){
+    function _load(v){
       if(formatter.isMasterPage(v)){
         return formatter.exeFormag(v,Date.now())
       }else if(location.href.match(/\/jenkins[.]/)){

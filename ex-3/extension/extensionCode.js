@@ -12341,7 +12341,7 @@ window._Util={
         $("#bz-dialog").remove()
         let o=$("<div id='bz-dialog' style='position:fixed;width:0;height:0;z-index:"+Number.MAX_SAFE_INTEGER+"'></div>").appendTo(document.body.parentElement)
         _body=o[0].attachShadow({mode:"open"})
-        _body.innerHTML=`<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/main.max.css'>`
+        _body.innerHTML=`<link rel='stylesheet' href='${bzComm.getResourceRoot()}/css/main.max.css'>`
                        +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/main.icons.css'>`
                        +`<style>.bz-bg>*{background:#FFF;box-shadow: inset 2px 2px 2px hsla(0,0%,100%,.25), inset -2px -2px 2px rgba(0,0,0,.25);border: 2px solid #CCC;border-radius: 10px;}</style>`
       }else{
@@ -12660,8 +12660,8 @@ window._Util={
     if(_Util._style){
       d.write("<style>"+_Util._style+"</style>")
     }else{
-      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/js-editor.css'>");
-      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/main.max.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm.getResourceRoot()+"/css/js-editor.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm.getResourceRoot()+"/css/main.max.css'>");
     }
     d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.icons.css'>");
     d.write("<style>input{font-family: Courier;}\n#_content span{color:blue;}\nul input{border: 0;margin: 2px;}</style>");
@@ -15666,7 +15666,7 @@ window.bzComm={
       }
     }
   },
-  _chkInit:function(_time,_inAppFun,_inOth){
+  chkInit:function(_time,_inAppFun,_inOth){
     _time=_time||Date.now()
     if(bzComm.getIframeId()){
       bzComm.init()
@@ -15677,7 +15677,7 @@ window.bzComm={
     }else{
       setTimeout(()=>{
         if(Date.now()-_time<2000){
-          bzComm._chkInit(_time,_inAppFun,_inOth)
+          bzComm.chkInit(_time,_inAppFun,_inOth)
         }else{
           _inOth&&_inOth()
         }
@@ -15726,7 +15726,7 @@ window.bzComm={
     }
     return e&&e.constructor==String&&e.includes("findIframe")&&e
   },
-  _getResourceRoot:function(){
+  getResourceRoot:function(){
     return "chrome-extension:/"+"/"+bzComm.getBZId()
   },
   _getIframeIdByPath:function(p){
@@ -16106,7 +16106,7 @@ if(window.name=="bz-client"){
     bzComm.init()
   }
 }else{
-  bzComm._chkInit()
+  bzComm.chkInit()
 };
 var _DialogViewDef={
   //modal cover
@@ -23577,7 +23577,7 @@ var _infoManagement={
     _extra=_extra?"<div class='extra'>"+_extra+"</div>":"";
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
 
-    var _html =`<link rel="stylesheet" type="text/css" href="${bzComm._getResourceRoot()}/css/bzInsert.css">`
+    var _html =`<link rel="stylesheet" type="text/css" href="${bzComm.getResourceRoot()}/css/bzInsert.css">`
               +"<div class='bz-importantInfo-bk' onmouseover='this.remove()'>"
               +"<pre class='bz-importantInfo "+_type+"' style='"+wl+"'>"
               +"<a class='bz-close-white bz-small-icon bz-small-btn' style='border:0;float:right;margin:-15px -15px;'></a>"
@@ -41569,7 +41569,7 @@ var _tipHandler={
     let os=$(".bz-tip-iframe").remove();
     os=$("<div class='bz-tip-iframe'></div>").appendTo(document.body.parentNode);
     _tipHandler._shadowRoot = os[0].attachShadow({ mode: 'open' });
-    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/bzInsert.css'/>`
+    _tipHandler._shadowRoot.innerHTML = `<link rel='stylesheet' href='${bzComm.getResourceRoot()}/css/bzInsert.css'/>`
     +`<div class="bz-tip-2 BZIgnore" style="top: ${r.top+r.height/2+30}px; left: ${Math.max(r.width/2+r.left-150,0)}px;">`
     +`<div class="bz-tip BZIgnore" style="">`
     +`<button class="bz-close BZIgnore bz-icon" type="button" onclick="$('.bz-tip-iframe').remove();" style="position: absolute;right: 5px;top: 4px;padding:0;">`
@@ -41657,7 +41657,7 @@ var _innerWin={
   },
   _getHTML:function(){
     let _host=SERVER_HOST.replace(/^http(s)?:/,location.protocol);
-    return `<link rel="stylesheet" type="text/css" href="${bzComm._getResourceRoot()}/css/bzInsert.css">`
+    return `<link rel="stylesheet" type="text/css" href="${bzComm.getResourceRoot()}/css/bzInsert.css">`
     +`<div id="BZ_Win" class="bz-tb-container BZIgnore"`
     +`  style="font-size: 13px; font-weight: normal; color: rgb(102, 102, 102);min-width:100px;position: fixed;box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 9px;">`
     +`  <div class="bz-main-body">`

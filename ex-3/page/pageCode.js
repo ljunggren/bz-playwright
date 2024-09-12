@@ -4478,7 +4478,7 @@ window._Util={
         $("#bz-dialog").remove()
         let o=$("<div id='bz-dialog' style='position:fixed;width:0;height:0;z-index:"+Number.MAX_SAFE_INTEGER+"'></div>").appendTo(document.body.parentElement)
         _body=o[0].attachShadow({mode:"open"})
-        _body.innerHTML=`<link rel='stylesheet' href='${bzComm._getResourceRoot()}/css/main.max.css'>`
+        _body.innerHTML=`<link rel='stylesheet' href='${bzComm.getResourceRoot()}/css/main.max.css'>`
                        +`<link rel='stylesheet' href='${SERVER_HOST}/ide/css/main.icons.css'>`
                        +`<style>.bz-bg>*{background:#FFF;box-shadow: inset 2px 2px 2px hsla(0,0%,100%,.25), inset -2px -2px 2px rgba(0,0,0,.25);border: 2px solid #CCC;border-radius: 10px;}</style>`
       }else{
@@ -4797,8 +4797,8 @@ window._Util={
     if(_Util._style){
       d.write("<style>"+_Util._style+"</style>")
     }else{
-      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/js-editor.css'>");
-      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm._getResourceRoot()+"/css/main.max.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm.getResourceRoot()+"/css/js-editor.css'>");
+      d.write("<link rel='stylesheet' type='text/css' href='"+bzComm.getResourceRoot()+"/css/main.max.css'>");
     }
     d.write("<link rel='stylesheet' type='text/css' href='"+_host+"/ide/css/main.icons.css'>");
     d.write("<style>input{font-family: Courier;}\n#_content span{color:blue;}\nul input{border: 0;margin: 2px;}</style>");
@@ -8139,7 +8139,7 @@ window.bzComm={
       }
     }
   },
-  _chkInit:function(_time,_inAppFun,_inOth){
+  chkInit:function(_time,_inAppFun,_inOth){
     _time=_time||Date.now()
     if(bzComm.getIframeId()){
       bzComm.init()
@@ -8150,7 +8150,7 @@ window.bzComm={
     }else{
       setTimeout(()=>{
         if(Date.now()-_time<2000){
-          bzComm._chkInit(_time,_inAppFun,_inOth)
+          bzComm.chkInit(_time,_inAppFun,_inOth)
         }else{
           _inOth&&_inOth()
         }
@@ -8199,7 +8199,7 @@ window.bzComm={
     }
     return e&&e.constructor==String&&e.includes("findIframe")&&e
   },
-  _getResourceRoot:function(){
+  getResourceRoot:function(){
     return "chrome-extension:/"+"/"+bzComm.getBZId()
   },
   _getIframeIdByPath:function(p){
@@ -8579,7 +8579,7 @@ if(window.name=="bz-client"){
     bzComm.init()
   }
 }else{
-  bzComm._chkInit()
+  bzComm.chkInit()
 };
 var _domRecorder={
   _uploadFileTypes:["avi","bat", "css", "docx", "epub", "gif", "html", "jpg", "js", "json", "odt","ogv","pdf", "png", "rtf", "sh", "txt", "zip"],
