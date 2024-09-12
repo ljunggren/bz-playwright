@@ -7801,52 +7801,60 @@ window.BZ={
   },
   initAppData:function(){
     if(window.extensionContent){
-      console.log("initAppData",bzComm.getIframeId())
-      bzComm.postToIDE({
-        fun:"getSharedData",
-        scope:"BZ",
-        return:function(d){
-          if(d){
-            BZ.assignShareData(d)
-            _aiDataHandler._init()
-
-            if(BZ._isRecording()){
-              setTimeout(()=>{
-                _domRecorder._handleFileInput()
-              },100)
-            }else if(BZ._data._status){
-              bzComm.postToApp({
-                fun:"_takeoverWin",
-                scope:"TWHandler",
-                ps:[1]
-              })
-            }
-
-            bzComm.postToApp({
-              fun:"insertJQuery",
-              scope:"insertScript",
-              ps:[d],
-              insertCallFun:1,
-              return:function(){
-                if(BZ._isRecording()||BZ._isAutoRunning()){
-                  _domRecorder._refresh()
-                }
-                BZ._pageReady=1
+      if(!BZ._initAppData){
+        console.log("initAppData",bzComm.getIframeId())
+        bzComm.postToIDE({
+          fun:"getSharedData",
+          scope:"BZ",
+          return:function(d){
+            if(d){
+              BZ.assignShareData(d)
+              _aiDataHandler._init()
+  
+              if(BZ._isRecording()){
+                setTimeout(()=>{
+                  _domRecorder._handleFileInput()
+                },100)
+              }else if(BZ._data._status){
+                bzComm.postToApp({
+                  fun:"_takeoverWin",
+                  scope:"TWHandler",
+                  ps:[1]
+                })
               }
-            })
-            bzComm._exeInIframes({
-              fun:"initAppData",
-              scope:"BZ"
-            })
-            if(!bzComm.getIframeId()){
-              bzComm.postToIDE({
-                fun:"infoAppReady",
-                scope:"BZ"
+  
+              bzComm.postToApp({
+                fun:"insertJQuery",
+                scope:"insertScript",
+                ps:[d],
+                insertCallFun:1,
+                return:function(){
+                  if(BZ._isRecording()||BZ._isAutoRunning()){
+                    _domRecorder._refresh()
+                  }
+                  BZ._pageReady=1
+                }
               })
+              _end()
             }
           }
-        }
+        })
+      }else{
+        _end()
+      }
+    }
+
+    function _end(){
+      bzComm._exeInIframes({
+        fun:"initAppData",
+        scope:"BZ"
       })
+      if(!bzComm.getIframeId()){
+        bzComm.postToIDE({
+          fun:"infoAppReady",
+          scope:"BZ"
+        })
+      }
     }
   },
   _isAutoRunning:function(){
@@ -8110,18 +8118,7 @@ window.bzComm={
     }
     if(parent!=window){
       if(bzComm._isAppExtension()){
-        window.addEventListener('message', (e) => {
-          if (e.data.type==='bz-set-iframe-idx') {
-            bzComm.postToBackground({
-              fun:"updateIframeIdx",
-              scope:"bgComm",
-              ps:[bzComm.getIframeId(),e.data.idx]
-            })
-            bzComm.buildIFrameMap()
-          }else if(e.data.type==='bz-exe'){
-            window[e.data.scope][e.data.fun](...(e.data.ps||[]))
-          }
-        });
+        iframeManagement._listenUpdateIdx()
       }
     }else{
       setTimeout(()=>{
@@ -8179,20 +8176,6 @@ window.bzComm={
   },  
   _focusIDE:function(){
     bzComm.postToBackground({fun:"focusTab",scope:"bgUtil",ps:[bzComm.getIdeTabId()]})
-  },  
-  _getNotReadyIFrame:function(){
-    let v= bzComm._findIFrame((x)=>{return !x.bzCommReady})
-    if(v){
-      console.log("Missing bzCommReady:",v)
-    }else{
-      v=bzComm._findIFrame((x)=>{return x.idx===undefined})
-      if(v){
-        console.log("Missing idx:"+v)
-      }else{
-        console.log("Not missing")
-        bzComm._findIFrame(x=>console.log(x))
-      }
-    }
   },
   _getIframePathById: function () {
     let ks=[],f=bzComm.getIframeId();
@@ -8362,34 +8345,24 @@ window.bzComm={
   updateAppIFrameMap:function(v,_updateSubIframe){
     document.documentElement.setAttribute("appIFrames",JSON.stringify(v).replace(/"/g,"'"))
     if(_updateSubIframe){
-      let d=bzComm._getIframeByAttr(bzComm.getIframeId(),0,v)
-      Object.keys(d).forEach((k)=>{
-        k=parseInt(k)
-        if(!Number.isNaN(k)){
-          bzComm.postToAppExtension({
-            fun:"updateAppIFrameMap",
-            scope:"bzComm",
-            toIFrameId:k,
-            ps:[v,1]
-          })
-        }
+      bzComm._exeInIframes({
+        fun:"updateAppIFrameMap",
+        scope:"bzComm",
+        ps:[v,1]
       })
+      // let d=bzComm._getIframeByAttr(bzComm.getIframeId(),0,v)
+      // Object.keys(d).forEach((k)=>{
+      //   k=parseInt(k)
+      //   if(!Number.isNaN(k)){
+      //     bzComm.postToAppExtension({
+      //       fun:"updateAppIFrameMap",
+      //       scope:"bzComm",
+      //       toIFrameId:k,
+      //       ps:[v,1]
+      //     })
+      //   }
+      // })
     }
-  },
-  buildIFrameMap: function (fs) {
-    fs=fs||$("IFRAME").toArray()
-    fs.forEach((x,i)=>{
-      if(x.contentDocument&&x.contentWindow&&!x.contentWindow.bzComm){
-        bzComm.postToBackground({
-          fun:"updateIframeIdx",
-          scope:"bgComm",
-          ps:[x.contentWindow.curBZIframeId,i]
-        })
-        bzComm.buildIFrameMap($(x.contentDocument).find("IFRAME").toArray())
-      }else{
-        x.contentWindow.postMessage({type:"bz-set-iframe-idx",idx:i}, "*")
-      }
-    })
   },
   reportIFrameResize:function(v){
     let f=bzComm._curResizeIFrame
@@ -9148,6 +9121,7 @@ var _domRecorder={
     $(b).on("change","input,textarea,select",_domRecorder._bindFun);
     $(b).on("focus","input,textarea,select",_domRecorder._bindFocus);
     $(b).on("blur","[contenteditable=true]",_domRecorder._bindContentEditable);
+    // $(b).on("mouseenter","iframe",_domRecorder._bindEnterIframe);
 
     $(_document).find("*").toArray().forEach(function(e){
       e=e.shadowRoot
@@ -10198,6 +10172,9 @@ var _domRecorder={
     if(a.target==this){
       _domRecorder._recordEvent(a,this.innerHTML);
     }
+  },
+  _bindEnterIframe:function(a){
+    bzComm._assignIFrameIdx(a)
   },
   _bindFocus:function(a){
     if(!BZ._isRecording()){

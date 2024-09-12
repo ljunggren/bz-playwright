@@ -97,6 +97,7 @@ const _tabManagement={
         let i=_tabManagement._map[a.myIde]
         if(i){
           if(t.frameId){
+            console.log("remove iframe",t.frameId)
             let p=i.getIframeById(t.parentFrameId)
             if(p){
               cf=p[t.frameId]
@@ -126,21 +127,22 @@ const _tabManagement={
     });
 
     chrome.webNavigation.onErrorOccurred.addListener((t) => {
-      _tabManagement._loadData(function(){
-        let td=t.tabId||t
-        let a=_tabManagement._map[td]
-        if(!a){
-          return
-        }
-        let i=_tabManagement._map[a.myIde]
-        if(i){
-          bgComm.postMessageToIDE(a.myIde,{
-            scope:"BZ",
-            fun:"infoLoadPageError",
-            ps:[t]
-          })
-        }
-      })
+      console.log("error",t)
+      // _tabManagement._loadData(function(){
+      //   let td=t.tabId||t
+      //   let a=_tabManagement._map[td]
+      //   if(!a){
+      //     return
+      //   }
+      //   let i=_tabManagement._map[a.myIde]
+      //   if(i){
+      //     bgComm.postMessageToIDE(a.myIde,{
+      //       scope:"BZ",
+      //       fun:"infoLoadPageError",
+      //       ps:[t]
+      //     })
+      //   }
+      // })
     })
 
     chrome.webNavigation.onCommitted.addListener((t) => {
@@ -174,22 +176,27 @@ const _tabManagement={
       }else if(a.app){
         let i=_tabManagement._map[a.myIde]
         if(i){
-          bgComm.postMessageToIDE(a.myIde,{
-            fun:"infoLoadingNewPage",
-            scope:"BZ"
-          })
 
           let fs=i.appIFrames
           if(!f){
-            fs[0]={bzCommReady:1,idx:0}
+            fs[0]={idx:0}
+            bgComm.postMessageToIDE(a.myIde,{
+              fun:"infoLoadingNewPage",
+              scope:"BZ"
+            })
           }else{
-            debugger
+            console.log("add iframe",f)
             let p=i.getIframeById(pf)
             if(p){
               p[f]={
                 url:t.url,
-                idx:Object.keys(p).length,
-                bzCommReady:1//t.url=="about:blank"?1:0
+                // idx:Object.keys(p).filter(x=>parseInt(x)).length,
+              }
+              if(t.url!="about:blank"){
+                bgComm.postMessageToIDE(a.myIde,{
+                  fun:"infoLoadingNewPage",
+                  scope:"BZ"
+                })      
               }
               // Object.values(p).forEach(v=>{
               //   delete v.idx
@@ -229,30 +236,6 @@ const _tabManagement={
     }
 
   },
-  _initAllIframe:function(t,_fun){
-    t.forEachIframe((v,f)=>{
-      if(!v.bzCommReady){
-        _tabManagement._initIframe(t,f)
-      }
-    })
-    _fun&&_fun()
-  },
-  _initAllIframeIdx:function(t){
-    t.findIframe((v,f)=>{
-      if(v.idx===undefined){
-        _tabManagement._initIframe(t,f,0,function(){
-          let p=t._getParentFrame(f)
-          bgComm.postMessageToAppExtension(t.myApp||t.id,{
-            fun:"buildIFrameMap",
-            scope:"bzComm",
-            toIFrameId:p.k,
-          })
-          _tabManagement._chkIframeIdx(t)
-        })
-        return 1
-      }
-    })
-  },
   _initIframe:function(t,f,d,_fun){
     let ti=parseInt(t.myApp||t.id)
     f=parseInt(f)
@@ -281,7 +264,6 @@ const _tabManagement={
       if(t){
         let f=t.getIframeById(iframeId)
         if(f){
-          f.bzCommReady=1
           _tabManagement._store()
           _tabManagement._buildIFrameMap(t)
         }
@@ -306,51 +288,36 @@ const _tabManagement={
   _reportReady:function(t){
     t=t||Object.values(_tabManagement._map).find(x=>x.app)
     clearTimeout(t._reInitIframeTimer)
-    if(!t.findIframe((v,k)=>v.idx===undefined)){
-      _tabManagement._assignId({
-        appIFrames:t.appIFrames
-      },t.id)
-
-      _tabManagement._assignId({
-        appIFrames:t.appIFrames
-      },t.myIde)
-      bgComm.postMessageToAppExtension(t.id,{
-        fun:"initAppData",
-        scope:"BZ"
+    t._reInitIframeTimer=setTimeout(()=>{
+      bgComm.postMessageToAppExtension(t.myApp||t.id,{
+        fun:"updateAppIFrameMap",
+        scope:"bzComm",
+        toIFrameId:0,
+        ps:[t.appIFrames,1]
       })
-    }else{
+      bgComm.postMessageToIDE(t.myIde||t.id,{
+        fun:"updateAppIFrameMap",
+        scope:"bzComm",
+        toIFrameId:0,
+        ps:[t.appIFrames]
+      })
       t._reInitIframeTimer=setTimeout(()=>{
-        _tabManagement._initAllIframe(t)
+        bgComm.postMessageToAppExtension(t.id,{
+          fun:"initAppData",
+          scope:"BZ"
+        })
       },100)
-    }
+    },100)
   },
   _buildIFrameMap:function(t){
-    clearTimeout(t._reInitIframeTimer)
-    if(!t.findIframe((v,k)=>!v.bzCommReady)){
-      clearTimeout(t._buildIFrameTimer);
-      t._buildIFrameTimer=setTimeout(()=>{
-        bgComm.postMessageToAppExtension(t.id,{
-          fun:"buildIFrameMap",
-          scope:"bzComm",
-          toIFrameId:0,
-        })
-        _tabManagement._chkIframeIdx(t)
-      },100)
-    }else{
-      t._reInitIframeTimer=setTimeout(()=>{
-        _tabManagement._initAllIframe(t)
-      },100)
-    }
-  },
-  _chkIframeIdx:function(t){
-    setTimeout(()=>{
-      if(!t.findIframe((v,k)=>!v.bzCommReady)){
-        _tabManagement._initAllIframeIdx(t)
-      }else{
-        t._reInitIframeTimer=setTimeout(()=>{
-          _tabManagement._initAllIframe(t)
-        },100)
-      }
+    clearTimeout(t._buildIFrameTimer)
+    t._buildIFrameTimer=setTimeout(()=>{
+      bgComm.postMessageToAppExtension(t.id,{
+        fun:"buildIFrameMap",
+        scope:"iframeManagement",
+        toIFrameId:0,
+        ps:[]
+      })
     },100)
   },
   _buildMap:function(fun){
