@@ -166,9 +166,29 @@ const _tabManagement={
         if(t.frameId||t.documentLifecycle=="prerender"){
           return
         }else if(!t.url.includes("token=")&&t.transitionType!="link"&&t.transitionType!="reload"){
-          debugger
           delete _tabManagement._map[a.id]
-          return bgComm.exeScriptInExtension(`debugger;bzComm.popIDE()`,a.id)
+
+          chrome.scripting.executeScript({
+            target: { tabId: parseInt(a.id) },
+            function: () => {
+              _doIt(Date.now())
+              function _doIt(t){
+                if(window.bzComm){
+                  bzComm.popIDE()
+                }else{
+                  if(Date.now()-t<3000){
+                    setTimeout(()=>{
+                      _doIt(t)
+                    },1)
+                  }
+                }
+              }
+            }
+          },(r)=>{
+            _sendResponse&&_sendResponse(r);
+          });
+
+          return
         }
         _closeApp(a)
         _tabManagement._assignId({ide:a.id,appIFrames:a.appIFrames},a.id)
@@ -248,7 +268,26 @@ const _tabManagement={
       appIFrames:t.appIFrames,
       iframeId:f||0
     };
-    bgComm.exeScriptInExtension(`bzComm.init(${JSON.stringify(d)})`,ti,f)
+
+    chrome.scripting.executeScript({
+      target: { tabId: ti,frameIds:[f] },
+      function: (d) => {
+        _doIt(d,Date.now())
+        function _doIt(d,t){
+          if(window.bzComm){
+            bzComm.init(d)
+          }else{
+            if(Date.now()-t<3000){
+              setTimeout(()=>{
+                _doIt(d,t)
+              },1)
+            }
+          }
+        }
+      },
+      args: [d]
+    },(r)=>{});
+
     chrome.scripting.executeScript({
       target: { tabId: ti,frameIds:[f] },
       function: (f) => {
@@ -390,10 +429,25 @@ const _tabManagement={
     })
   },
   _assignId:function(d,id){
-    d.appIFrames=JSON.stringify(d.appIFrames).replace(/"/g,"'")
-    let _script=`bzComm.assignId(${JSON.stringify(d)});`
+    chrome.scripting.executeScript({
+      target: { tabId: id},
+      function: (d) => {
+        _doIt(d,Date.now())
+        function _doIt(d,t){
+          if(window.bzComm){
+            bzComm.assignId(d)
+          }else{
+            if(Date.now()-t<3000){
+              setTimeout(()=>{
+                _doIt(d,t)
+              },1)
+            }
+          }
+        }
+      },
+      args: [d]
+    },(r)=>{});
 
-    bgComm.exeScriptInExtension(_script,id)
   },
   _askBZInfo:function(t,_fun){
     bgComm.postMessageToIDE(t.id,{

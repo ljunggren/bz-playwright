@@ -1698,16 +1698,11 @@ var formatter={
       if(v){
         v=JSON.parse(v)
 
-        if(v.autoFormat){
-          if(formatter.isMasterPage(v)){
-            return formatter.exeFormag(v,Date.now())
-          }else if(location.href.match(/\/jenkins[.]/)){
-            formatter.insertCss()
-            if(location.href.match(/jenkins[.].+\/job[\/]/)){
-              if(!location.href.match(/\/[0-9]+[\/]/)){
-                formatter.attachQuickLogClick()
-              }
-            }
+        if(v.autoFormat&&!window.name){
+          if(parent==window){
+            _load()
+          }else{
+            bzComm._chkInit(0,0,_load)
           }
         }
         formatter.chkXray(v);
@@ -1716,6 +1711,19 @@ var formatter={
         },1000)
       }
     })
+
+    function _load(){
+      if(formatter.isMasterPage(v)){
+        return formatter.exeFormag(v,Date.now())
+      }else if(location.href.match(/\/jenkins[.]/)){
+        formatter.insertCss()
+        if(location.href.match(/jenkins[.].+\/job[\/]/)){
+          if(!location.href.match(/\/[0-9]+[\/]/)){
+            formatter.attachQuickLogClick()
+          }
+        }
+      }
+    }
   },
   chkXray:function(v){
     if(v&&v.account&&v.account.xray&&location.href.includes(v.account.xray)){

@@ -31,7 +31,7 @@ window.insertScript={
     }
   },
   insertCss:function(_fun){
-    ["main.max.css","main.icon.css","js-editor.css"].forEach(x=>{
+    ["js-editor.css"].forEach(x=>{
       var _style=document.createElement("link")
       _style.rel="stylesheet"
       _style.href=bzComm._getResourceRoot()+'/css/'+x

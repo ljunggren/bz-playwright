@@ -123,32 +123,6 @@ globalThis.bgComm={
   getExeId:function(){
     bgComm._exeId=bgComm._exeId||Date.now()
     return bgComm._exeId++
-  },
-  exeScriptInExtension:function(_script,_tabId,_frameId,_sendResponse){
-    console.log("exeScriptInExtension",_script,_tabId,_frameId)
-    let _target={ tabId: parseInt(_tabId) }
-    _target.frameIds=[parseInt(_frameId||0)]
-    
-    chrome.scripting.executeScript({
-      target: _target,
-      function: (_script) => {
-        _doIt(Date.now())
-        function _doIt(t){
-          if(window.bzComm){
-            eval(_script)
-          }else if(location.href!="about:blank"){
-            if(Date.now()-t<3000){
-              setTimeout(()=>{
-                _doIt(t)
-              },1)
-            }
-          }
-        }
-      },
-      args: [_script]
-    },(result)=>{
-      _sendResponse&&_sendResponse(result);
-    });
   }
 }
 bgComm.init()

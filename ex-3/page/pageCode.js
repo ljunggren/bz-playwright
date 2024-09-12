@@ -8139,17 +8139,20 @@ window.bzComm={
       }
     }
   },
-  _chkInit:function(_time){
+  _chkInit:function(_time,_inAppFun,_inOth){
     _time=_time||Date.now()
     if(bzComm.getIframeId()){
       bzComm.init()
       if(bzComm._isApp()){
         insertScript.insertJQuery()
       }
+      _inAppFun&&_inAppFun()
     }else{
       setTimeout(()=>{
-        if(Date.now()-_time<10000){
-          bzComm._chkInit()
+        if(Date.now()-_time<2000){
+          bzComm._chkInit(_time,_inAppFun,_inOth)
+        }else{
+          _inOth&&_inOth()
         }
       },1)
     }
