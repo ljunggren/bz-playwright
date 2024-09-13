@@ -1,3 +1,4 @@
+const { chromium } = require('playwright');
 const fs = require('fs');
 const killer = require('tree-kill');
 
@@ -21,18 +22,19 @@ const Service = {
       Service.nextResetTime=Date.now()+((parseInt(Service.testReset)||1)*60000)
     }
   },
-  logMonitor(page,testReset,keepalive,reportPrefix,inService, logLevel, browser, video, saveVideo){
+  logMonitor({testReset,keepalive,reportPrefix,inService, LogLevelArray, video,width,height,userdatadir, saveVideo}){
     this.inService=inService;
     this.testReset=testReset;
     Service.setNextResetTime()
 
     this.keepalive=keepalive;
     this.video=video;
-    this.page=page;
-    this.browser=browser
+    this.width=width;
+    this.height=height;
+    this.userdatadir=userdatadir;
     this.saveVideo = saveVideo;
 
-    this.logLevel=logLevel;
+    this.logLevel=LogLevelArray;
 
     if (this.video && this.video != "none") {
       Service.consoleMsg("Running in video mode");
@@ -44,9 +46,16 @@ const Service = {
       Service.consoleMsg("Override report prefix: " + reportPrefix);
       Service.reportPrefix=reportPrefix + "_";
     } 
-
-   // page.on('console', (log) => console[log._type](log._text));
-
+  },
+  setBeginningFun(fun){
+    Service.beginningFun=fun
+  },
+  setPopup(popup){
+    this.popup=popup
+  },
+  setPage(page,browser){
+    this.page=page
+    this.browser=browser
 
     page.on('console', msg => {
       let timeout,t;
@@ -113,7 +122,6 @@ const Service = {
         }
       }
     })
-    
     function trimPreMsg(msg){
       if(msg&&msg.startsWith("BZ-LOG:")){
         msg=msg.substring(7).trim()
@@ -122,16 +130,7 @@ const Service = {
       }
       return msg
     }
-  },
-  setBeginningFun(fun){
-    Service.beginningFun=fun
-  },
-  setPopup(popup){
-    this.popup=popup
-  },
-  setPage(page,browser){
-    this.page=page
-    this.browser=browser
+
   },
   //task:{key,fun,onTime,timeout}
   addTask(task){
@@ -224,10 +223,11 @@ const Service = {
     })
     
     Service.addTask({
-      key:"coop-reload",
+      key:"coop-reload:",
       fun(msg){
+        msg=msg.substring(12).trim()
         Service.cancelChkCoop()
-        Service.reset(1)
+        Service.reloadIDE(msg)
       },
       timeout:Service.stdTimeout
     })
@@ -600,13 +600,74 @@ const Service = {
     })
   },
   async reloadIDE(msg){
-    Service.consoleMsg("Reload IDE for "+msg)
-    Service.page.evaluate(()=>{  
-      localStorage.setItem("bz-reboot",1)
-    });
+    Service.consoleMsg("Reload IDE ...")
     
-    await Service.page.reload();
+    await Service.browser.close();
+    await Service.startIDE(Service.startUrl.replace("/run","/"),msg);
+
     Service.init() 
+  },  
+  async startIDE(url,data){
+    Service.startUrl = url;
+    const launchargs = [
+      '--disable-extensions-except=' + __dirname + '/ex-3',
+      '--load-extension=' + __dirname + '/ex-3',
+      '--ignore-certificate-errors',
+      '--no-sandbox',
+      `--window-size=${Service.width},${Service.height}`,
+      '--defaultViewport: null',
+    ];
+
+
+    let browser = await chromium.launchPersistentContext(Service.userdatadir,{
+      recordVideo: Service.video==="none"? undefined : {
+        dir: 'videos/',
+      },
+      headless: false,
+      args: launchargs,
+      launchType: "PERSISTENT"
+    });
+
+    let page = await browser.newPage();
+
+
+    // Setup popup
+    page.on('popup', async popup => {
+      console.log('Popup');
+      popup.on("error", appPrintStackTrace);
+      popup.on("pageerror", appPrintStackTrace);
+      popup.setViewportSize({ width: Service.width, height: Service.height });
+      Service.setPopup(popup);
+    })
+
+    page.on("error", idePrintStackTrace);
+    page.on("pageerror", idePrintStackTrace);
+
+    Service.setPage(page,browser);
+
+    const response = await page.goto(url);
+
+    if(data){
+      console.log("Data: ", data);
+      await page.evaluate((d)=>{
+        setTimeout(()=>{
+          localStorage.setItem("bz-reboot",1)
+          console.log("lws:"+d)
+          localStorage.setItem("coop-tasks",d)
+          localStorage.setItem("lws-tasks",d)
+        },1000)
+      },[data]);
+    }
+
+    function appPrintStackTrace(err){
+      Service.consoleMsg(err.stack,"error","app");
+    }
+
+    function idePrintStackTrace(err){
+      Service.consoleMsg(err.stack,"error","ide");
+      Service.chkIDE()  
+    }
+
   },
   shutdown(msg){
     if(Service.debugIDE){
