@@ -7632,32 +7632,32 @@ tbody td:first-child,tbody td:last-child{
 };
 window.BZ={
   _curShareData:0,
-  _codeToKeyDataMap:{
-    "BZ._data._autoRunning":"autoRunning",
-    "_IDE._data._setting":"ideSetting",
-    "_config":"config",
-    "BZ._curEnv":"curEnv",
-    "_aiAuthHandler._data":"aiAuthHandler",
-    "BZ._data._curProject":"curProject",
-    "_IDE._data._curVersion":"curVersion",
-    "_IDE._data._curModule._data":"curModule",
-    "_IDE._data._curTest._data":"curTest",
-    "_IDE._data._curAction":"curAction",
-    "_aiDataHandler":"aiDataHandler",
-    "_cooperatorHandler._data":"cooperatorHandler",
-    "BZ._hasVideo":"hasVideo",
-    _dictionaryConfig:"dictionaryConfig",
-    "BZ._data._status":"bzStatus",
-    "_ideDataBind._data._key":"ideDataBindKey",
-    "_ideDataBind._data._limit":"ideDataBindLimit",
-    "_innerWin._data._dataBind._showDataBind":"dataBindShowDataBind",
-    "_comCss":"comCss",
-    "curUser._curProject.setting":"curProjectSetting",
-    "_appWordHandler._wordMap":"appWordHandlerWordMap",
-    "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
-    "BZ._userHabit.toolbarPos":"userHabitToolbarPos",
-    "BZ._data._checkout":"checkout",
-  },
+  // _codeToKeyDataMap:{
+  //   "BZ._data._autoRunning":"autoRunning",
+  //   "_IDE._data._setting":"ideSetting",
+  //   "_config":"config",
+  //   "BZ._curEnv":"curEnv",
+  //   "_aiAuthHandler._data":"aiAuthHandler",
+  //   "BZ._data._curProject":"curProject",
+  //   "_IDE._data._curVersion":"curVersion",
+  //   "_IDE._data._curModule._data":"curModule",
+  //   "_IDE._data._curTest._data":"curTest",
+  //   "_IDE._data._curAction":"curAction",
+  //   "_aiDataHandler":"aiDataHandler",
+  //   "_cooperatorHandler._data":"cooperatorHandler",
+  //   "BZ._hasVideo":"hasVideo",
+  //   _dictionaryConfig:"dictionaryConfig",
+  //   "BZ._data._status":"bzStatus",
+  //   "_ideDataBind._data._key":"ideDataBindKey",
+  //   "_ideDataBind._data._limit":"ideDataBindLimit",
+  //   "_innerWin._data._dataBind._showDataBind":"dataBindShowDataBind",
+  //   "_comCss":"comCss",
+  //   "curUser._curProject.setting":"curProjectSetting",
+  //   "_appWordHandler._wordMap":"appWordHandlerWordMap",
+  //   "_IDE._data._setting.curEnvironment":"settingCurEnvironment",
+  //   "BZ._userHabit.toolbarPos":"userHabitToolbarPos",
+  //   "BZ._data._checkout":"checkout",
+  // },
   _data:{},
   _log:function(o){
     console.log("BZ._debug")
@@ -7888,7 +7888,7 @@ window.BZ={
   },
   _setSharedData:function(d){
     BZ._curShareData={...BZ._curShareData,...d}
-    d=_Util._changeObjectKeys(BZ._curShareData,BZ._codeToKeyDataMap)
+    // d=_Util._changeObjectKeys(BZ._curShareData,BZ._codeToKeyDataMap)
 
     bzComm.postToAppExtension({
       fun:"assignShareData",
@@ -7942,12 +7942,13 @@ window.BZ={
       "BZ._data._checkout":t&&BZ._isCheckout()&&t._data.type=="unit",
     }
     d={...BZ._curShareData,...d}
-    return _Util._changeObjectKeys(d,BZ._codeToKeyDataMap)
+    return d
+    // return _Util._changeObjectKeys(d,BZ._codeToKeyDataMap)
   },
   assignShareData:function(dd,_ignoreSub){
-    BZ._keyToCodeDataMap=BZ._keyToCodeDataMap||_Util._invertObject(BZ._codeToKeyDataMap)
-    let d=_Util._changeObjectKeys(dd,BZ._keyToCodeDataMap)
-
+    // BZ._keyToCodeDataMap=BZ._keyToCodeDataMap||_Util._invertObject(BZ._codeToKeyDataMap)
+    // let d=_Util._changeObjectKeys(dd,BZ._keyToCodeDataMap)
+    let d={...dd}
     for(var k in d){
       var v=d[k]
       let ks=k.split(".")
@@ -8005,64 +8006,64 @@ window.bzComm={
     return bzComm._newIdValue++
   },
   _keyToCodeMap:{
-    _setSharedData:"setSharedData",
-    _timingInfo:"timingInfo",
-    _start:"start",
-    _end:"end",
-    _setStatus:"setStatus",
-    _flashTmpCover:"flashTmpCover",
-    _bzDomPicker:"bzDomPicker",
-    _ideRecorder:"ideRecorder",
-    _ideTask:"ideTask",
-    _domActionTask:"domActionTask",
-    _exeAction:"exeAction",
-    _newItem:"newItem",
-    _ideActionManagement:"ideActionManagement",
-    _storeUserHabit:"storeUserHabit",
-    _aiDataUpdateHandler:"aiDataUpdateHandler",
-    _updateActionCommentDesc:"updateActionCommentDesc",
-    _receiveAPPInfo:"receiveAPPInfo",
-    _ideTestManagement:"ideTestManagement",
-    _insertInitRefresh:"insertInitRefresh",
-    _setClickFileInput:"setClickFileInput",
-    _domRecorder:"domRecorder",
-    _setPopMsg:"setPopMsg",
-    _mergeToSetAction:"mergeToSetAction",
-    _addNewItem:"addNewItem",
-    _setRequestCount:"setRequestCount",
-    _attachReqData:"attachReqData",
-    _appReqRepHandler:"appReqRepHandler",
-    _setToken:"setToken",
-    _aiAuthHandler:"aiAuthHandler",
-    _Util:"Util",
-    _log:"log",
-    _doAfterComment:"doAfterComment",
-    _tipHandler:"tipHandler",
-    _takeoverWin:"takeoverWin",
-    _takeoverPopMsg:"takeoverPopMsg",
-    _setBackTestPage:"setBackTestPage",
-    _innerWin:"innerWin",
-    _pickElement:"pickElement",
-    _isElementReady:"isElementReady",
-    _cssHandler:"cssHandler",
-    _endRequire:"endRequire",
-    _domActionTask:"domActionTask",
-    _getCanvasData:"getCanvasData",
-    _postAPIData:"postAPIData",
-    _setAlert:"setAlert",
-    _setOnbeforeunload:"setOnbeforeunload",
-    _triggerConfirm:"triggerConfirm",
-    _triggerPrompt:"triggerPrompt",
-    _getUICompleteTime:"getUICompleteTime",
-    _transferMonitor:"transferMonitor",
-    _infoManagement:"infoManagement",
-    _showImportantInfo:"showImportantInfo",
-    _originAJax:"originAJax",
-    _flashMutipleTmpCover:"flashMutipleTmpCover",
-    _showTmpCover:"showTmpCover",
-    _showOffset:"showOffset",
-    _removeTmpCover:"removeTmpCover",
-    _setIdx:"setIdx",
+    // _setSharedData:"setSharedData",
+    // _timingInfo:"timingInfo",
+    // _start:"start",
+    // _end:"end",
+    // _setStatus:"setStatus",
+    // _flashTmpCover:"flashTmpCover",
+    // _bzDomPicker:"bzDomPicker",
+    // _ideRecorder:"ideRecorder",
+    // _ideTask:"ideTask",
+    // _domActionTask:"domActionTask",
+    // _exeAction:"exeAction",
+    // _newItem:"newItem",
+    // _ideActionManagement:"ideActionManagement",
+    // _storeUserHabit:"storeUserHabit",
+    // _aiDataUpdateHandler:"aiDataUpdateHandler",
+    // _updateActionCommentDesc:"updateActionCommentDesc",
+    // _receiveAPPInfo:"receiveAPPInfo",
+    // _ideTestManagement:"ideTestManagement",
+    // _insertInitRefresh:"insertInitRefresh",
+    // _setClickFileInput:"setClickFileInput",
+    // _domRecorder:"domRecorder",
+    // _setPopMsg:"setPopMsg",
+    // _mergeToSetAction:"mergeToSetAction",
+    // _addNewItem:"addNewItem",
+    // _setRequestCount:"setRequestCount",
+    // _attachReqData:"attachReqData",
+    // _appReqRepHandler:"appReqRepHandler",
+    // _setToken:"setToken",
+    // _aiAuthHandler:"aiAuthHandler",
+    // _Util:"Util",
+    // _log:"log",
+    // _doAfterComment:"doAfterComment",
+    // _tipHandler:"tipHandler",
+    // _takeoverWin:"takeoverWin",
+    // _takeoverPopMsg:"takeoverPopMsg",
+    // _setBackTestPage:"setBackTestPage",
+    // _innerWin:"innerWin",
+    // _pickElement:"pickElement",
+    // _isElementReady:"isElementReady",
+    // _cssHandler:"cssHandler",
+    // _endRequire:"endRequire",
+    // _domActionTask:"domActionTask",
+    // _getCanvasData:"getCanvasData",
+    // _postAPIData:"postAPIData",
+    // _setAlert:"setAlert",
+    // _setOnbeforeunload:"setOnbeforeunload",
+    // _triggerConfirm:"triggerConfirm",
+    // _triggerPrompt:"triggerPrompt",
+    // _getUICompleteTime:"getUICompleteTime",
+    // _transferMonitor:"transferMonitor",
+    // _infoManagement:"infoManagement",
+    // _showImportantInfo:"showImportantInfo",
+    // _originAJax:"originAJax",
+    // _flashMutipleTmpCover:"flashMutipleTmpCover",
+    // _showTmpCover:"showTmpCover",
+    // _showOffset:"showOffset",
+    // _removeTmpCover:"removeTmpCover",
+    // _setIdx:"setIdx",
   },
   pageType:{
     bzIdeExtension:{
@@ -8409,11 +8410,11 @@ window.bzComm={
       return
     }
     let cp=bzComm.getCurPageType();
-    if(!bzComm._isIDEExtension()){
-      bzComm._codeToKeyMap=bzComm._codeToKeyMap||_Util._invertObject(bzComm._keyToCodeMap)
-      v.scope=bzComm._codeToKeyMap[v.scope]||v.scope
-      v.fun=bzComm._codeToKeyMap[v.fun]||v.fun
-    }
+    // if(!bzComm._isIDEExtension()){
+    //   bzComm._codeToKeyMap=bzComm._codeToKeyMap||_Util._invertObject(bzComm._keyToCodeMap)
+    //   v.scope=bzComm._codeToKeyMap[v.scope]||v.scope
+    //   v.fun=bzComm._codeToKeyMap[v.fun]||v.fun
+    // }
 
     if(v.toPage&&v.toPage!=cp.key){
       return bzComm._postMessage(v)
@@ -8531,8 +8532,8 @@ window.bzComm={
         v.toIFrameId=0
       }
     }
-    v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
-    v.scope=bzComm._keyToCodeMap[v.scope]||v.scope
+    // v.fun=bzComm._keyToCodeMap[v.fun]||v.fun
+    // v.scope=bzComm._keyToCodeMap[v.scope]||v.scope
 
     bzComm._handleReturnFun(v,fun)
     bzComm._postMessage(v)
