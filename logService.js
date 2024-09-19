@@ -165,10 +165,14 @@ const Service = {
       timeout:Service.stdTimeout
     })
     Service.addTask({
-      key:"I-AM-OK",
-      fun:function(){
+      key:"I-AM-OK:",
+      fun:function(msg){
+        // msg=msg.substring(8).trim()
+        // Service.tmpSetting=msg
         clearTimeout(Service.wakeupTimer)
         Service.tryWakeup++
+        Service.cancelChkCoop()
+        // Service.reloadIDE(msg)
       },
       timeout:Service.stdTimeout
     })
@@ -416,7 +420,7 @@ const Service = {
     Service.addTask({
       key:"timeout in ms:",
       fun(msg){
-        let v= (parseInt(msg.split(this.key)[1].trim())||0) + Service.stdTimeout;
+        let v= parseInt(msg.match(/[0-9]+/)||0) + Service.stdTimeout;
         return v;
       },
       msg:"Action timeout"
@@ -600,10 +604,10 @@ const Service = {
     })
   },
   async reloadIDE(msg){
-    Service.consoleMsg("Reload IDE ...")
-    
     await Service.browser.close();
-    await Service.startIDE(Service.startUrl.replace("/run","/"),msg);
+    let url=Service.startUrl.replace(/\/m[0-9]+\/t[0-9]+\/.+$/,"/")
+    console.log("Reload IDE: ", url);
+    await Service.startIDE(url,msg);
 
     Service.init() 
   },  
@@ -615,7 +619,7 @@ const Service = {
       '--ignore-certificate-errors',
       '--no-sandbox',
       `--window-size=${Service.width},${Service.height}`,
-      '--defaultViewport: null',
+      '--defaultViewport: null'
     ];
 
 
@@ -625,7 +629,8 @@ const Service = {
       },
       headless: false,
       args: launchargs,
-      launchType: "PERSISTENT"
+      launchType: "PERSISTENT",
+      // devtools: true
     });
 
     let page = await browser.newPage();
@@ -648,13 +653,12 @@ const Service = {
     const response = await page.goto(url);
 
     if(data){
-      console.log("Data: ", data);
       await page.evaluate((d)=>{
-        setTimeout(()=>{
-          localStorage.setItem("bz-reboot",1)
-          console.log("lws:"+d)
-          localStorage.setItem("coop-tasks",d)
-          localStorage.setItem("lws-tasks",d)
+        window["bz-reboot"]=1
+        window["coop-tasks"]=d
+      setTimeout(()=>{
+          // localStorage.setItem("bz-reboot",1)
+          // localStorage.setItem("coop-tasks",d)
         },1000)
       },[data]);
     }

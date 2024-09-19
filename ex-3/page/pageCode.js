@@ -8418,7 +8418,7 @@ window.bzComm={
     if(v.toPage&&v.toPage!=cp.key){
       return bzComm._postMessage(v)
     }else if(v.result){
-      return _handleResult(v)
+      return bzComm._handleResult(v)
     }
     try{
       if(v.eval){
@@ -8454,45 +8454,57 @@ window.bzComm={
       delete rv.fromIFrameId
       bzComm._postMessage(rv)
     }
-
-    function _handleResult(v){
-      if(v.return){
-        let fun=bzComm._callBackMap[v.return].return;
-        delete bzComm._callBackMap[v.return];
-        if(v.result){
-          if(v.result.error){
-            if(cp.key=="bzIde"){
-              alert(v.result.error)
-            }else{
-              console.log("BZ-LOG:"+v.result.error)
-            }
+  },
+  _handleResult:function(v){
+    if(v.return){
+      let cp=bzComm.getCurPageType()
+      let fun=bzComm._callBackMap[v.return].return;
+      delete bzComm._callBackMap[v.return];
+      if(v.result){
+        if(v.result.error){
+          if(cp.key=="bzIde"){
+            alert(v.result.error)
+          }else{
+            console.log("BZ-LOG:"+v.result.error)
           }
-
-          fun&&fun(v.result.value,v.ps)
         }
-      }else{
-        window[v.scope][v.fun](v.result.value,v.ps)
+
+        fun&&fun(v.result.value,v.ps)
       }
+    }else{
+      window[v.scope][v.fun](v.result.value,v.ps)
     }
   },
-  _postMessage:function(v){
+  _postMessage:function(v,_retry){
+    _retry=_retry||0
     let cp=bzComm.getCurPageType()
     // console.log("Send message from "+cp.key,v)
     if(cp.getTabId()==v.toId&&v.toIFrameId==bzComm.getIframeId()){
       window.dispatchEvent(new CustomEvent(v.toPage, {detail:v}));
     }else{
-      let _bkFun=function(r){
-        // console.log("Get response message on "+cp.key+" and from remote page")
-
-        bzComm.handleMessage(r)
-      }
-  
       if(window.extensionContent){
-        chrome.runtime.sendMessage(v)
+        chrome.runtime.sendMessage(v,_handleErr)
       }else if(window.name=="bz-master"){
-        chrome.runtime.sendMessage(bzComm.getBZId(), v);
+        chrome.runtime.sendMessage(bzComm.getBZId(), v,_handleErr);
       }else{
         window.dispatchEvent(new CustomEvent("bzAppExtension", {detail:v}));
+      }
+    }
+
+    function _handleErr(r){
+      let err=chrome.runtime.lastError
+      if(err){
+        console.error(err.message)
+        if(_retry>5){
+          if(v.return){
+            v.ps=[err];
+            bzComm._handleResult(v)
+          }
+          return
+        }
+        setTimeout(()=>{
+          bzComm._postMessage(v,_retry+1)
+        },1000)
       }
     }
   },

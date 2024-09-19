@@ -564,6 +564,7 @@ var _bzMessage={
     _showScreenshot:"显示截图",
     _hideScreenshot:"隐藏截图",
     _takeScreenshot:"截屏",
+    _scriptRequest:"Script Request",
     _break:"中断",
     _continue:"继续",
     _wait:"等待",

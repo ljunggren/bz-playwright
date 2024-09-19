@@ -901,7 +901,7 @@ var formatter={
       fd.totalScenarios+=ss.length
     }
 
-    let ls=list=list.filter(x=>!fd.failedOnly||x.result=="failed")
+    let ls=list=list.filter(x=>x.code&&(!fd.failedOnly||x.result=="failed"))
     if(ls.length){
       fe.panel[0].innerHTML+=ls.map(x=>formatter.getGroupElement(x)).join("")
       formatter.element.header.find(".bz-analyze").attr({disabled:false})
@@ -949,11 +949,15 @@ var formatter={
       }
       parsingScenario=s
       list.push(s)
-      if(x){
-        handleSummaryInfo(s)
-      }
       handleStartTime(s)
       handleDeclare(s)
+      if(s.code){
+        if(x){
+          handleSummaryInfo(s)
+        }
+      // }else{
+      //   debugger
+      }
       handleInit(s)
 
       handleFailedScenario(s)
