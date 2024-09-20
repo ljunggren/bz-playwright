@@ -8495,8 +8495,14 @@ window.bzComm={
     function _handleErr(r){
       let err=chrome.runtime.lastError
       if(err){
-        console.error(err.message)
+        console.error("BZ-LOG:"+err.message)
         if(_retry>5){
+          console.log("BZ-LOG:Retry post message failed")
+          if(v.ps){
+            console.log("BZ-LOG:"+v.scope+"."+v.fun+"("+v.ps.join(",")+")")
+          }else{
+            console.log("BZ-LOG:"+v.scope+"."+v.fun+"()")
+          }
           if(v.return){
             v.ps=[err];
             bzComm._handleResult(v)
