@@ -660,7 +660,7 @@ var formatter={
         ${ctrl}
         <div class="bz-time">${o.time||""}</div>
         ${o.result?`<div class="bz-result bz-icon bz-${o.result} ${o.result=='failed'?'bz-to-failed':''}">${o.result=='failed'?'⧬':''}</div>`:""}
-        ${o.type=='scenario'?'<A class="bz-close-eye" style="margin-right:15px;"></A><input class="bz-chk-replay" type="checkbox"/>':''}
+        ${o.type=='scenario'&&o.result&&o.result!='running'?'<A class="bz-close-eye" style="margin-right:15px;"></A><input class="bz-chk-replay" type="checkbox"/>':''}
       </div>
       <pre class="bz-panel ${o.code}" ${o.close?'':'style="display:none;"'}>
         ${exPanel}
