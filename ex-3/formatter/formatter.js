@@ -17,6 +17,26 @@ var formatter={
     s.setAttribute("rel","stylesheet")
     s.setAttribute("href","//ai.boozang.com/formatter/formatter.css")
     document.body.append(s)
+    s=document.createElement("style")
+    s.innerHTML=`
+    .bz-close-eye::before{
+      content: "\\e9b0";
+    }
+    .bz-del::before,
+    .bz-delete::before{
+      content: "\\e971";
+    }
+    .bz-to-failed::before{
+      margin-right: -16px;
+      top: -7px;
+      font-size: 8px;
+    }
+    .bz-to-failed{
+      color: red !important;
+      font-size:25px;
+    }`
+    document.body.append(s)
+
   },
   updateFormatLogSetting:function(setting,_fun){
     try{
@@ -251,6 +271,8 @@ var formatter={
         return formatter.checkJsonValidation(e.target)
       }else if(o.hasClass("bz-switch2")){
         return
+      }else if(o.hasClass("bz-close-eye")){
+        o.parent().parent().hide()
       }else if(o.hasClass("bz-close")){
         formatter.closeScenario(o)
       }else if(o.hasClass("bz-switch")){
@@ -633,12 +655,12 @@ var formatter={
     <div id="${o.code}" class="bz-content bz-close-panel bz-level-${level} ${o.ckey||""} ${o.css||""}">
       <div class="bz-title bz-${o.result}-title">
         <button key="${o.code}" style="background-size:${o.close?12:8}px;visibility:${o.details!==undefined&&!o.details?'hidden':'unset'}" class="bz-icon bz-${o.close||"switch"}"></button>
-        <div class="bz-icon bz-${o.type}"></div>
+        <div class="bz-icon bz-${o.type}" style="${['group','call','scenario','unit','int'].includes(o.type)?'':'margin-left:45px;'}"></div>
         <div class="bz-title-text" bz="${o.bz||""}" worker="${o.worker||""}">${o.title||o.name} ${formatter.getWorkInfo(o)}</div>
         ${ctrl}
         <div class="bz-time">${o.time||""}</div>
-        ${o.result?`<div class="bz-result bz-icon bz-${o.result}"></div>`:""}
-        ${o.type=='scenario'?'<input class="bz-chk-replay" type="checkbox"/>':''}
+        ${o.result?`<div class="bz-result bz-icon bz-${o.result} ${o.result=='failed'?'bz-to-failed':''}">${o.result=='failed'?'⧬':''}</div>`:""}
+        ${o.type=='scenario'?'<A class="bz-close-eye" style="margin-right:15px;"></A><input class="bz-chk-replay" type="checkbox"/>':''}
       </div>
       <pre class="bz-panel ${o.code}" ${o.close?'':'style="display:none;"'}>
         ${exPanel}
@@ -1494,14 +1516,14 @@ var formatter={
     function retrieveActionData(v,p,testbz){
       let x=v.match(/^([0-9]+)\: \#\#Action.*\#\# \(([0-9\/mt\-c]+|tmp)\)\, *(.*)/)
 
-      let name=x[3],type,flash,screenshot;
+      let name=x[3].replace(/^trigger:/,"").trim(),type,flash,screenshot;
       if(name.match(/^(Set |Typing |Check )/)){
         type="keyboard"
       }else{
         type=name.split(/[ :]/)[0].toLowerCase()
         if(type.match(/validate/)){
           type="validate"
-        }else if(type=="group"||["given","when","then"].includes(name.toLowerCase())){
+        }else if(type=="group"||["given","when","then"].includes(type)){
           type="group"
           if(v.includes("Auto-one-action-group")){
             flash=1
@@ -1510,12 +1532,14 @@ var formatter={
           if(v.includes("attachScreenshotToReport")){
             screenshot=1
           }
-        }else if(type.match(/^(double|click|extract|refresh|call|load|hover|mousedown|mouseup|mousemove|drag|dragdrop)( |$)/)){
+        }else if(type.match(/^(mouse|click|extract|refresh|call|load|hover|mousedown|mouseup|mousemove|drag|dragdrop)( |$)/)){
           
         }else if(type.match(/execute api/)){
           type="api"
         }else if(type.match(/Re-Initialize/i)){
           type="refresh"
+        }else if(type=="script"){
+          type="script"
         }else{
           type="call"
         }

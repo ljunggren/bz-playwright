@@ -229,9 +229,8 @@ const Service = {
     Service.addTask({
       key:"coop-reload:",
       fun(msg){
-        msg=msg.substring(12).trim()
         Service.cancelChkCoop()
-        Service.reloadIDE(msg)
+        Service.reloadIDE()
       },
       timeout:Service.stdTimeout
     })
@@ -603,10 +602,14 @@ const Service = {
       $util.getCoopStatus()
     })
   },
-  async reloadIDE(msg){
-    await Service.browser.close();
+  async reloadIDE(){
     let url=Service.startUrl.replace(/\/m[0-9]+\/t[0-9]+\/.+$/,"/")
     console.log("Reload IDE: ", url);
+    let msg=await this.page.evaluate(()=>{
+      return _cooperatorHandler._getReloadData()
+    })
+
+    await Service.browser.close();
     await Service.startIDE(url,msg);
 
     Service.init() 
@@ -656,11 +659,7 @@ const Service = {
       await page.evaluate((d)=>{
         window["bz-reboot"]=1
         window["coop-tasks"]=d
-      setTimeout(()=>{
-          // localStorage.setItem("bz-reboot",1)
-          // localStorage.setItem("coop-tasks",d)
-        },1000)
-      },[data]);
+      },data);
     }
 
     function appPrintStackTrace(err){

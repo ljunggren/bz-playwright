@@ -7719,6 +7719,7 @@ window.BZ={
   initAppData:function(){
     if(window.extensionContent){
       if(!BZ._initAppData){
+        BZ._initAppData=1
         console.log("initAppData",bzComm.getIframeId())
         bzComm.postToIDE({
           fun:"getSharedData",
@@ -7767,10 +7768,12 @@ window.BZ={
         scope:"BZ"
       })
       if(!bzComm.getIframeId()){
-        bzComm.postToIDE({
-          fun:"infoAppReady",
-          scope:"BZ"
-        })
+        setTimeout(()=>{
+          bzComm.postToIDE({
+            fun:"infoAppReady",
+            scope:"BZ"
+          })
+        },100)
       }
     }
   },
@@ -17690,8 +17693,8 @@ var $util={
   },
   //triggerKeyEvents
   triggerKeyEvents:function(o,k,ch,c,a,s,_fun){ //c:ctrl, a:alt, s:shift
-        if(_Util._isSysButton(o)&&[13,32].includes(k)){
-            return $util.triggerMouseEvents(o,"click",0,0,0,0,0,_fun)
+    if(_Util._isSysButton(o)&&[13,32].includes(k)){
+      return $util.triggerMouseEvents(o,"click",0,0,0,0,0,_fun)
     }
 
     $(o).focus();
@@ -17813,7 +17816,7 @@ var $util={
 
     o.focus()
     if(document.activeElement!=o){
-            o.bzTmp=_cssHandler._findPath(o)
+      o.bzTmp=_cssHandler._findPath(o)
       _Util._setFindDomJS(o)
     //   _jsPath=o._jsPath
     // }else{
@@ -17835,6 +17838,7 @@ var $util={
     // d.innerHTML=s;
     // o.ownerDocument.body.parentNode.append(d);
     // d.remove()
+    $util.triggerTabEvent(o)
     setTimeout(()=>{
       o._keydownDone=1
     },10)
@@ -18056,18 +18060,18 @@ var $util={
         }else if(_withSubmit){
           let _form=_Util._getParentElementByCss("form",o)
           if(_form){
-                        _doFinal()
+            _doFinal()
             _form.submit()
             return
           }
-                    _doFinal()
+          _doFinal()
         }else if(!_noAutoSelect){
-                    return _autoClickMenuAfterSetValue(v,o,_doFinal)
+          return _autoClickMenuAfterSetValue(v,o,_doFinal)
         }else{
-                    return _doFinal()
+          return _doFinal()
         }
       }catch(eee){
-                _domActionTask._doLog("util: "+eee.stack)
+        _domActionTask._doLog("util: "+eee.stack)
         console.log(eee.stack);
         _doFinal()
       }
@@ -18075,31 +18079,30 @@ var $util={
 
     // 
     function _doFinal(){
-      if(_blur){
-        $util.triggerBlurEvent(o);
-      }
       _domActionTask._doLog("util: "+1709+(_fun?1:0))
-      if(_fun){
-        let _tmp=_fun
-        _fun=0
-        _tmp()
+      if(_blur){
+        setTimeout(()=>{
+          $util.triggerBlurEvent(o);
+          _fun&&_fun()
+        },1)
+      }else{
+        _fun&&_fun()
       }
-      
     }
     function _autoClickMenuAfterSetValue(v,dom,_afterFun){
-            if(!_handleDiff(v,dom,_afterFun)){
+      if(!_handleDiff(v,dom,_afterFun)){
         if(!_Util._isHidden(dom)){
-                    $util.triggerKeyEvents(dom,null,null,false,false,false,_afterFun);
+          $util.triggerKeyEvents(dom,null,null,false,false,false,_afterFun);
         }else{
-                    _afterFun&&_afterFun()
+          _afterFun&&_afterFun()
         }
         setTimeout(()=>{
           if(!_Util._isHidden(dom)){
-                        _handleDiff(v,dom)
+            _handleDiff(v,dom)
           }
         },50)
       }else{
-              }
+      }
     }
 
     function _handleDiff(v,dom,_afterFun){
@@ -18130,7 +18133,7 @@ var $util={
                 if(_Util._isInMenu(x,o)){
                   _domActionTask._doLog("Click menu: "+x.outerHTML)
                   $util.triggerMouseEvents(x,1,0,0,0,0,0,function(){
-                                        $util.triggerKeyEvents(dom,null,null,false,false,false,_afterFun);
+                    $util.triggerKeyEvents(dom,null,null,false,false,false,_afterFun);
                   })
                   return 1
                 }
@@ -18209,6 +18212,7 @@ var $util={
     o=_Util._getElementByQuickPath(o)
     e=new window[e](...eps)
     o.dispatchEvent(e)
+    o.blur()
     _fun&&_fun()
   },
   findDoms:function(p){
@@ -27247,7 +27251,6 @@ var TWHandler={
             _CtrlDriver._refreshDom($(".bz-action-list-content")[0])
           },100)
         }
-    
       }
       _finalFun()
     }  
@@ -29699,7 +29702,7 @@ var _domActionTask={
     
     if(_backFun){
       _fun=function(r){
-        _domActionTask._doLog("Send back result")
+        _domActionTask._doLog("Send back result",_data.description)
         r.exeTime=_data.exeTime
         if(_data.e){
           delete _data.e.bzTxtElement
@@ -29736,7 +29739,6 @@ var _domActionTask={
             _domActionTask._doLog("Go to take screenshot")
             return _screenshotHandler._getScreenshot(0,0,function(v){
               r.CV=v
-              _domActionTask._doLog("Send result 3")
               _finalFun&&_finalFun(r);
               _finalFun=0
             })
@@ -29744,7 +29746,6 @@ var _domActionTask={
             _domActionTask._registerSuccessAction(_data)
           }
 
-          _domActionTask._doLog("Send result 2")
           _finalFun&&_finalFun(r);
           _finalFun=0
         }
