@@ -22,7 +22,7 @@ const Service = {
       Service.nextResetTime=Date.now()+((parseInt(Service.testReset)||1)*60000)
     }
   },
-  logMonitor({testReset,keepalive,reportPrefix,inService, LogLevelArray, video,width,height,userdatadir, saveVideo}){
+  logMonitor({testReset,keepalive,file,inService, LogLevelArray, video,width,height,userdatadir, saveVideo}){
     this.inService=inService;
     this.testReset=testReset;
     Service.setNextResetTime()
@@ -42,9 +42,9 @@ const Service = {
 
     Service.consoleMsg("Initializing logMonitor");
    
-    if (reportPrefix) {
-      Service.consoleMsg("Override report prefix: " + reportPrefix);
-      Service.reportPrefix=reportPrefix + "_";
+    if (file) {
+      Service.consoleMsg("Override report prefix: " + file);
+      Service.reportPrefix=file + "_";
     } 
   },
   setBeginningFun(fun){

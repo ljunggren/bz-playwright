@@ -8462,7 +8462,13 @@ window.bzComm={
   _handleResult:function(v){
     if(v.return){
       let cp=bzComm.getCurPageType()
-      let fun=bzComm._callBackMap[v.return].return;
+      let fun=bzComm._callBackMap[v.return]
+      if(fun){
+        fun=fun.return;
+      }else{
+        debugger
+        console.log("BZ-LOG: No callback function found for: "+v.return)
+      }
       delete bzComm._callBackMap[v.return];
       if(v.result){
         if(v.result.error){

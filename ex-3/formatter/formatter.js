@@ -1514,7 +1514,7 @@ var formatter={
     }
 
     function retrieveActionData(v,p,testbz){
-      let x=v.match(/^([0-9]+)\: \#\#Action.*\#\# \(([0-9\/mt\-c]+|tmp)\)\, *(.*)/)
+      let x=v.match(/^([0-9]+)\: \#\#Action.*\#\# \(([0-9\/mt\-c.]+|tmp)\)\, *(.*)/)
 
       let name=x[3].replace(/^trigger:/,"").trim(),type,flash,screenshot;
       if(name.match(/^(Set |Typing |Check )/)){
@@ -1528,7 +1528,8 @@ var formatter={
           if(v.includes("Auto-one-action-group")){
             flash=1
           }
-        }else if(type=="script"){
+        }else if(type=="script"||type=="js"){
+          type="script"
           if(v.includes("attachScreenshotToReport")){
             screenshot=1
           }
@@ -1825,8 +1826,10 @@ var formatter={
     let f=formatter.data.setting.lineClear
     if(f){
       if(f.constructor==String){
-        f=eval(f)
-        formatter.data.setting.lineClear=f
+        let fn=formatter.data.setting.lineClearFun
+        fn=fn||eval(f)
+        formatter.data.setting.lineClearFun=fn
+        f=fn
         // return eval(`(${f})(v)`,{v:v})
       }
       return _bzEval._exeFun(f,[v])

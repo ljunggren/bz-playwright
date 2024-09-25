@@ -69,7 +69,7 @@ window.insertScript={
       }else if(r&&r.constructor==Function){
         r(_end)
       }else{
-        _end()
+        _end(r)
       }
     }catch(e){
       _fun({
@@ -83,7 +83,8 @@ window.insertScript={
         eval("delete "+k)
       })
       _fun({
-        _type:4
+        _type:4,
+        _returnValue:v
       })
     }
   }
