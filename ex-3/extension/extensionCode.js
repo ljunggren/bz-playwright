@@ -16136,6 +16136,7 @@ window.bzComm={
     }else{
       p={w:screen.availWidth/2,h:screen.availHeight}
     }
+    window.name=""
     let v=location.href
     window.open(v,"bz-master","width="+p.w+",height="+p.h)
     location.href=location.origin
@@ -16143,7 +16144,8 @@ window.bzComm={
 }
 if(window.name=="bz-client"){
   bzComm.init()
-}else if(window.name=="bz-master"){
+}else if(window.name=="bz-master"||location.href.match(/(localhost|\.boozang\.com)\/extension/)){
+  window.name="bz-master"
   if(!window.BZ){
     location.reload()
   }else if(window.extensionContent){
