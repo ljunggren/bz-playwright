@@ -1142,7 +1142,7 @@
 
 .bz-team::before{
   font-size: 10px;
-  padding: 3px 3px 4px 3px;
+  padding: 3px 0px;
 }
 
 .bz-trends::before{

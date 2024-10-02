@@ -226,6 +226,7 @@ var _bzMessage={
     },
     _error:{
       _missingPage:"Missing APP window",
+      _mappingError:"Mapping error",
       _missingScript:"Missing script",
       _missingRequest:"Missing request",
       _missingTokenSetting:"Missing token setting",

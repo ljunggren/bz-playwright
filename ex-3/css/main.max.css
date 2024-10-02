@@ -6132,8 +6132,8 @@ legend{
   background-color: var(--bz-black);
   height: 1px;
   margin-top: 14px;
-  right: -13px;
-  float: right;
+  right: -8px;
+  position: absolute;
   border-radius: 5px 0 0 5px;
 }
 .bz-item-left-point{

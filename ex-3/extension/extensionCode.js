@@ -917,6 +917,7 @@ var _bzMessage={
     },
     _error:{
       _missingPage:"Missing APP window",
+      _mappingError:"Mapping error",
       _missingScript:"Missing script",
       _missingRequest:"Missing request",
       _missingTokenSetting:"Missing token setting",
@@ -7917,6 +7918,9 @@ window.BZ={
     _fun&&_fun(v)
     return v
   },
+  closedApp:function(){
+    BZ.TW=0
+  }
 };
 //bz-ignore
 window._Util={
@@ -8021,7 +8025,7 @@ window._Util={
     }
   },
   _isBZTWOpened:function(){
-    return BZ.TW&&!BZ.TW.closed&&!window.extensionContent
+    return BZ.TW//&&!BZ.TW.closed&&!window.extensionContent
   },
   _openBZTW:function(_url,ws){
     BZ.TW=window.open(SERVER_HOST+"/empty.html?bzIde="+bzComm.getIdeTabId()+"#"+_url,"bz-client",ws);
@@ -15812,8 +15816,20 @@ window.bzComm={
     return window.curBZIframeId||parseInt(document.documentElement.getAttribute("iframeId")||0);
   },
   assignId:function(d){
+    if(!window.name&&parent==window){
+      window.name="bz-client"
+      location.reload()
+      return
+    }
     for(let k in d){
-      document.documentElement.setAttribute(k,d[k])
+      let v=d[k]
+      if(_Util._isObjOrArray(v)){
+        v=JSON.stringify(v).replace(/"/g,"'")
+      }
+      document.documentElement.setAttribute(k,v)
+    }
+    if(!d.app){
+      BZ.TW=0
     }
     if(window.curBZIframeId){
       document.documentElement.setAttribute("iframeId",curBZIframeId)
@@ -16113,7 +16129,7 @@ window.bzComm={
     }
   },
   popIDE:function(){
-    window.name=""
+    // window.name=""
     let p=localStorage.getItem("bz-ide")
     if(p){
       p=JSON.parse(p)
@@ -23967,30 +23983,6 @@ var _localStorageManagement={
   },
   _encrypt:function(a,bEncrypt){
     return a;
-    /*
-    if(!a||_Util._checkBrowserType().name.includes("Edge")){
-      return a;
-    }
-    var b=md5Value;
-    var c=""
-    var ii=0;
-    for(var i=0;i<a.length;i++){
-      var v1=a[i].charCodeAt();
-      var v2=0;
-      if(!b[ii]){
-        ii=0;
-      }
-      v2=b[ii].charCodeAt();
-      if(bEncrypt){
-        c+=String.fromCharCode((v1 ^ v2)+10);
-      }else{
-        v1-=10;
-        c+=String.fromCharCode(v1 ^ v2);
-      }
-      ii++;
-    }
-    return c;
-    */
   },
   _decrypt:function(a){
     return this._encrypt(a,false);
@@ -24283,7 +24275,7 @@ var _localStorageManagement={
       localStorage.clear()
       localStorage.setItem("BZ-Reload","1")
       return setTimeout(()=>{
-        location.reload()
+        _IDE._reload()
       },BZ._isInDemo()?500:1)
     }
   },
@@ -29692,6 +29684,7 @@ var _domActionTask={
         _domActionTask._exeAction(_data,_setting,_backFun,_descDelay)
       },100)
     }
+
     _domActionTask._lastAction=_data
     if(_data.asOneAction&&_data.oneActionList){
       return _domActionTask._exeOneActionList(_data,_setting,function(_result){
@@ -29711,6 +29704,17 @@ var _domActionTask={
         _domActionTask._doLog("Send back result",_data.description)
         r.exeTime=_data.exeTime
         if(_data.e){
+          if(r._type==2&&_data.doRetryPreviousAction){
+            if(!_data.redidPreviousAction&&BZ._lastMouseAction){
+              return _doRedoLastAction(r,_data,()=>{
+                _domActionTask._notReadyTime=0
+                _fun&&_fun(_result)
+              })
+            }else{
+              _data.redidPreviousAction=1
+              r.stillRetryable=0
+            }
+          }
           delete _data.e.bzTxtElement
         }
         r.img=r._img=_data._img
@@ -30222,23 +30226,26 @@ var _domActionTask={
         }else{
           _result = _domActionTask._compareWithExpectation(_data,_result._extractData,_force);
         }
-        if(_result._type==2){
-          document.body._bzValidateData.find(x=>{
-            if(x._key==_data._key){
-              if(x._html&&x._html!=_calcMD5(_data.e.outerHTML)){
-                _result._type=_taskInfo._type._notReady;
+        if(document.body._bzValidateData){
+          if(_result._type==2){
+            document.body._bzValidateData.find(x=>{
+              if(x._key==_data._key){
+                if(x._html&&x._html!=_calcMD5(_data.e.outerHTML)){
+                  _result._type=_taskInfo._type._notReady;
+                }
               }
-            }
-          })
-        }else if(_result._type==1){
-          document.body._bzValidateData.find(x=>{
-            if(x._key==_data._key){
-              if(!x._html&&!_data.e){
-                _result._type=_taskInfo._type._notReady;
+            })
+          }else if(_result._type==1){
+            document.body._bzValidateData.find(x=>{
+              if(x._key==_data._key){
+                if(!x._html&&!_data.e){
+                  _result._type=_taskInfo._type._notReady;
+                }
               }
-            }
-          })
+            })
+          }
         }
+
       }else if(_data.content.type=="unexist"){
         _result._type=_taskInfo._type._failed
         _result._msg=_bzMessage._system._error._existError
@@ -31332,7 +31339,7 @@ var _domActionTask={
           _result._errSou=_taskInfo._errSou._exp;
           break;
         }else{
-          _valids.push($(":Contains("+vv+"):last")[0])
+          _valids.push($(o).find(":Contains("+vv+"):last")[0])
         }
       }catch(e){
         _result._type=_taskInfo._type._failed;
@@ -39515,9 +39522,12 @@ var _transferMonitor={
     }else{
       _transferMonitor._lastUIUpdate=_transferMonitor._lastUIUpdate||Date.now()
       var t=_transferMonitor._lastUIUpdate
-      if(Date.now()-t>500){
+      if(Date.now()-t>500&&document.body&&document.body.innerText&&document.body.innerText.trim()){
         _fun(t)
       }else{
+        if(Date.now()-t>500){
+          _transferMonitor._lastUIUpdate=0
+        }
         setTimeout(function(){
           _transferMonitor._getUICompleteTime(_fun)
         },10)
@@ -39670,7 +39680,7 @@ var _bzDomPicker={
 
     
     BZ._data._uiSwitch._tmpPath=p
-    if(p){
+    if(!_Util._isEmpty(p)){
       if(bzComm._getIframeIdByPath(p)==bzComm.getIframeId()){
         let o=$util.findDom(p);
         _bzDomPicker._popWin(o,{x:0,y:0});
@@ -46336,22 +46346,12 @@ var _ideActionManagement={
           }
         }
         let rd={t:t,m:m}
-        if(_ideActionManagement._isEmptyTest(t)){
-          _ideModuleManagement._loadItem(m,function(){
-            rd.a=_ideActionManagement._findAction(t,a=>a.id==d[2])
-            _fun&&_fun(rd.a&&rd)
-          })
-          if(!_fun){
-            return rd
+        rd.a=_ideActionManagement._findAction(t,a=>a.id==d[2])
+        if(rd.a){
+          if(_fun){
+            return _fun(rd)
           }
-        }else{
-          rd.a=_ideActionManagement._findAction(t,a=>a.id==d[2])
-          if(rd.a){
-            if(_fun){
-              return _fun(rd)
-            }
-            return rd
-          }
+          return rd
         }
       }
     }

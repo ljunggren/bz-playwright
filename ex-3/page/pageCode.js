@@ -154,7 +154,7 @@ window._Util={
     }
   },
   _isBZTWOpened:function(){
-    return BZ.TW&&!BZ.TW.closed&&!window.extensionContent
+    return BZ.TW//&&!BZ.TW.closed&&!window.extensionContent
   },
   _openBZTW:function(_url,ws){
     BZ.TW=window.open(SERVER_HOST+"/empty.html?bzIde="+bzComm.getIdeTabId()+"#"+_url,"bz-client",ws);
@@ -8000,6 +8000,9 @@ window.BZ={
     _fun&&_fun(v)
     return v
   },
+  closedApp:function(){
+    BZ.TW=0
+  }
 };
 window.bzComm={
   _shareData:{},
@@ -8285,8 +8288,20 @@ window.bzComm={
     return window.curBZIframeId||parseInt(document.documentElement.getAttribute("iframeId")||0);
   },
   assignId:function(d){
+    if(!window.name&&parent==window){
+      window.name="bz-client"
+      location.reload()
+      return
+    }
     for(let k in d){
-      document.documentElement.setAttribute(k,d[k])
+      let v=d[k]
+      if(_Util._isObjOrArray(v)){
+        v=JSON.stringify(v).replace(/"/g,"'")
+      }
+      document.documentElement.setAttribute(k,v)
+    }
+    if(!d.app){
+      BZ.TW=0
     }
     if(window.curBZIframeId){
       document.documentElement.setAttribute("iframeId",curBZIframeId)
@@ -8586,7 +8601,7 @@ window.bzComm={
     }
   },
   popIDE:function(){
-    window.name=""
+    // window.name=""
     let p=localStorage.getItem("bz-ide")
     if(p){
       p=JSON.parse(p)

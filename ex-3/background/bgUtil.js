@@ -136,5 +136,26 @@ globalThis.bgUtil={
   focusTab:function(t){
     chrome.tabs.update(t.id,{active:true})
   },
+  exeRuntimeCmd:function(t,k,ps,f){
+    if(f){
+      if(ps.constructor==Array){
+        chrome.runtime[k](...ps,f)
+      }else if(ps.constructor==Object){
+        if(ps.insertFun){
+          if(ps.parameters){
+            chrome.runtime[k](...ps.parameters,f)
+          }else{
+            chrome.runtime[k](f)
+          }
+        }else{
+          chrome.runtime[k](ps)
+        }
+      }else{
+        chrome.runtime[k](ps)
+      }
+    }else{
+      chrome.runtime[k]()
+    }
+  }
 }
 

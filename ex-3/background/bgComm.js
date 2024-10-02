@@ -42,6 +42,7 @@ globalThis.bgComm={
     _tabManagement._tabReady(t.tab.id,t.frameId)
   },
   updateIframeIdx:function(t,frameId,idx){
+    console.log("updateIframeIdx",t,frameId,idx)
     _tabManagement._updateIframeIdx(t.tab.id,frameId,idx)
   },
   //Send message to extension (ide or app)

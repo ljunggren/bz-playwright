@@ -226,6 +226,7 @@ var _bzMessage={
     },
     _error:{
       _missingPage:"缺少 APP 页面",
+      _mappingError:"映射错误",
       _missingScript:"未设置脚本",
       _missingRequest:"未设置 API 请求",
       _missingTokenSetting:"缺少令牌设置",

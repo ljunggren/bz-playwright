@@ -251,7 +251,8 @@ const _tabManagement={
           toPage:"bzApp",
           toId:a.myApp,
           fun:"close",
-          scope:"window"
+          scope:"window",
+          toIFrameId:0
         })
       }
     }
@@ -326,6 +327,7 @@ const _tabManagement={
     })
   },
   _reportReady:function(t){
+    console.log("report ready",t)
     t=t||Object.values(_tabManagement._map).find(x=>x.app)
     clearTimeout(t._reInitIframeTimer)
     t._reInitIframeTimer=setTimeout(()=>{
