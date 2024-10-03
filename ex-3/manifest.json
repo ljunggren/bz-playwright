@@ -7,7 +7,6 @@
   "permissions": [
     "tabs",
     "webRequest",
-    "management",
     "storage",
     "scripting",
     "desktopCapture",
