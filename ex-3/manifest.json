@@ -42,7 +42,7 @@
       ],
       "matchAboutBlank":true,
       "all_frames":true,
-      "js": ["extension/content.js","extension/extensionCode.js","formatter/formatter.js"]
+      "js": ["extension/content.js","extension/extensionCode.js"]
     }
   ],
   "icons": { 
