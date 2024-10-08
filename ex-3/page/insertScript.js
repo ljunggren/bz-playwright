@@ -54,6 +54,11 @@ window.insertScript={
     }
   },
   exeScript:function({script,$loop,$parameter,$test,$module,$project,$action,$group,$element,funMap},_fun){
+    bzComm.postToIDE({
+      fun:"log",
+      scope:"console",
+      ps:["exe-script"]
+    })
     if($element){
       $element=$util.findDom($element)
     }
@@ -72,6 +77,10 @@ window.insertScript={
         _end(r)
       }
     }catch(e){
+      console.log(e.stack)
+      Object.keys(funMap).forEach(k=>{
+        eval("delete "+k)
+      })
       _fun({
         _type:1,
         _msg:e.message
