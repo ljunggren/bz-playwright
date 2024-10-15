@@ -2,7 +2,6 @@ globalThis.bgUtil={
   requestMap:{},
   openWindow:function(t,d){
     let w=chrome.windows.create(d)
-    debugger
   },
   ajax:async function(tab,data,fun){
     let asFile=data.notDownloadAsFile
@@ -156,6 +155,21 @@ globalThis.bgUtil={
     }else{
       chrome.runtime[k]()
     }
-  }
+  },
+  updateWindow:function(t,d){
+    let w=_tabManagement._map[t.tab.id]
+
+    if(w){
+      if(d[0]=="ide"){
+        w=w.myIde||w.id
+      }else{
+        w=w.myApp||w.id
+      }
+      w=_tabManagement._map[w].windowId
+      chrome.windows[d[1]](w,d[2],()=>{
+        console.log("ok")
+      })
+    }
+  },
 }
 

@@ -87,7 +87,7 @@
   --bz-warning: #ffc107;
   --bz-warn-color: #df3b69;
   --active-color-feature:#8747d1;
-  --selected-black:#181818;
+  --selected-black:#183e4e;
   --std-input-height:27px;
   --std-input-padding: 0 6px;
 
@@ -12676,6 +12676,10 @@ textarea{
   border-left:0 !important;
   border-top:0 !important;
   border-right:0 !important;
+}
+.main-nav .bz-drag-over{
+  width: 56px;
+  height: 56px;
 }
 .bz-main-menu-root{
   /* border-bottom: var(--bz-border); */
