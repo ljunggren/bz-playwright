@@ -61,6 +61,7 @@ window.insertScript={
     })
     if($element){
       $element=$util.findDom($element)
+      console.log($element)
     }
     if(funMap){
       Object.keys(funMap).forEach(k=>{
