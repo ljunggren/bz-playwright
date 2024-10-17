@@ -5,6 +5,7 @@ node_modules/
 results.json
 userdata/
 report*.json
-ex-3/page/*.js
-ex-3/ide/*.js
+ex-3/page
+ex-3/ide
+ex-3/css
 ex-3/extension/extensionCode.js
