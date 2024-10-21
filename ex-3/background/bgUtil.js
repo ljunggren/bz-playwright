@@ -158,17 +158,31 @@ globalThis.bgUtil={
   },
   updateWindow:function(t,d){
     let w=_tabManagement._map[t.tab.id]
-
-    if(w){
-      if(d[0]=="ide"){
-        w=w.myIde||w.id
-      }else{
-        w=w.myApp||w.id
+    _doIt()
+    function _doIt(_retry){
+      _retry=_retry||0
+      if(w){
+        if(d[0]=="ide"){
+          w=w.myIde||w.id
+        }else{
+          if(w.myApp){
+            w=w.myApp
+          }else if(w.myIde){
+            w=w.id
+          }else if(_retry<10){
+            return setTimeout(()=>{
+              _doIt(_retry+1)
+            },100)
+          }else{
+            return
+          }
+          w=w.myApp||w.id
+        }
+        w=_tabManagement._map[w].windowId
+        chrome.windows[d[1]](w,d[2],()=>{
+          console.log("ok")
+        })
       }
-      w=_tabManagement._map[w].windowId
-      chrome.windows[d[1]](w,d[2],()=>{
-        console.log("ok")
-      })
     }
   },
 }
