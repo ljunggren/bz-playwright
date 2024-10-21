@@ -176,7 +176,6 @@ globalThis.bgUtil={
           }else{
             return
           }
-          w=w.myApp||w.id
         }
         w=_tabManagement._map[w].windowId
         chrome.windows[d[1]](w,d[2],()=>{
