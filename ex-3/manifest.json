@@ -9,7 +9,6 @@
     "webRequest",
     "storage",
     "scripting",
-    "desktopCapture",
     "webNavigation",
     "windows"
   ],
