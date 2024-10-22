@@ -66,6 +66,7 @@
       "page/pageExtra.js",
       "css/bzInsert.css",
       "css/main.max.css",
+      "css/main.icons.css",
       "css/js-editor.css"
     ],
     "matches": ["<all_urls>"]
