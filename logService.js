@@ -606,7 +606,7 @@ const Service = {
     let url=Service.startUrl.replace(/\/m[0-9]+\/t[0-9]+\/.+$/,"/")
     console.log("Reload IDE: ", url);
     let msg=await this.page.evaluate(()=>{
-      return _cooperatorHandler._getReloadData()
+      return BZ.getReloadData()
     })
 
     await Service.browser.close();
