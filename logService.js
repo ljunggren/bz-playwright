@@ -11,7 +11,7 @@ const Service = {
   status:"",
   tryWakeup:0,
   lastHardResetTimer:0,
-  result: 2,
+  result: 0,
   consoleNum:0,
   logLevel: ["info","warn","error"],
   setResetButton(restartFun){
@@ -686,6 +686,7 @@ const Service = {
       setTimeout(()=>{
         //killer(Service.browser.process().pid, 'SIGKILL');
         setTimeout(()=>{
+          console.log("Service.result:"+Service.result)
           process.exit(Service.result)
         },1000)
       },1000)
