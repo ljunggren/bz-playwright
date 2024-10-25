@@ -65,9 +65,17 @@
       "ide/en/word.js",
       "page/pageExtra.js",
       "css/bzInsert.css",
+      "css/icon.font.css",
       "css/main.max.css",
       "css/main.icons.css",
-      "css/js-editor.css"
+      "css/js-editor.css",
+      "font2.0/icomoon.eot",
+      "font2.0/icomoon.svg",
+      "font2.0/icomoon.ttf",
+      "font2.0/icomoon.woff",
+      "font2.0/icomoon.woff2",
+      "font2.0/google-font.txt",
+      "font2.0/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2"
     ],
     "matches": ["<all_urls>"]
   }]
