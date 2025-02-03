@@ -183,6 +183,6 @@ globalThis.bgUtil={
         })
       }
     }
-  },
+  }
 }
 

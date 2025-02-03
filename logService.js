@@ -610,11 +610,11 @@ const Service = {
     })
 
     await Service.browser.close();
-    await Service.startIDE(url,msg);
+    await Service.startIDE({url:url,data:msg});
 
     Service.init() 
   },  
-  async startIDE(url,data){
+  async startIDE({url,data,listsuite,listscenarios,tests}){
     Service.startUrl = url;
     const launchargs = [
       '--disable-extensions-except=' + __dirname + '/ex-3',
@@ -660,8 +660,32 @@ const Service = {
         window["bz-reboot"]=1
         window["coop-tasks"]=d
       },data);
+    }else if(tests){
+      console.log("Going to post tmp tasks .....")
+      setTimeout(()=>{
+        console.log("post task:"+tests)
+        page.evaluate((v)=>{
+          $util.exeTests(v)
+        }, tests);
+      },5000)
+    }else if(listsuite||listscenarios){
+      Service.setBeginningFun(function(){
+        Service.insertFileTask(function(){
+          Service.result = 0;
+          Service.shutdown()
+        })
+        if(listsuite){
+          page.evaluate((v)=>{
+            $util.getTestsBySuite(v)
+          }, listsuite);
+        }else if(listscenarios){
+          page.evaluate((v)=>{
+            $util.getScenariosByTag(v)
+          }, JSON.parse(listscenarios));
+        }
+      })
     }
-
+    
     function appPrintStackTrace(err){
       Service.consoleMsg(err.stack,"error","app");
     }

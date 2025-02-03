@@ -91,120 +91,120 @@ function start(reset){
       console.log("Setting userdatadir: " + userdatadir);
     }
 
-  const launchargs = [
-    '--disable-extensions-except=' + __dirname + '/bz-extension',
-    '--load-extension=' + __dirname + '/bz-extension',
-    '--ignore-certificate-errors',
-    '--no-sandbox',
-    `--window-size=${width},${height}`,
-    '--defaultViewport: null',
-    ];
+    const launchargs = [
+      '--disable-extensions-except=' + __dirname + '/bz-extension',
+      '--load-extension=' + __dirname + '/bz-extension',
+      '--ignore-certificate-errors',
+      '--no-sandbox',
+      `--window-size=${width},${height}`,
+      '--defaultViewport: null',
+      ];
 
-  const browser = await chromium.launchPersistentContext(userdatadir,{
-   recordVideo: video==="none"? undefined : {
-      dir: 'videos/',
-    },
-    headless: false,
-    args: launchargs,
-    launchType: "PERSISTENT"
+    const browser = await chromium.launchPersistentContext(userdatadir,{
+      recordVideo: video==="none"? undefined : {
+        dir: 'videos/',
+      },
+      headless: false,
+      args: launchargs,
+      launchType: "PERSISTENT"
     });
 
   
 
-  function appPrintStackTrace(err){
-    Service.consoleMsg(err.stack,"error","app");
-  }
-
-  function idePrintStackTrace(err){
-    Service.consoleMsg(err.stack,"error","ide");
-    Service.chkIDE()  
-  }
-
-  const page = await browser.newPage();
-
-
-  // Setup popup
-  page.on('popup', async popup => {
-    console.log('Popup');
-    popup.on("error", appPrintStackTrace);
-    popup.on("pageerror", appPrintStackTrace);
-    popup.setViewportSize({ width: width, height: height });
-    Service.setPopup(popup);
-  })
-
-  
-  let url = result.args[0],tests;
-  if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
-    if (!url.endsWith("/")) {
-        url += "/"
+    function appPrintStackTrace(err){
+      Service.consoleMsg(err.stack,"error","app");
     }
-    url += "run"
-  }
-  console.log("Url: ", url, reset);
 
-  if(reset){
-    url=url.replace(/\/run$/,"/")
-  }else if(url.endsWith("/run")){
+    function idePrintStackTrace(err){
+      Service.consoleMsg(err.stack,"error","ide");
+      Service.chkIDE()  
+    }
+
+    const page = await browser.newPage();
+
+
+    // Setup popup
+    page.on('popup', async popup => {
+      console.log('Popup');
+      popup.on("error", appPrintStackTrace);
+      popup.on("pageerror", appPrintStackTrace);
+      popup.setViewportSize({ width: width, height: height });
+      Service.setPopup(popup);
+    })
+
+    
+    let url = result.args[0],tests;
+    if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
+      if (!url.endsWith("/")) {
+          url += "/"
+      }
+      url += "run"
+    }
+    console.log("Url: ", url, reset);
+
+    if(reset){
+      url=url.replace(/\/run$/,"/")
+    }else if(url.endsWith("/run")){
       tests=url.match(/\/(m[mt0-9\.,]+)\/run/)
       if(tests){
         tests=tests[1]
         console.log("tests: "+tests)
         url=url.replace(/\/(m[mt0-9\.,]+)\/run/,"")
       }
-  }
+    }
   
-  url=url.replace("#","&docker=1#")
-  
-  console.log(url)
-  let inService=0;
-  console.log("Browser URL: "+url)
-  if(url.match(/(\?|\&)key=.+(\&|\#)/)){
-    console.log("Running in cooperation!")
-    inService=1
-  }else{
-    console.log("Running in stand alone!")
-  }
+    url=url.replace("#","&docker=1#")
+    
+    console.log(url)
+    let inService=0;
+    console.log("Browser URL: "+url)
+    if(url.match(/(\?|\&)key=.+(\&|\#)/)){
+      console.log("Running in cooperation!")
+      inService=1
+    }else{
+      console.log("Running in stand alone!")
+    }
 
-  console.log("#### Updated browser for PW ###")
-  // Assign all log listeners
-  Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray,browser);
- if(tests){
-    console.log("Going to post tmp tasks .....")
-    setTimeout(()=>{
-      console.log("post task:"+tests)
-      page.evaluate((v)=>{
-        $util.exeTests(v)
-      }, tests);
-    },5000)
-  }else if(listsuite||listscenarios){
-    Service.setBeginningFun(function(){
-      Service.insertFileTask(function(){
-        Service.result = 0;
-        Service.shutdown()
+    console.log("#### Updated browser for PW ###")
+    // Assign all log listeners
+    Service.logMonitor(page,testReset,keepalive,file,inService,LogLevelArray,browser);
+    if(tests){
+      console.log("Going to post tmp tasks .....")
+      setTimeout(()=>{
+        console.log("post task:"+tests)
+        page.evaluate((v)=>{
+          $util.exeTests(v)
+        }, tests);
+      },5000)
+    }else if(listsuite||listscenarios){
+      Service.setBeginningFun(function(){
+        Service.insertFileTask(function(){
+          Service.result = 0;
+          Service.shutdown()
+        })
+        if(listsuite){
+          page.evaluate((v)=>{
+            $util.getTestsBySuite(v)
+          }, listsuite);
+        }else if(listscenarios){
+          page.evaluate((v)=>{
+            $util.getScenariosByTag(v)
+          }, JSON.parse(listscenarios));
+        }
       })
-      if(listsuite){
-        page.evaluate((v)=>{
-          $util.getTestsBySuite(v)
-        }, listsuite);
-      }else if(listscenarios){
-        page.evaluate((v)=>{
-          $util.getScenariosByTag(v)
-        }, JSON.parse(listscenarios));
-      }
-    })
-  }
-  
+    }
+    
 
-  //const version = await page.browser().version();
-  //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
-  console.log("Login by url with TOKEN: ", url);
-  const response = await page.goto(url);
+    //const version = await page.browser().version();
+    //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
+    console.log("Login by url with TOKEN: ", url);
+    const response = await page.goto(url);
 
-  Service.setPage(page,browser);
+    Service.setPage(page,browser);
 
 
-  page.on("error", idePrintStackTrace);
-  page.on("pageerror", idePrintStackTrace);
+    page.on("error", idePrintStackTrace);
+    page.on("pageerror", idePrintStackTrace);
 
   })()
 }

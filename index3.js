@@ -121,40 +121,13 @@ function start(reset){
       console.log("Running in stand alone!")
     }
 
-    console.log("#### Updated browser for PW ###")
-    // Assign all log listeners
-    if(tests){
-      console.log("Going to post tmp tasks .....")
-      setTimeout(()=>{
-        console.log("post task:"+tests)
-        page.evaluate((v)=>{
-          $util.exeTests(v)
-        }, tests);
-      },5000)
-    }else if(listsuite||listscenarios){
-      Service.setBeginningFun(function(){
-        Service.insertFileTask(function(){
-          Service.result = 0;
-          Service.shutdown()
-        })
-        if(listsuite){
-          page.evaluate((v)=>{
-            $util.getTestsBySuite(v)
-          }, listsuite);
-        }else if(listscenarios){
-          page.evaluate((v)=>{
-            $util.getScenariosByTag(v)
-          }, JSON.parse(listscenarios));
-        }
-      })
-    }
-    
+
 
     //const version = await page.browser().version();
     //console.log("Running Chrome version: " + version);  const response = await page.goto(url);
     console.log("Login by url with TOKEN: ", url);
     Service.logMonitor({testReset,keepalive,file,inService,LogLevelArray,width,height,video,userdatadir});
-    Service.startIDE(url)
+    Service.startIDE({url:url,tests:tests,listsuite:listsuite,listscenarios:listscenarios})
 
   })()
 }
