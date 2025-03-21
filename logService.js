@@ -302,6 +302,7 @@ const Service = {
           Service.insertHandleIdling();
           Service.wakeupIDE()
         }else{
+          Service.result=2
           Service.shutdown("Shutdown: No task to run")
         }
       },Service.idlingTimerValue)
@@ -602,17 +603,30 @@ const Service = {
       $util.getCoopStatus()
     })
   },
-  async reloadIDE(){
-    let url=Service.startUrl.replace(/\/m[0-9]+\/t[0-9]+\/.+$/,"/")
-    console.log("Reload IDE: ", url);
-    let msg=await this.page.evaluate(()=>{
-      return BZ.getReloadData()
-    })
-
-    await Service.browser.close();
-    await Service.startIDE({url:url,data:msg});
-
-    Service.init() 
+  async reloadIDE(v){
+    if(v){
+      console.log(v)
+    }else{
+      console.log("Reload from IDE")
+    }
+    setTimeout(async ()=>{
+      let url=Service.startUrl.replace(/\/m[0-9]+\/t[0-9]+\/.+$/,"/")
+      console.log("Reload IDE:",url, Date.now());
+      let msg=await this.page.evaluate(()=>{
+        return BZ.getReloadData()
+      })
+  
+      console.log("Browser closing:",Date.now())
+      await Service.browser.close();
+      console.log("Browser closed:",Date.now())
+      setTimeout(async ()=>{
+        console.log("Browser opening:",Date.now())
+        await Service.startIDE({url:url,data:msg});
+        console.log("Browser opened:",Date.now())
+      },1000)
+  
+      Service.init() 
+    },1000)
   },  
   async startIDE({url,data,listsuite,listscenarios,tests}){
     Service.startUrl = url;
@@ -654,14 +668,15 @@ const Service = {
     Service.setPage(page,browser);
 
     const response = await page.goto(url);
-
     if(data){
+      await page.waitForTimeout(5000);
+      console.log("Doing Reboot ...")
       await page.evaluate((d)=>{
         window["bz-reboot"]=1
         window["coop-tasks"]=d
       },data);
     }else if(tests){
-      console.log("Going to post tmp tasks .....")
+      console.log("Doing tmp tasks ...")
       setTimeout(()=>{
         console.log("post task:"+tests)
         page.evaluate((v)=>{
@@ -669,6 +684,7 @@ const Service = {
         }, tests);
       },5000)
     }else if(listsuite||listscenarios){
+      console.log("Doing list suite ...")
       Service.setBeginningFun(function(){
         Service.insertFileTask(function(){
           Service.result = 0;

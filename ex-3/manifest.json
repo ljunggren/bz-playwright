@@ -64,6 +64,7 @@
       "ide/en/config.js",
       "ide/en/word.js",
       "page/pageExtra.js",
+      "css/formatter-max.css",
       "css/bzInsert.css",
       "css/icon.font.css",
       "css/main.max.css",
