@@ -91,6 +91,16 @@ function start(reset){
     }
 
     let url = result.args[0],tests;
+    let token=url.match(/[\&\?]token=[^\&]*/)
+    if(!token){
+      console.log("Missing token in the url: "+url)
+      process.exit(2)
+      return
+    }else if(token[0].length!=63){
+      console.log("Bad Token: "+url)
+      process.exit(2)
+      return
+    }
     if ((!opts.screenshot) && (!opts.listscenarios) && typeof (url) == 'string' && !url.endsWith("/run") && url.match(/\/m[0-9]+\/t[0-9]+/)) {
       if (!url.endsWith("/")) {
         url += "/"
@@ -132,9 +142,7 @@ function start(reset){
   })()
 }
 
-console.log("Sleeping "+sleep+"s")
 setTimeout(()=>{
-  console.log("Finished sleep!")
   start()
 },sleep*1000)
 
