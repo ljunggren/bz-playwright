@@ -723,6 +723,7 @@ const Service = {
     (async () => {
       await Service.page.close()
       await Service.browser.close()
+      console.log("Browser closed!")
       setTimeout(()=>{
         //killer(Service.browser.process().pid, 'SIGKILL');
         setTimeout(()=>{
