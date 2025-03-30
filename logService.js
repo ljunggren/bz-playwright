@@ -209,6 +209,26 @@ const Service = {
     })
 
     Service.addTask({
+      key:"download-bz-file",
+      fun(v){
+        try{
+          console.log(v)
+          v=v.trim().split("download-bz-file:")[1].trim()
+          v=fs.readFileSync(__dirname+"/ex-3/"+v,"utf8");
+          console.log(v)
+  
+        }catch(ex){
+          v=ex.message
+        }
+        Service.page.evaluate((v)=>{
+          console.log(v)
+          window.tmpBZCode=v
+        },v);
+
+      }
+    })
+
+    Service.addTask({
       key:"loaded all module data",
       fun(msg){
         Service.markLoadingBZ()
@@ -648,7 +668,6 @@ const Service = {
       `--window-size=${Service.width},${Service.height}`,
       '--defaultViewport: null'
     ];
-
 
     let browser = await chromium.launchPersistentContext(Service.userdatadir,{
       recordVideo: Service.video==="none"? undefined : {
