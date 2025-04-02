@@ -27,7 +27,6 @@ $("#formatPage").click(()=>{
   bzFormat.gotoOrg=0
   updateSetting(()=>{
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      // 重新加载当前标签页
       chrome.tabs.reload(tabs[0].id);
     });
   })
@@ -35,10 +34,11 @@ $("#formatPage").click(()=>{
 $("#orgPage").click(()=>{
   chrome.tabs.query({active: true, currentWindow: true}, function(v){
     bzFormat.gotoOrg=1
-    chrome.runtime.sendMessage({ pop:1,fun:"formatLog",data:{
-      id:v[0].id,
-      data:bzFormat
-    }});
+    updateSetting(()=>{
+      chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.reload(tabs[0].id);
+      });
+    })
     window.close();
   });
 })
