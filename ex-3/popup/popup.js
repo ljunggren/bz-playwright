@@ -39,7 +39,6 @@ $("#orgPage").click(()=>{
         chrome.tabs.reload(tabs[0].id);
       });
     })
-    window.close();
   });
 })
 $(".bz-tab").click(function(){
@@ -358,13 +357,16 @@ function updateSetting(_fun){
   bzFormat.declareTime=$("#declareTime").val()
   bzFormat.initTime=$("#initTime").val()
   bzFormat.actionTime=$("#actionTime").val()
-  chrome.storage.sync.set({"bz-log-format":JSON.stringify(bzFormat)},_fun)
+  chrome.storage.sync.set({"bz-log-format":JSON.stringify(bzFormat)})
 
   if(bzFormat.account.version){
     $("#ide").show()
   }else{
     $("#ide").hide()
   }
+  setTimeout(()=>{
+    _fun&&_fun()
+  },1000)
 }
 init();
 // getPageInfo();
