@@ -127,7 +127,7 @@ globalThis.bgUtil={
     })
 
     function doFinal(o){
-      chrome.tabs.captureVisibleTab(o.windowId,(img) => {
+      chrome.tabs.captureVisibleTab(o.windowId,{format:"png"},(img) => {
         fun(img)
       })
     }

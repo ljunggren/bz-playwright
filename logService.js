@@ -375,6 +375,7 @@ const Service = {
     Service.addTask({
       key:"shutdown",
       fun(msg){
+        console.log("IDE ask to shutdown")
         Service.bzLoad=1
         Service.shutdown()
       },
