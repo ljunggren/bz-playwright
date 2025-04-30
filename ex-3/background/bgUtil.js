@@ -115,8 +115,9 @@ globalThis.bgUtil={
     _tabManagement._getTabById(t.tab.id,function(o){
       if(o){
         if(o.ide){
-          if(o.myApp){
-            _tabManagement._getTabById(o.myApp,doFinal)
+          let id=_tabManagement._getIdeAppId(o)
+          if(id){
+            _tabManagement._getTabById(id,doFinal)
           }
         }else{
           doFinal(o)
@@ -172,9 +173,9 @@ globalThis.bgUtil={
         if(d[0]=="ide"){
           w=w.myIde||w.id
         }else{
-          if(w.myApp){
-            w=w.myApp
-          }else if(w.myIde){
+          if(w.ide){
+            w=_tabManagement._getIdeAppId(w)
+          }else if(w.app){
             w=w.id
           }else if(_retry<10){
             return setTimeout(()=>{
@@ -190,6 +191,10 @@ globalThis.bgUtil={
         })
       }
     }
+  },
+  reload:function(t,v){
+    v=parseInt(v)
+    chrome.tabs.reload(v);
   }
 }
 
