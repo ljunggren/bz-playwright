@@ -2,6 +2,9 @@ globalThis.bgComm={
   _exeMap:{},
   init:function(){
     chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse){
+      if(msg.action=="ping"){
+        return sendResponse({status:"alive"})
+      }
       handleMessage(msg,sender,sendResponse);
     });
 
@@ -10,7 +13,7 @@ globalThis.bgComm={
     });
 
     function handleMessage(msg,sender,sendResponse){
-      console.log("receive message from "+msg.fromPage)
+      // console.log("receive message from "+msg.fromPage)
       if(msg.toPage=="bzBg"){
         if(msg.result){
           let f=bgComm._exeMap[msg.return]
@@ -42,14 +45,14 @@ globalThis.bgComm={
     _tabManagement._tabReady(t.tab.id,t.frameId)
   },
   updateIframeIdx:function(t,frameId,idx){
-    console.log("updateIframeIdx",t,frameId,idx)
+    // console.log("updateIframeIdx",t,frameId,idx)
     _tabManagement._updateIframeIdx(t.tab.id,frameId,idx)
   },
   //Send message to extension (ide or app)
   postToTab:function(msg){
     let _toId=parseInt(msg.toId)
     if(_toId){
-      console.log("post message to",msg)
+      // console.log("post message to",msg)
       if(msg.toIFrameId=="parent"){
         _tabManagement._getParentIFrameId(msg.fromId,msg.fromIFrameId,(pId)=>{
           _doIt(_toId,msg,{frameId:parseInt(pId)},0)
@@ -80,7 +83,7 @@ globalThis.bgComm={
 
     function _doRetry(id,msg,f,_retry,e){
       if(_retry<10){
-        console.log("retry post message to",id,msg,f)
+        // console.log("retry post message to",id,msg,f)
         setTimeout(()=>{
           _tabManagement._getTabById(id,function(v){
             if(v){
@@ -89,7 +92,7 @@ globalThis.bgComm={
           })
         },100)
       }else{
-        console.log("post message error",e?e.stack:"")
+        // console.log("post message error",e?e.stack:"")
       }
     }
   },

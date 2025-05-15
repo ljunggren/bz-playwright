@@ -134,14 +134,15 @@ globalThis.bgUtil={
     }
   },
   focusTab:function(t,v){
-    v=parseInt(v)
-    _tabManagement._getTabById(v,function(o){
-      chrome.windows.update(o.windowId,{focused:true})
-      // chrome.windows.update(o.windowId,{state:"minimized"})
-      // setTimeout(()=>{
-      //   chrome.windows.update(o.windowId,{state:"normal"})
-      // })
-    })
+    chrome.windows.update(t.tab.windowId,{focused:true})
+    // v=parseInt(v)
+    // _tabManagement._getTabById(v,function(o){
+    //   chrome.windows.update(o.windowId,{focused:true})
+    //   // chrome.windows.update(o.windowId,{state:"minimized"})
+    //   // setTimeout(()=>{
+    //   //   chrome.windows.update(o.windowId,{state:"normal"})
+    //   // })
+    // })
   },
   exeRuntimeCmd:function(t,k,ps,f){
     if(f){
