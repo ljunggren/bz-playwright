@@ -3,7 +3,7 @@
   "name": "Boozang: Test automation powered by AI, Intelligent models and Cucumber",
   "short_name": "Boozang",
   "description": "Write tests, debug visually, analyze root causes and automate your CI builds. Tests can be recorded or written in clear text.",
-  "version": "4.4.13",
+  "version": "4.4.17",
   "permissions": [
     "tabs",
     "webRequest",
