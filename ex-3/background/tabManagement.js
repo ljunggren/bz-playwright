@@ -159,6 +159,8 @@ const _tabManagement={
 
       if(!a.url){
         return
+      }else{
+        _closeSameIDE(a)
       }
       _tabManagement._map[a.id]=a
       a.url=f?a.url:t.url
@@ -242,6 +244,24 @@ const _tabManagement={
 
           _tabManagement._store()
         }
+      }
+    }
+
+    function _closeSameIDE(a){
+      let v=a.url.match(/\/\/([^\/]+\.boozang\.com|location)\/extension\?/)
+      if(v){
+        Object.values(_tabManagement._map).forEach(x=>{
+          if(a!=x&&x.url&&x.url.includes(v[0])){
+            debugger
+            bgComm.postToTab({
+              toPage:"bzIde",
+              toId:x.id,
+              fun:"close",
+              scope:"window",
+              toIFrameId:0
+            })
+          }
+        })
       }
     }
 
